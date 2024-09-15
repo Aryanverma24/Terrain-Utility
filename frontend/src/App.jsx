@@ -1,14 +1,34 @@
 import {Outlet} from 'react-router-dom'
 import {ToastContainer} from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
+import Navigation from './component/Navigation'
+import { API } from '../utils/API'
+import { useEffect } from 'react'
+import Login from './component/Login'
 
 function App() {
+
+  //axios tutorial
+
+  // const getData = async ()=>{
+  //   try {
+  //     const {data} = await API.get('/api/lands')
+  //     console.log(data);
+      
+  //   } catch (error) {
+  //     console.log(error);
+      
+  //   }
+  // }
+  // useEffect(()=>{
+  //   getData();
+  // },[])
   
   return (
     <>
     <ToastContainer />
-    <main className="py-3 bg-[#eeecec]">
-    <h2 className='text-black'>hello</h2>
+    <Navigation />
+    <main className="bg-[#eeecec]">
        <Outlet />
     </main>
     </>

@@ -17,7 +17,7 @@ router.route("/").post(createLand).get(getAllLands)
 
 router.route("/:id").get(getLandById).put(updateLandById).delete(deleteLandById)
 
-router.route("/:landType").get(getLandByType);
+router.route("/:landtype").get(getLandByType);
 router.route("/owner/:id").get(getLandByUserId);
 
 router.route("/user/:username").get(getLandbyUser);

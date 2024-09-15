@@ -124,16 +124,11 @@ const getLandbyUser = asyncHandler(async(req,res)=>{
 
 //land type
 
-const getLandByType = asyncHandler(async(req,res)=>{
-    try {
-        const landtype = req.params.landType
-        res.send(landtype)
-        const lands = await Land.find({landtype : landtype})
-        res.send(lands)
-    } catch (error) {
-        res.status(200).send("error")
-    }
-})
+const getLandByType = asyncHandler(async (req, res) => {
+    const landtype = req.params.landtype;
+    const lands = await Land.find({ type: landtype });
+    res.json(lands);
+  });
 
 export {
     createLand,

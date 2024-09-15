@@ -1,0 +1,10 @@
+.texts{
+    display : none;
+}
+.nav-container:hover .texts{
+    display: block;
+}
+
+.icons{
+    scale : 1.4;
+}

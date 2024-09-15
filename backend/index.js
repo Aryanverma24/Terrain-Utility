@@ -8,11 +8,11 @@ import cookieParser from "cookie-parser";
 import dbConnect from  './config/db.js'
 import userRoutes from './routes/userRoutes.js'
 import landRouter from './routes/landRoutes.js'
-import { METHODS } from "http";
 
 
 const app = express();
 dotenv.config();
+app.use(cors());
 
 const port = process.env.PORT;
 
@@ -24,11 +24,6 @@ app.use(express.json())
 app.use(express.urlencoded({extended : true}))
 app.use(cookieParser())
 
-app.use(cors({
-  origin: '*', 
-  optionsSuccessStatus: 200, 
-  credentials: true
-}));
 
 //routes 
 
