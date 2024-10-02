@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import "./Navigation.css";
 import { Link, Navigate } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
 import { API } from "../../utils/API";
+import { AuthContext } from "../../contexts/authContext";
 
 const Navigation = () => {
   const [sidebar, setSidebar] = useState(false);
   const [dropdown,setDropdown] = useState(false);
+  const {isAuthenticated,getUser,logout,user} = useContext(AuthContext)
+  const navigate = useNavigate()
 
   const toggleDropdown = () => {
     setDropdown(!dropdown);
@@ -16,7 +19,24 @@ const Navigation = () => {
   const toggleSidebar= () => {
     setSidebar(!sidebar);
   }
-  
+  // const username= user?.username
+  // console.log(username)
+
+  const logoutUser =  async(e) => {
+    try {
+      const {data} = await API.post('/api/users/logout')
+      console.log(data)
+      if(data){
+        logout()
+        console.log("logout clicked!!")
+        navigate('/login')
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+
   return (
     <div
       className={` ${
@@ -65,6 +85,15 @@ const Navigation = () => {
 
         <div className="relative">
           <ul className="mt-[1rem]">
+            {
+              user?.username ? <li className="mb-2 ml-[1rem]">
+              <button
+              onClick={()=>{
+                logoutUser()
+              }}
+              className="mr-2 font-semibold text-gray-400">Logout {user?.username}</button>
+            </li> :
+            <>
             <li className="mb-2 ml-[1rem]">
               <Link to='/login'
               className="mr-2 font-semibold text-gray-400">Login</Link>
@@ -73,6 +102,8 @@ const Navigation = () => {
               <Link to='/register'
               className="mr-2 font-semibold text-gray-400">Register</Link>
             </li>
+            </>
+            }
           </ul>
         </div>
     </div>

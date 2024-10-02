@@ -6,6 +6,7 @@ import { Route, RouterProvider , createRoutesFromElements } from 'react-router'
 import { createBrowserRouter} from "react-router-dom"
 import Login from './component/Login.jsx'
 import Register from './component/Register.jsx'
+import AuthState from '../contexts/authContext.jsx'
 
 
 const router = createBrowserRouter(
@@ -18,5 +19,8 @@ const router = createBrowserRouter(
 );
 
 createRoot(document.getElementById('root')).render(
+  <AuthState>
+
   <RouterProvider router={router} />
+  </AuthState>
 )

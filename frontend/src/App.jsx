@@ -3,11 +3,13 @@ import {ToastContainer} from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
 import Navigation from './component/Navigation'
 import { API } from '../utils/API'
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import Login from './component/Login'
+import { AuthContext } from '../contexts/authContext'
 
 function App() {
 
+  const {getUser,user} = useContext(AuthContext)
   //axios tutorial
 
   // const getData = async ()=>{
@@ -23,6 +25,12 @@ function App() {
   // useEffect(()=>{
   //   getData();
   // },[])
+
+  useEffect(()=>{
+    getUser();
+  },[])
+
+  
   
   return (
     <>

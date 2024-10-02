@@ -4,7 +4,15 @@ import asyncHandler from "../middlerwares/asyncHandler.js"
 
 const authenticate = asyncHandler(async(req,res,next)=>{
    
-     const token = req.cookies.jwt;
+    //  const token = req.cookies.jwt;
+    const userToken = req.headers.authorization;
+    console.log(userToken);
+    if(!userToken){
+        res.status(401)
+        throw new Error("Not Authorized. token failed")
+    }
+   const token = userToken?.split("Bearer ")[1]
+     
     if(token){
         try {
             const decoded =  jwt.verify(token,process.env.JWT_SECRET)

@@ -1,15 +1,46 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { set } from "mongoose";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { API } from "../../utils/API";
+import { AuthContext } from "../../contexts/authContext";
 
 
 const Login = () => {
+  const {isAuthenticated,getUser} = useContext(AuthContext)
+  const [email,setEmail] = useState('');
+  const [password,setPassword] = useState('');
+  const navigate = useNavigate()
+
+  const getLogin = async(e)=>{
+    e.preventDefault();
+    try {
+      const {data} = await API.post('/api/users/auth',{
+        email,password
+      })
+      if(data){
+        localStorage.setItem("token", data?.token)
+        getUser();
+        navigate('/')
+      }
+   } catch (error) {
+      console.log(error)
+    }
+  }
+
+ useEffect(()=>{
+  if(isAuthenticated){
+    navigate('/')
+  }
+ },[isAuthenticated])
+  
+
   return (
     <section className="ml-[4rem] h-screen text-white bg-[#0e0e0e]">
       <div className="flex flex-wrap">
         <div className="ml-[9rem] mt-[3rem]">
           <h1 className="text-4xl text-green-600 text-right font-semibold mb-4">SIGN IN</h1>
           
-          <form className="w-[28rem] mt-[6rem]">
+          <form onSubmit={getLogin} className="w-[28rem] mt-[6rem]">
             <div className="block mt-[1rem] mb-[1rem]">
               <label htmlFor="email" className="ml-[2rem] cursor-pointer text-green-600 font-semibold text-xl">
                 Email :
@@ -17,7 +48,9 @@ const Login = () => {
               <input
                 type="email"
                 id="email"
+                value={email}
                 placeholder="enter your email"
+                onChange={(e)=> setEmail(e.target.value) }
                 className="ml-[5rem] text-green-600 mt-2 px-3 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 shadow-md shadow-slate-500 "
               />
             </div>
@@ -28,6 +61,8 @@ const Login = () => {
               <input
                 type="password"
                 id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="enter your password"
                 className="ml-[3rem] text-green-600 mt-2 px-3 py-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 shadow-md shadow-slate-500 "
               />

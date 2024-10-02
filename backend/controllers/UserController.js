@@ -23,8 +23,8 @@ const createUser = asyncHandler(async(req,res) => {
 
      try {
         await newUser.save()
-        createToken(res,newUser._id);
-        res.status(200).send(newUser)
+        const token = createToken(res,newUser._id);
+        res.status(200).send({user:newUser, token})
      } catch (error) {
         res.status(500)
         throw new error("invalid user")
@@ -42,18 +42,24 @@ const loginUser = asyncHandler(async(req,res) =>{
         const checkPassword = await bcrypt.compare(password,existUser.password)
 
         if(checkPassword){
-            createToken(res,existUser._id)
+            const token = createToken(res,existUser._id)
 
-            res.status(200).json({
+            return res.status(200).json({
                 _id : existUser._id,
                 username : existUser.username,
                 email : existUser.email,
                 isAdmin : existUser.isAdmin,
-                contactNumber : existUser.contactNumber
+                contactNumber : existUser.contactNumber,
+                token
             })
         }
-        return 
+        return  res.status(400).json({
+            error:"Invalid Credentials"
+        })
     }
+    return  res.status(400).json({
+        error:"Invalid Credentials"
+    })
 
 })
 
@@ -74,20 +80,10 @@ const getAllUser = asyncHandler(async (req,res)=>{
 })
 
 const getCurrentUserProfile = asyncHandler( async (req,res) => {
-
-    const userToken = req.cookies.jwt;
-    const decoded = jwt.verify(userToken,process.env.JWT_SECRET)
-    const user = await User.findById(decoded.userId).select("-password")
-    
+    const user = req.user;
     if(user){
         res.status(201)
-        .json({
-            _id : user._id,
-            username : user.username,
-            email : user.email,
-            isAdmin : user.isAdmin,
-            contactNumber : user.contactNumber
-        })
+        .json({data:user, message:"User Data Fetched"})
     }
     else{
         res.status(404)
