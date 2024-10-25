@@ -41,7 +41,7 @@ const Navigation = () => {
     <div
       className={` ${
         sidebar ? "hidden" : "flex"
-      } nav-container lg:flex xl:flex justify- z-40 sm:hidden md:hidden bg-black text-blue-200 flex-wrap w-[6%] fixed hover:w-[15%] h-screen`}
+      } nav-container lg:flex xl:flex justify- z-40 sm:hidden md:hidden bg-black text-blue-200 flex-wrap w-[9%] fixed hover:w-[15%] h-screen`}
     >
       <div className="flex flex-col">
         <div className="image-container w-full h-10 flex m-2 mt-[2rem] ">

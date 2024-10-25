@@ -1,30 +1,32 @@
-import {Outlet} from 'react-router-dom'
-import {ToastContainer} from "react-toastify"
-import 'react-toastify/dist/ReactToastify.css'
-import Navigation from './component/Navigation'
-import { API } from '../utils/API'
-import { useContext, useEffect } from 'react'
-import Login from './component/Login'
-import Home from './component/Home'
-import { AuthContext } from '../contexts/authContext'
+import { Outlet } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Navigation from "./component/Navigation";
+import { API } from "../utils/API";
+import { useContext, useEffect } from "react";
+import Login from "./component/Login";
+import Home from "./component/Home";
+import { AuthContext } from "../contexts/authContext";
 
 function App() {
-  const {getUser,user} = useContext(AuthContext)
-  useEffect(()=>{
+  const { getUser, user } = useContext(AuthContext);
+  useEffect(() => {
     getUser();
-  },[])
+  }, []);
 
-  
-  
   return (
     <>
-    <ToastContainer />
-    <Navigation />
-    <main className="bg-[#eeecec]">
-       <Outlet />
-    </main>
+      <ToastContainer />
+      <div className="flex">
+        <div className="w-1/12 bg-gray-800">
+          <Navigation />
+        </div>
+        <main className="w-11/12 bg-[#eeecec] h-full">
+          <Outlet />
+        </main>
+      </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

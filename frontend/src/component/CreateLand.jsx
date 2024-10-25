@@ -1,41 +1,44 @@
-import React, { useState } from 'react';
-import { API } from '../../utils/API';
+import React, { useState } from "react";
+import { API } from "../../utils/API";
 
 const CreateLand = () => {
-  const [landtype, setLandtype] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [pincode, setPincode] = useState('');
+  const [landtype, setLandtype] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [image, setImage] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append('landtype', landtype);
-    formData.append('city', city);
-    formData.append('state', state);
-    formData.append('pincode', pincode);
-    formData.append('image', image);
-
+    console.log(landtype, city, state, pincode, "fksdjlkfsjkl");
+    
+    formData.append("landtype", landtype);
+    formData.append("city", city);
+    formData.append("state", state);
+    formData.append("pincode", pincode);
+    formData.append("image", image);    
     try {
-      const response = await API.post('/uploads', {
-        body: formData,
-      });
+      // const response = await API.post("/uploads", {
+      //   body: formData,
+      // });
+   
+      const response = await API.post("/uploads", formData);
 
       if (response.ok) {
         const data = await response.json();
         console.log(data);
       } else {
-        console.error('Error:', response.status);
+        console.error("Error:", response.status);
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className='flex flex-col ml-[30rem] p-[4rem]'>
+    <form onSubmit={handleSubmit} className="flex flex-col ml-[30rem] p-[4rem]">
       <input
         type="text"
         value={landtype}
@@ -69,6 +72,5 @@ const CreateLand = () => {
     </form>
   );
 };
-
 
 export default CreateLand;
