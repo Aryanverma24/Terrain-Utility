@@ -10,6 +10,7 @@ import AuthState from '../contexts/authContext.jsx'
 import Home from './component/Home.jsx'
 import CreateLand from './component/CreateLand.jsx'
 import Lands from './component/Lands.jsx'
+import WishList from './component/WishList.jsx'
 
 
 const router = createBrowserRouter(
@@ -23,6 +24,8 @@ const router = createBrowserRouter(
       <Route path='/uploads' element={<CreateLand />} />
 
       <Route path='/lands' element={<Lands />} />
+      <Route path='/wishlist' element={<WishList />} />
+
     </Route>
   )
 );
