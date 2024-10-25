@@ -62,14 +62,14 @@ const Navigation = () => {
         </div>
           
         <div className="m-4 mt-5 ">
-            <Link to="/" className="flex items-center">
+            <Link to="/lands" className="flex items-center">
               <FaHome className="mr-3 icons" />
               <span className="texts">Lands</span>
             </Link>
         </div>
 
         <div className="m-4 mt-5 ">
-            <Link to="/" className="flex items-center">
+            <Link to="/wishlist" className="flex items-center">
               <FaHome className="mr-3 icons" />
               <span className="texts">Wishlist</span>
             </Link>
@@ -91,16 +91,16 @@ const Navigation = () => {
               onClick={()=>{
                 logoutUser()
               }}
-              className="mr-2 font-semibold text-gray-400">Logout {user?.username}</button>
+              className="mr-2 font-semibold text-green-500">Logout {user?.username}</button>
             </li> :
             <>
             <li className="mb-2 ml-[1rem]">
               <Link to='/login'
-              className="mr-2 font-semibold text-gray-400">Login</Link>
+              className="mr-2 font-semibold text-green-600">Login</Link>
             </li>
             <li className="mb-2 ml-[1rem]">
               <Link to='/register'
-              className="mr-2 font-semibold text-gray-400">Register</Link>
+              className="mr-2 font-semibold text-green-600">Register</Link>
             </li>
             </>
             }

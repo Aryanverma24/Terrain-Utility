@@ -7,13 +7,22 @@ import { createBrowserRouter} from "react-router-dom"
 import Login from './component/Login.jsx'
 import Register from './component/Register.jsx'
 import AuthState from '../contexts/authContext.jsx'
+import Home from './component/Home.jsx'
+import CreateLand from './component/CreateLand.jsx'
+import Lands from './component/Lands.jsx'
 
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path='/' element={<App />} >
+
       <Route path='/login' element={<Login />} />
       <Route path='/register' element={<Register />} />
+
+      <Route index={true} path='/' element={<Home />} />
+      <Route path='/uploads' element={<CreateLand />} />
+
+      <Route path='/lands' element={<Lands />} />
     </Route>
   )
 );

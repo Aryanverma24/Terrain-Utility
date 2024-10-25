@@ -17,8 +17,8 @@ const router = express.Router();
 import { authenticate,authorizeAdmin } from "../middlerwares/authMiddlewares.js";
 
 //home route
-router.route("/").post(createUser).get(authenticate, authorizeAdmin, getAllUser);
-
+router.route("/").get(authenticate, authorizeAdmin, getAllUser);
+router.route("/register").post(createUser)
 //login logout 
 router.route("/auth").post(loginUser)
 router.route("/logout").post(logout)

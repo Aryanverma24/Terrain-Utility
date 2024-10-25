@@ -11,10 +11,11 @@ const createLand = asyncHandler(async(req,res)=>{
     const decoded = jwt.verify(userToken,process.env.JWT_SECRET)
     const user = await User.findById(decoded.userId).select("-password")
 
-    if(!landtype || !city || !state || !pincode){
+    if(!landtype || !city || !state || !pincode ){
         res.status(404).send("all fields are required!")
     }
     const userName = user.username
+    
 
     const land = new Land({landtype , city , state, pincode,owner : user,ownerName : userName}) 
 
@@ -125,10 +126,12 @@ const getLandbyUser = asyncHandler(async(req,res)=>{
 //land type
 
 const getLandByType = asyncHandler(async (req, res) => {
-    const landtype = req.params.landtype;
-    const lands = await Land.find({ type: landtype });
+    const landtype = req.params;
+    console.log(landtype)
+    const lands = await Land.find({ landtype: landtype });
     res.json(lands);
   });
+
 
 export {
     createLand,
@@ -138,5 +141,6 @@ export {
     updateLandById,
     deleteLandById,
     getLandbyUser,
-    getLandByType
+    getLandByType,
+    
 }

@@ -1,6 +1,6 @@
-import { set } from "mongoose";
+
 import React, { useContext, useEffect, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link,  useNavigate } from "react-router-dom";
 import { API } from "../../utils/API";
 import { AuthContext } from "../../contexts/authContext";
 
@@ -70,12 +70,12 @@ const Login = () => {
 
             <button 
                 type="submit"
-                className="w-36 bg-green-600 hover:bg-green-800 px-2 py-1 ml-[5rem] mt-[1rem] rounded-lg text-white">
+                className="w-36 bg-green-600 hover:bg-green-800 px-2 py-1 ml-[8rem] mt-[1rem] rounded-lg text-white">
                 Sign In...
             </button>
           </form> 
 
-          <div className=" mt-[4rem]">
+          <div className="ml-[8rem] mt-[1rem]">
             <p className="">
               New User ? {""}
               <Link to='/register' 

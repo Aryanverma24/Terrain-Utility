@@ -1,19 +1,18 @@
 import express from "express";
 import { 
-    createLand,
     getAllLands,
     getLandById,
     getLandByUserId,
     updateLandById,
     deleteLandById,
     getLandbyUser,
-    getLandByType
+    getLandByType,
 } from "../controllers/LandController.js";
 
 
 const router = express.Router();
 
-router.route("/").post(createLand).get(getAllLands)
+router.route("/").get(getAllLands)
 
 router.route("/:id").get(getLandById).put(updateLandById).delete(deleteLandById)
 

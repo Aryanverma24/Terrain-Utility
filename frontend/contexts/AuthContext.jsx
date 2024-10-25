@@ -5,8 +5,11 @@ import React from 'react'
 import { API } from "../utils/API";
 
 const AuthState = ({children}) => {
+
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated]  = useState(false)
+
+
     const getUser = async () => {
         try {
             const {data} = await API.get('/api/users/profile');
@@ -19,7 +22,6 @@ const AuthState = ({children}) => {
                 setIsAuthenticated(false)
             }
         } catch (error) {
-            console.log(error);
             setIsAuthenticated(false)
             setUser()
         }
@@ -31,11 +33,12 @@ const AuthState = ({children}) => {
         setIsAuthenticated(false);
     }
 
+  
 
   return (
     <AuthContext.Provider
     value={{
-        user, isAuthenticated,getUser,logout
+        user, isAuthenticated,getUser,logout,
     }}
     >
         {children}
@@ -43,4 +46,4 @@ const AuthState = ({children}) => {
   )
 }
 
-export default AuthState;
+export default AuthState; 

@@ -7,6 +7,10 @@ const LandSchema = new mongoose.Schema(
             type : String,
             required : true,
         },
+        image : {
+            type : String ,
+            reuired : true
+        },
         city : {
             type : String,
             required : true,
