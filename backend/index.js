@@ -35,7 +35,6 @@ app.use(cookieParser())
 
 app.use('/api/users', userRoutes),
 app.use('/api/lands',landRouter),
-
 app.post('/uploads', upload.single('image'), function (req, res, next) {
   const file = req.file;
   console.log(file);

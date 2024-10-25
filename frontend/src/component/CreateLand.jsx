@@ -19,7 +19,7 @@ const CreateLand = () => {
     formData.append('image', image);
 
     try {
-      const response = await API.post('/create-land', {
+      const response = await API.post('/uploads', {
         body: formData,
       });
 
