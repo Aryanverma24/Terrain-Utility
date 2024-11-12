@@ -24,6 +24,7 @@ const MyLands = () => {
   return (
     <>
       <div className="bg-black text-white h-full">
+        
         {user?.username ? (
           <>
             <div className="flex justify-between mb-[1rem] mx-[2rem]">
@@ -45,9 +46,13 @@ const MyLands = () => {
           </>
         ) : (
           <>
-            <div className="text-xl text-center">
-              <h2 className="pt-[3rem] font-semibold">WELCOME</h2>
+           <div className="h-screen">
+           <div className="flex justify-center p-10" >
+                <img className="w-[25rem] h-[25rem] rounded-3xl" src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png" alt="User not found" />
             </div>
+            <h3 className="text-center">User not Found!! Please 
+              <Link to="/login" className="text-green-500"> login</Link> first</h3> 
+           </div>
           </>
         )}
 
