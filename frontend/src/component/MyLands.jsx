@@ -3,21 +3,23 @@ import { useContext, useEffect, useState } from "react";
 import { API } from "../../utils/API";
 import { Link } from "react-router-dom";
 
-const Home = () => {
+const MyLands = () => {
   const { user } = useContext(AuthContext);
 
 
   const [lands, setLands] = useState([]);
 
   useEffect(() => {
-      API.get(`/api/lands`)
+    if (user?._id) {
+      API.get(`/api/lands/owner/${user._id}`)
         .then((response) => {
           setLands(response.data);
         })
         .catch((error) => {
           console.error(error);
         });
-  },);
+    }
+  }, [user]);
 
   return (
     <>
@@ -27,10 +29,10 @@ const Home = () => {
             <div className="flex justify-between mb-[1rem] mx-[2rem]">
               <div className="text-2xl text-center ml-[28rem]">
                 <h2 className="pt-[3rem]  font-semibold">
-                  WELCOME{" "}
                   <span className="font-bold uppercase text-green-600">
-                    {user?.username}
+                    {user?.username}{"'s "}
                   </span>
+                  Lands
                 </h2>
               </div>
               <div
@@ -90,4 +92,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default MyLands;

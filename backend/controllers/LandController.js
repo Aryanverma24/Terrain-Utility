@@ -4,6 +4,7 @@ import jwt, { decode } from "jsonwebtoken";
 import User from "../modals/UserModal.js";
 
 const createLand = asyncHandler(async (req, res, next) => {
+  
   const { landtype, city, state, pincode } = req.body;
   const authHeader = req.headers.authorization;
   let userToken;

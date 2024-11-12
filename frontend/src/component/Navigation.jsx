@@ -76,14 +76,14 @@ const Navigation = () => {
         </div>
 
         <div className="m-4 mt-5 ">
-            <Link to="/" className="flex items-center">
+            <Link to="/MyLands" className="flex items-center">
               <FaHome className="mr-3 icons" />
-              <span className="texts">Home</span>
+              <span className="texts">My Lands</span>
             </Link>
         </div>
       </div>
 
-        <div className="relative">
+        <div className="relative top-20">
           <ul className="mt-[1rem]">
             {
               user?.username ? <li className="mb-2 ml-[1rem]">

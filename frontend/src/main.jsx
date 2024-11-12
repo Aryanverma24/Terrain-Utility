@@ -11,6 +11,7 @@ import Home from './component/Home.jsx'
 import CreateLand from './component/CreateLand.jsx'
 import Lands from './component/Lands.jsx'
 import WishList from './component/WishList.jsx'
+import MyLands from './component/MyLands.jsx'
 
 
 const router = createBrowserRouter(
@@ -22,7 +23,8 @@ const router = createBrowserRouter(
 
       <Route index={true} path='/' element={<Home />} />
       <Route path='/uploads' element={<CreateLand />} />
-
+      
+      <Route path='/mylands' element={<MyLands />} />
       <Route path='/lands' element={<Lands />} />
       <Route path='/wishlist' element={<WishList />} />
 

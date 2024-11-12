@@ -160,10 +160,10 @@ const Register = () => {
     <section className="flex flex-col md:flex-row bg-[#0e0e0e] text-white min-h-screen">
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md bg-gray-800 rounded-lg shadow-lg p-6">
-          <h1 className="text-4xl font-bold text-green-600 text-center mb-6">
+          <h1 className="text-4xl font-bold text-green-600 text-center mb-4">
             REGISTER
           </h1>
-          <form className="space-y-4" onSubmit={submitForm}>
+          <form className="space-y-3" onSubmit={submitForm}>
             {/** Name Input */}
             <div>
               <label
@@ -180,7 +180,7 @@ const Register = () => {
                 placeholder="Enter your name"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
+                className="w-full px-3 py-1 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
                 autoComplete="new-name"
               />
             </div>
@@ -201,7 +201,7 @@ const Register = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
+                className="w-full px-3 py-1 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
                 autoComplete="new-email"
               />
             </div>
@@ -222,7 +222,7 @@ const Register = () => {
                 placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
+                className="w-full px-3 py-1 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
                 autoComplete="new-password"
               />
             </div>
@@ -243,7 +243,7 @@ const Register = () => {
                 placeholder="Enter password again"
                 value={rePassword}
                 onChange={(e) => setRePassword(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
+                className="w-full px-3 py-1 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
                 autoComplete="new-repassword"
               />
             </div>
@@ -263,7 +263,7 @@ const Register = () => {
                 placeholder="Enter your number"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
+                className="w-full px-3 py-1 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 transition duration-200 ease-in-out"
                 autoComplete="tel"
                 required
                 pattern="[0-9]*"
@@ -294,13 +294,13 @@ const Register = () => {
       </div>
 
       {/* Optional Image Section */}
-      {/* <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center">
         <img
           src="https://cdni.iconscout.com/illustration/premium/thumb/user-account-sign-up-4489360-3723267.png"
           alt="Registration Illustration"
           className="h-[24rem] w-[28rem] rounded-xl hidden md:block"
         />
-      </div> */}
+      </div>
     </section>
   );
 };
