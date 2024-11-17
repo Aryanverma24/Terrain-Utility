@@ -18,6 +18,7 @@ const Login = () => {
       });
       if (data) {
         localStorage.setItem("token", data?.token);
+        console.log(localStorage);
         getUser();
         navigate("/");
       }
