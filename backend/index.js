@@ -78,6 +78,17 @@ app.get("/get-land", async (req, res) => {
   }
 });
 
+app.get('/api/lands/owner/:ownerId', async (req, res) => {
+  const { ownerId } = req.params;
+  try {
+    const lands = await Land.find({ owner: ownerId }); // Assuming 'owner' is the correct field in your schema
+    res.json(lands);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching lands', error });
+  }
+});
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

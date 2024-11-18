@@ -47,37 +47,64 @@ function CreateLand() {
   };
 
   return (
-    <div>
-      <form onSubmit={uploadData}>
-        <input
-          type="text"
-          value={landtype}
-          onChange={(e) => setLandtype(e.target.value)}
-          placeholder="Land Type"
-        />
-        <input
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="City"
-        />
-        <input
-          type="text"
-          value={state}
-          onChange={(e) => setState(e.target.value)}
-          placeholder="State"
-        />
-        <input
-          type="text"
-          value={pincode}
-          onChange={(e) => setPincode(e.target.value)}
-          placeholder="Pincode"
-        />
-        <input type="file" accept="image/*" onChange={onInputChange} />
-        <button type="submit">Upload</button>
-      </form>
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-semibold text-center mb-6">Create New Land</h2>
+        <form onSubmit={uploadData} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={landtype}
+              onChange={(e) => setLandtype(e.target.value)}
+              placeholder="Land Type"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="City"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="State"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              value={pincode}
+              onChange={(e) => setPincode(e.target.value)}
+              placeholder="Pincode"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onInputChange}
+              className="w-full py-2 px-4 border border-gray-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Upload
+          </button>
+        </form>
+      </div>
     </div>
   );
-}
+};
 
 export default CreateLand;

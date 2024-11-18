@@ -81,36 +81,43 @@ const updateLandById = asyncHandler(async (req, res) => {
   const { landtype, city, pincode, state, owner } = req.body;
 
   if (land) {
+    // Update fields if provided, otherwise keep current values
     land.landtype = landtype || land.landtype;
     land.city = city || land.city;
     land.state = state || land.state;
     land.pincode = pincode || land.pincode;
 
     if (owner) {
+      // Fetch the user if owner update is requested
       const checkOwner = await User.find({ username: owner });
-      if (checkOwner) {
+      if (checkOwner && checkOwner.length > 0) {
         const ownerId = checkOwner[0]._id;
         const ownerName = checkOwner[0].username;
         land.owner = ownerId || land.owner;
         land.ownerName = ownerName || land.ownerName;
       } else {
-        res.status(400).send("User not find");
+        return res.status(400).send("User not found");
       }
     }
 
+    // Save the updated land to the database
+    const updatedLand = await land.save();
+
+    // Return the updated data in the response
     res.status(200).json({
-      _id: land._id,
-      landtype: land.landtype,
-      city: land.city,
-      pincode: land.pincode,
-      state: land.state,
-      owner: land.owner,
-      ownerName: land.ownerName,
+      _id: updatedLand._id,
+      landtype: updatedLand.landtype,
+      city: updatedLand.city,
+      pincode: updatedLand.pincode,
+      state: updatedLand.state,
+      owner: updatedLand.owner,
+      ownerName: updatedLand.ownerName,
     });
   } else {
-    res.status(400).send("Land not find!");
+    res.status(400).send("Land not found!");
   }
 });
+
 
 const deleteLandById = asyncHandler(async (req, res) => {
   const landId = req.params;
