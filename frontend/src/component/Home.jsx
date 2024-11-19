@@ -1,12 +1,11 @@
 import { AuthContext } from "../../contexts/authContext";
 import { useContext, useEffect, useState } from "react";
-import { API } from "../../utils/API";
+import {API}  from "../../utils/API";
 import { Link } from "react-router-dom";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
-
-
+ 
   const [lands, setLands] = useState([]);
 
   useEffect(() => {
@@ -18,6 +17,15 @@ const Home = () => {
           console.error(error);
         });
   },);
+
+  const handleAddToWishlist = async (landId) => {
+    try {
+      await API.post(`/api/wishlist/${landId}/`, user._id);
+      alert("Land added to wishlist!");
+    } catch (error) {
+      console.error("Error adding to wishlist:", error);
+    }
+  };
 
   return (
     <>
@@ -51,7 +59,7 @@ const Home = () => {
 
         <ul className="flex justify-evenly ml-[5rem] mr-[1rem] flex-wrap">
           {lands.map((land) => (
-            <div key={land.id} className="w-[20rem]">
+            <div key={land._id} className="w-[20rem]">
               <div className="bg-blue-200 p-[0.5rem] m-5 rounded-xl">
                 {land.landtype == "industrial" ? (
                   <>
@@ -81,6 +89,9 @@ const Home = () => {
                   <p>STATE : {land.state}</p>
                   <p>PINCODE : {land.pincode}</p>
                 </div>
+                <button onClick={() => handleAddToWishlist(land._id)}>
+                   Add to Wishlist
+                </button>
               </div>
             </div>
           ))}

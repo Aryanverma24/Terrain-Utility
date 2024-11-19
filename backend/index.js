@@ -8,7 +8,9 @@ import asyncHandler from "./middlerwares/asyncHandler.js";
 import dbConnect from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import landRouter from "./routes/landRoutes.js";
-import Land from "./modals/LandModal.js";
+import wishlistRouter from "./routes/wishlistRoutes.js"
+
+
 import { createLand } from "./controllers/LandController.js";
 
 const upload = multer({ dest: "uploads/" });
@@ -36,6 +38,7 @@ app.use(cookieParser());
 
 app.use("/api/users", userRoutes),
   app.use("/api/lands", landRouter),
+app.use("/api/wishlist",wishlistRouter)
   app.post(
     "/uploads",
     upload.single("image"),

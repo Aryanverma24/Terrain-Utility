@@ -81,22 +81,22 @@ const getLandById = asyncHandler(async (req, res) => {
 
 const getLandByUserId = asyncHandler(async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    let userToken;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      userToken = authHeader.split(" ")[1];
-    } else {
-      return res.status(401).send("Authorization token not provided.");
-    }
-    const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
+    // 1. Extract userId from req.params
+    const { id } = req.params;
 
-    const user = await User.findById(decoded.userId).select("-password");
-    const userId = user._id;
-    // res.send(user)
-    const owner = await Land.find({ owner: userId });
-    res.send(owner);
+    // 2. Query the Land model to find all lands where the owner is the provided userId
+    const lands = await Land.find({ owner: id }).populate("owner", "username"); // Optional: populate owner data (like username)
+
+    // 3. If no lands are found, return a 404 response
+    if (!lands || lands.length === 0) {
+      return res.status(404).json({ message: "No lands found for this user." });
+    }
+    // 4. Return the lands if found
+    res.status(200).json(lands);
   } catch (error) {
-    res.status(400).send("user not found!");
+    // 5. Handle server errors
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving lands. Please try again later." });
   }
 });
 

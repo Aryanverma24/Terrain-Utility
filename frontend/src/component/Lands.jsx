@@ -8,17 +8,7 @@ const Lands = () => {
   // const { user } = useContext(AuthState)
   const [landtype,setLandtype] = useState('');
   const [lands,setLands] = useState([]);
-
-  // const handleLands = async(e) => {
-  //   e.preventDefault();
-  //   API.get(`/api/lands/${landtype}`)
-  //   .then(response => {
-  //     console.log(lands)
-  //     setLands(response.data)
-  //   }).catch(error=>{
-  //     console.log(error)
-  //   })
-  // }
+  
   useEffect(()=>{
     API.get(`/api/lands/${landtype}`)
     .then(response => {
