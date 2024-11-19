@@ -24,7 +24,7 @@ const LandSchema = new mongoose.Schema(
             required : true,
         },
         owner : {
-            type : mongoose.Schema.ObjectId,
+            type : mongoose.Schema.Types.ObjectId,
             ref : User
         },
         ownerName : {

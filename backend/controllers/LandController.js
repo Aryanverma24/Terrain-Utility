@@ -1,70 +1,45 @@
+
+
+import jwt, { decode } from "jsonwebtoken";
+import User from '../modals/UserModal.js';  // Correct path depending on your folder structure
+
+
 import Land from "../modals/LandModal.js";
 import asyncHandler from "../middlerwares/asyncHandler.js";
-import jwt, { decode } from "jsonwebtoken";
-import User from "../modals/UserModal.js";
 
-const createLand = asyncHandler(async (req, res, next) => {
-  
-  const { landtype, city, state, pincode } = req.body;
-  const authHeader = req.headers.authorization;
-  let userToken;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    userToken = authHeader.split(" ")[1];
-  } else {
-    return res.status(401).send("Authorization token not provided.");
-  }
+const createLand = asyncHandler(async (req, res) => {
+  console.log("Body data received:", req.body);
+  console.log("File data received:", req.file);
+  const { landtype, city, state, pincode ,image} = req.body;
+  const { userId, userName } = req; // From the authenticated user
+
+  // Check if all required fields are provided
+  // if (!landtype || !city || !state || !pincode||!image) {
+  //   return res.status(400).send("All fields are required!");
+  // }
+
   try {
-    const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select("-password");
-
-    // Validate input fields
-    if (!landtype || !city || !state || !pincode) {
-      return res.status(400).send("All fields are required!"); // Return early
-    }
-
-    const userName = user.username;
-
     const land = new Land({
       landtype,
       city,
       state,
       pincode,
-      owner: user,
-      ownerName: userName,
+      image: req.file ? req.file.filename : null, // Save image filename
+      owner: userId,      // Owner ID from authenticated user
+      ownerName: userName // Owner name from authenticated user
     });
-
+    console.log(land); 
+console.log(land);
+    // Save to the database
     await land.save();
-    return res.status(200).send(land); // Return the saved land
+    console.log(land);
+    // Return the created land document as the response
+    return res.status(201).json(land);
   } catch (error) {
-    // Handle errors such as invalid token or user not found
-    console.error(error); // Log the error for debugging
-    return res.status(500).send("Unable to save in database"); // Return error response
+    console.error("Error during land creation:", error);
+    return res.status(500).send("Unable to save in database");
   }
 });
-
-// const createLand = asyncHandler(async(req,res)=>{
-
-//     const {landtype,city , state , pincode} = req.body
-
-//     const userToken = req.cookies.jwt
-//     const decoded = jwt.verify(userToken,process.env.JWT_SECRET)
-//     const user = await User.findById(decoded.userId).select("-password")
-
-//     if(!landtype || !city || !state || !pincode ){
-//         res.status(404).send("all fields are required!")
-//     }
-//     const userName = user.username
-
-//     const land = new Land({landtype , city , state, pincode,owner : user,ownerName : userName})
-
-//     try {
-//         await land.save()
-//         res.status(200).send(land)
-//     } catch (error) {
-//         res.status(500).send("unable to save in database")
-//     }
-// })
-
 const getAllLands = asyncHandler(async (req, res) => {
   const lands = await Land.find({});
   res.status(200).send(lands);
@@ -106,36 +81,43 @@ const updateLandById = asyncHandler(async (req, res) => {
   const { landtype, city, pincode, state, owner } = req.body;
 
   if (land) {
+    // Update fields if provided, otherwise keep current values
     land.landtype = landtype || land.landtype;
     land.city = city || land.city;
     land.state = state || land.state;
     land.pincode = pincode || land.pincode;
 
     if (owner) {
+      // Fetch the user if owner update is requested
       const checkOwner = await User.find({ username: owner });
-      if (checkOwner) {
+      if (checkOwner && checkOwner.length > 0) {
         const ownerId = checkOwner[0]._id;
         const ownerName = checkOwner[0].username;
         land.owner = ownerId || land.owner;
         land.ownerName = ownerName || land.ownerName;
       } else {
-        res.status(400).send("User not find");
+        return res.status(400).send("User not found");
       }
     }
 
+    // Save the updated land to the database
+    const updatedLand = await land.save();
+
+    // Return the updated data in the response
     res.status(200).json({
-      _id: land._id,
-      landtype: land.landtype,
-      city: land.city,
-      pincode: land.pincode,
-      state: land.state,
-      owner: land.owner,
-      ownerName: land.ownerName,
+      _id: updatedLand._id,
+      landtype: updatedLand.landtype,
+      city: updatedLand.city,
+      pincode: updatedLand.pincode,
+      state: updatedLand.state,
+      owner: updatedLand.owner,
+      ownerName: updatedLand.ownerName,
     });
   } else {
-    res.status(400).send("Land not find!");
+    res.status(400).send("Land not found!");
   }
 });
+
 
 const deleteLandById = asyncHandler(async (req, res) => {
   const landId = req.params;
