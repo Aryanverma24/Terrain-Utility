@@ -50,7 +50,7 @@ const Navigation = () => {
             alt="logo"
             className={`${sidebar ? "" : ""} rounded-full h-[40px]`}
           />
-          <h2 className="texts font-semibold ml-2 mt-1">Terrain Utility</h2>
+          <h2 className="texts font-semibold ml-2 mt-1">LandStrider</h2>
           </div>
 
           
