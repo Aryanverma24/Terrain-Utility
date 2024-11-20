@@ -22,6 +22,12 @@ const Home = () => {
 
   return (
     <>
+    <div className="bg-black" >
+      <h1 className="text-6xl text-green-500 text-center py-5 mb-0">
+      LAND STRIDE<i>R</i>
+      </h1>
+      <h3 className="mt-[-1.4rem] text-2xl semibold ml-[33rem] text-yellow-500 text-center">Fast and Simple...</h3>
+      </div>
       <div className="bg-black text-white h-full">
         {user?.username ? (
           <>

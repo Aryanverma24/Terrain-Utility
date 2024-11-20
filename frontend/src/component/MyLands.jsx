@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const MyLands = () => {
   const [lands, setLands] = useState([]);
@@ -71,6 +72,9 @@ const MyLands = () => {
     }
   };
 
+    const toastmsg =() => {
+      toast.success("Land details updated successfully!!")
+    }
   return (
     <div className="max-w-screen-lg mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-6">My Lands</h1>
@@ -100,7 +104,19 @@ const MyLands = () => {
           ))}
         </div>
       ) : (
-        <p className="text-center text-gray-500">No lands available</p>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
+        <p className="text-center text-gray-600 mb-6 text-xl font-semibold">
+          No Lands Available
+        </p>
+        <img
+          src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png"
+          alt="No lands available"
+          className="w-full max-w-5xl h-auto rounded-lg shadow-lg border border-gray-300 hover:shadow-2xl transition-shadow duration-300 ease-in-out mt-4 mb-10"
+        />
+      </div>
+      
+
+      
       )}
 
       {selectedLand && (
@@ -139,6 +155,7 @@ const MyLands = () => {
             </div>
             <button
               type="submit"
+              onClick={toastmsg}
               className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
             >
               Save Changes
