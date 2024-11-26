@@ -6,7 +6,9 @@ import {
   getLandByUserId,
   updateLandById,
   deleteLandById,
+  getLandReviews,
   getLandbyUser,
+  deleteReview,
   getLandByType,
 } from "../controllers/LandController.js";
 import { authenticate } from "../middlerwares/landauthenticate.js"; // Import the authenticate middleware
@@ -34,4 +36,10 @@ router.route("/user/:username").get(getLandbyUser); // Username-based search
 // Protected route for creating land
 router.route("/create-land").post(authenticate, createLand);
 
+router.route("/:id/reviews").get(getLandReviews).delete(
+// Make sure this route matches your params
+  authenticate, // Assuming you have authentication middleware
+  deleteReview
+);
+  
 export default router;

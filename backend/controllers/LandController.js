@@ -1,22 +1,21 @@
-
-
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import User from '../modals/UserModal.js';  // Correct path depending on your folder structure
-
-
 import Land from "../modals/LandModal.js";
 import asyncHandler from "../middlerwares/asyncHandler.js";
+import { Types } from 'mongoose'; 
 
+// Create Land
 const createLand = asyncHandler(async (req, res) => {
   console.log("Body data received:", req.body);
   console.log("File data received:", req.file);
-  const { landtype, city, state, pincode ,image} = req.body;
-  const { userId, userName } = req; // From the authenticated user
 
-  // Check if all required fields are provided
-  // if (!landtype || !city || !state || !pincode||!image) {
-  //   return res.status(400).send("All fields are required!");
-  // }
+  const { landtype, city, state, pincode } = req.body;
+  const { userId, username: userName } = req.user;  // From the authenticated user (using req.user)
+
+  // Validate input fields
+  if (!landtype || !city || !state || !pincode || !req.file) {
+    return res.status(400).send("All fields are required, including image!");
+  }
 
   try {
     const land = new Land({
@@ -24,15 +23,16 @@ const createLand = asyncHandler(async (req, res) => {
       city,
       state,
       pincode,
-      image: req.file ? req.file.filename : null, // Save image filename
+      image: req.file.filename, // Save image filename
       owner: userId,      // Owner ID from authenticated user
       ownerName: userName // Owner name from authenticated user
     });
-    console.log(land); 
-console.log(land);
+
+    console.log("Created Land:", land);
+
     // Save to the database
     await land.save();
-    console.log(land);
+
     // Return the created land document as the response
     return res.status(201).json(land);
   } catch (error) {
@@ -40,41 +40,60 @@ console.log(land);
     return res.status(500).send("Unable to save in database");
   }
 });
+
+// Get all lands
 const getAllLands = asyncHandler(async (req, res) => {
-  const lands = await Land.find({});
-  res.status(200).send(lands);
+  try {
+    const lands = await Land.find({}); // Fetch all lands
+
+    // Calculate average rating for each land
+    const landsWithAverageRating = lands.map((land) => {
+      const ratings = land.ratings; // Assuming land has a 'ratings' field (array)
+      let averageRating = 0;
+      
+      if (ratings && ratings.length > 0) {
+        // Calculate average rating
+        averageRating = ratings.reduce((acc, rating) => acc + rating, 0) / ratings.length;
+      }
+
+      // Return land with calculated averageRating
+      return {
+        ...land.toObject(),
+        averageRating: averageRating || 0, // Default to 0 if no ratings
+      };
+    });
+
+    // Return lands with average ratings
+    res.status(200).json(landsWithAverageRating);
+  } catch (error) {
+    console.error("Error fetching lands:", error);
+    res.status(500).send("Error fetching land data");
+  }
 });
 
+// Get land by ID
 const getLandById = asyncHandler(async (req, res) => {
   const land = await Land.findById(req.params.id);
   if (land) {
     res.status(200).send(land);
   } else {
-    res.status(400).send("land not found!");
+    res.status(400).send("Land not found!");
   }
 });
 
+// Get lands by user ID (this is now managed by req.user)
 const getLandByUserId = asyncHandler(async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    let userToken;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      userToken = authHeader.split(" ")[1];
-    } else {
-      return res.status(401).send("Authorization token not provided.");
-    }
-    const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
-
-    const user = await User.findById(decoded.userId).select("-password");
-    const userId = user._id;
-    // res.send(user)
-    const owner = await Land.find({ owner: userId });
-    res.send(owner);
+    const userId = req.user.id;  // From the authenticated user (req.user set by authenticate middleware)
+    const ownerLands = await Land.find({ owner: userId });
+    res.status(200).json(ownerLands);
   } catch (error) {
-    res.status(400).send("user not found!");
+    res.status(400).send("User lands not found!");
   }
 });
 
+
+// Update land by ID
 const updateLandById = asyncHandler(async (req, res) => {
   const land = await Land.findById(req.params.id);
 
@@ -104,54 +123,106 @@ const updateLandById = asyncHandler(async (req, res) => {
     const updatedLand = await land.save();
 
     // Return the updated data in the response
-    res.status(200).json({
-      _id: updatedLand._id,
-      landtype: updatedLand.landtype,
-      city: updatedLand.city,
-      pincode: updatedLand.pincode,
-      state: updatedLand.state,
-      owner: updatedLand.owner,
-      ownerName: updatedLand.ownerName,
-    });
+    res.status(200).json(updatedLand);
   } else {
     res.status(400).send("Land not found!");
   }
 });
 
-
+// Delete land by ID
 const deleteLandById = asyncHandler(async (req, res) => {
-  const landId = req.params;
+  const landId = req.params.id;
 
   if (landId) {
-    await Land.findByIdAndDelete(landId.id);
-    res.status(200).send("land successfully removed!");
+    await Land.findByIdAndDelete(landId);
+    res.status(200).send("Land successfully removed!");
   } else {
-    res.status(400).send("land not found");
+    res.status(400).send("Land not found");
   }
 });
 
+// Get lands by username (alternative method)
 const getLandbyUser = asyncHandler(async (req, res) => {
   try {
     const username = req.params.username;
 
     const user = await User.find({ username: username });
     const userId = user[0]._id;
-    const owner = await Land.find({ owner: userId });
-    res.send(owner);
+    const ownerLands = await Land.find({ owner: userId });
+    res.send(ownerLands);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching lands" });
   }
 });
+const getLandReviews = async (req, res) => {
+  try {
+    const land = await Land.findById(req.params.id).populate('reviews.user', 'username'); // Populate reviews with user details (username)
+    
+    if (!land) {
+      return res.status(404).json({ message: 'Land not found' });
+    }
+    
+    // Extracting and returning reviews from the land object
+    const reviews = land.reviews;
 
-//land type
+    res.status(200).json(reviews); // Send the reviews as response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
+
+// Delete review by userId
+// Delete review// Delete review
+const deleteReview = async (req, res) => {
+  try {
+    const { landId, userId } = req.params; // Extract the landId and userId from the URL params
+    const decodedUserId = req.userId; // Assume req.userId is set from the JWT middleware (use token verification)
+
+    // Check if the userId from the request matches the logged-in user's ID
+    if (decodedUserId !== userId) {
+      return res.status(403).json({ message: "You can only delete your own review." });
+    }
+
+    const land = await Land.findById(landId);
+
+    if (!land) {
+      return res.status(404).json({ message: "Land not found." });
+    }
+
+    // Find the review and remove it
+    const reviewIndex = land.reviews.findIndex(review => review.user.toString() === userId);
+    
+    if (reviewIndex === -1) {
+      return res.status(404).json({ message: "Review not found." });
+    }
+
+    // Remove the review from the land document
+    land.reviews.splice(reviewIndex, 1);
+    await land.save();
+
+    res.status(200).json({ message: "Review deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+
+
+
+
+
+
+// Get lands by type
 const getLandByType = asyncHandler(async (req, res) => {
-  const landtype = req.params;
-  console.log(landtype);
+  const { landtype } = req.params;
   const lands = await Land.find({ landtype: landtype });
   res.json(lands);
 });
+
 
 export {
   createLand,
@@ -160,6 +231,8 @@ export {
   getLandByUserId,
   updateLandById,
   deleteLandById,
+  getLandReviews,
   getLandbyUser,
   getLandByType,
+  deleteReview,
 };

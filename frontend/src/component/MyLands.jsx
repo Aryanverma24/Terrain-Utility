@@ -14,12 +14,13 @@ const MyLands = () => {
   useEffect(() => {
     const fetchLands = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/lands/owner/671b8e8...", {
+        const token = localStorage.getItem('token'); // Replace with your token storage location
+        axios.get(`http://localhost:5000/api/lands/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        
         setLands(response.data);
       } catch (error) {
         console.error("Error fetching lands:", error);

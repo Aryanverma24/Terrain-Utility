@@ -12,7 +12,7 @@ import CreateLand from './component/CreateLand.jsx'
 import Lands from './component/Lands.jsx'
 import WishList from './component/WishList.jsx'
 import MyLands from './component/MyLands.jsx'
-
+import SingleLand from './component/SingleLand.jsx'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -27,7 +27,8 @@ const router = createBrowserRouter(
       <Route path='/mylands' element={<MyLands />} />
       <Route path='/lands' element={<Lands />} />
       <Route path='/wishlist' element={<WishList />} />
-
+      <Route path="/" element={<Home />} />
+      <Route path="/land/:id" element={<SingleLand />} />
     </Route>
   )
 );
