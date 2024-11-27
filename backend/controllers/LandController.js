@@ -176,30 +176,33 @@ const getLandReviews = async (req, res) => {
 
 // Delete review by userId
 // Delete review// Delete review
+
+
 const deleteReview = async (req, res) => {
   try {
-    const { landId, userId } = req.params; // Extract the landId and userId from the URL params
-    const decodedUserId = req.userId; // Assume req.userId is set from the JWT middleware (use token verification)
+    const { landId, userId } = req.params;
+    const decodedUserId = req.user.id; // Access user ID from req.user.id
 
-    // Check if the userId from the request matches the logged-in user's ID
-    if (decodedUserId !== userId) {
+    console.log("Decoded User ID:", decodedUserId);
+    console.log("User ID from request:", userId);
+
+    if (decodedUserId.toString() !== userId.toString()) {
       return res.status(403).json({ message: "You can only delete your own review." });
     }
 
     const land = await Land.findById(landId);
-
     if (!land) {
       return res.status(404).json({ message: "Land not found." });
     }
 
-    // Find the review and remove it
-    const reviewIndex = land.reviews.findIndex(review => review.user.toString() === userId);
-    
+    const reviewIndex = land.reviews.findIndex(
+      (review) => review.user.toString() === userId
+    );
+
     if (reviewIndex === -1) {
       return res.status(404).json({ message: "Review not found." });
     }
 
-    // Remove the review from the land document
     land.reviews.splice(reviewIndex, 1);
     await land.save();
 
@@ -209,6 +212,10 @@ const deleteReview = async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
+
+
+
 
 
 

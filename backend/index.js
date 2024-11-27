@@ -131,7 +131,7 @@ app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
 // DELETE /api/lands/:landId/reviews/:userId
 // DELETE /api/lands/:landId/reviews/:userId
 // Backend route to delete review by userId or reviewId
-app.delete('/api/lands/:landId/reviews/:userId', deleteReview);
+app.delete('/api/lands/:landId/reviews/:userId',authenticate, deleteReview);
 
 
 
