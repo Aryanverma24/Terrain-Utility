@@ -2,6 +2,23 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+const decodeToken = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return null;
+  }
+};
+
 const MyLands = () => {
   const [lands, setLands] = useState([]);
   const [selectedLand, setSelectedLand] = useState(null); // State to store the selected land for modification
@@ -14,13 +31,26 @@ const MyLands = () => {
   useEffect(() => {
     const fetchLands = async () => {
       try {
-        const token = localStorage.getItem('token'); // Replace with your token storage location
-        axios.get(`http://localhost:5000/api/lands/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("No token found");
+          return;
+        }
+
+        const decoded = decodeToken(token);
+        if (!decoded || !decoded.userId) {
+          console.error("Invalid or missing userId in token");
+          return;
+        }
+
+        console.log("Decoded token:", decoded);
+
+        // Fetch lands for the logged-in user
+        const response = await axios.get(
+          `http://localhost:5000/api/lands/user/${decoded.userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
         setLands(response.data);
       } catch (error) {
         console.error("Error fetching lands:", error);
@@ -73,17 +103,23 @@ const MyLands = () => {
     }
   };
 
-    const toastmsg =() => {
-      toast.success("Land details updated successfully!!")
-    }
+  const toastmsg = () => {
+    toast.success("Land details updated successfully!!");
+  };
+
   return (
     <div className="max-w-screen-lg mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-6">My Lands</h1>
       {lands.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {lands.map((land) => (
-            <div key={land._id} className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-300">
-              <h3 className="text-xl font-semibold mb-2 capitalize">Type: {land.landtype}</h3>
+            <div
+              key={land._id}
+              className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-300"
+            >
+              <h3 className="text-xl font-semibold mb-2 capitalize">
+                Type: {land.landtype}
+              </h3>
               <p className="text-gray-600">City: {land.city}</p>
               <p className="text-gray-600">State: {land.state}</p>
               {land.image && (
@@ -106,18 +142,15 @@ const MyLands = () => {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-        <p className="text-center text-gray-600 mb-6 text-xl font-semibold">
-          No Lands Available
-        </p>
-        <img
-          src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png"
-          alt="No lands available"
-          className="w-full max-w-5xl h-auto rounded-lg shadow-lg border border-gray-300 hover:shadow-2xl transition-shadow duration-300 ease-in-out mt-4 mb-10"
-        />
-      </div>
-      
-
-      
+          <p className="text-center text-gray-600 mb-6 text-xl font-semibold">
+            No Lands Available
+          </p>
+          <img
+            src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png"
+            alt="No lands available"
+            className="w-full max-w-5xl h-auto rounded-lg shadow-lg border border-gray-300 hover:shadow-2xl transition-shadow duration-300 ease-in-out mt-4 mb-10"
+          />
+        </div>
       )}
 
       {selectedLand && (

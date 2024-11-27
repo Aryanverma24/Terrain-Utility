@@ -16,6 +16,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import User from "../backend/modals/UserModal.js"
+import { getLandsByUser } from "../backend/controllers/LandController.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,15 +82,8 @@ app.get("/get-land", async (req, res) => {
   }
 });
 
-app.get('/api/lands/owner/:ownerId', async (req, res) => {
-  const { ownerId } = req.params;
-  try {
-    const lands = await Land.find({ owner: ownerId }); // Assuming 'owner' is the correct field in your schema
-    res.json(lands);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching lands', error });
-  }
-});
+app.get("/user/:userId", getLandsByUser);
+
 // New API endpoint to get the username based on userId
 app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
   try {

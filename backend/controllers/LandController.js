@@ -72,14 +72,27 @@ const getAllLands = asyncHandler(async (req, res) => {
 });
 
 // Get land by ID
-const getLandById = asyncHandler(async (req, res) => {
-  const land = await Land.findById(req.params.id);
-  if (land) {
-    res.status(200).send(land);
-  } else {
-    res.status(400).send("Land not found!");
+const getLandById = async (req, res) => {
+  try {
+    const { id } = req.params; // Extract the ID from the route parameters
+
+    if (!id) {
+      return res.status(400).json({ message: "Land ID is required." });
+    }
+
+    const land = await LandModel.findById(id); // Replace with your database call
+
+    if (!land) {
+      return res.status(404).json({ message: "Land not found." });
+    }
+
+    res.status(200).json(land);
+  } catch (error) {
+    console.error("Error fetching land:", error);
+    res.status(500).json({ message: "An error occurred while fetching the land." });
   }
-});
+};
+
 
 // Get lands by user ID (this is now managed by req.user)
 const getLandByUserId = asyncHandler(async (req, res) => {
@@ -142,19 +155,24 @@ const deleteLandById = asyncHandler(async (req, res) => {
 });
 
 // Get lands by username (alternative method)
-const getLandbyUser = asyncHandler(async (req, res) => {
+const getLandsByUser = async (req, res) => {
   try {
-    const username = req.params.username;
+    const { userId } = req.params;
 
-    const user = await User.find({ username: username });
-    const userId = user[0]._id;
-    const ownerLands = await Land.find({ owner: userId });
-    res.send(ownerLands);
+    // Find lands where the owner matches the userId
+    const lands = await Land.find({ owner: userId });
+
+    if (!lands || lands.length === 0) {
+      return res.status(404).json({ message: "No lands found for this user." });
+    }
+
+    res.status(200).json(lands);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching lands" });
+    console.error("Error fetching lands:", error);
+    res.status(500).json({ message: "Server error while fetching lands." });
   }
-});
+};
+
 const getLandReviews = async (req, res) => {
   try {
     const land = await Land.findById(req.params.id).populate('reviews.user', 'username'); // Populate reviews with user details (username)
@@ -239,7 +257,7 @@ export {
   updateLandById,
   deleteLandById,
   getLandReviews,
-  getLandbyUser,
+  getLandsByUser,
   getLandByType,
   deleteReview,
 };

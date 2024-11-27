@@ -7,7 +7,7 @@ import {
   updateLandById,
   deleteLandById,
   getLandReviews,
-  getLandbyUser,
+  getLandsByUser,
   deleteReview,
   getLandByType,
 } from "../controllers/LandController.js";
@@ -31,7 +31,7 @@ router.route("/type/:landtype").get(getLandByType); // Changed to `/type/:landty
 router.route("/owner/:userId").get(getLandByUserId); // Changed to `/owner/:userId` for clarity
 
 // Route for getting lands by username
-router.route("/user/:username").get(getLandbyUser); // Username-based search
+router.route("/user/:username").get(getLandsByUser); // Username-based search
 
 // Protected route for creating land
 router.route("/create-land").post(authenticate, createLand);
