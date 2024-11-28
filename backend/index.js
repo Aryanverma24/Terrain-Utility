@@ -82,7 +82,27 @@ app.get("/get-land", async (req, res) => {
   }
 });
 
-app.get("/user/:userId", getLandsByUser);
+app.get("/api/lands/user/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+    console.log("Filtering lands for ownerName:", username); // Log the filtering condition
+
+    // Find lands where ownerName matches the logged-in user's username (case-insensitive)
+    const lands = await Land.find({ ownerName: username });  // Assuming exact match is fine
+
+    console.log("Returned lands:", lands); // Log the lands returned from the query
+
+    if (lands.length === 0) {
+      return res.status(404).json({ message: "No lands found for this user" });
+    }
+
+    res.json(lands);
+  } catch (err) {
+    console.error("Error fetching lands:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 // New API endpoint to get the username based on userId
 app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
@@ -226,7 +246,35 @@ app.delete('/api/lands/:landId/reviews/:userId',authenticate, deleteReview);
   }
 });
 
+app.put('/api/lands/:id', authenticate, async (req, res) => {
+  try {
+    const { landtype, city, state, pincode } = req.body;
+    const { id } = req.params;
 
+    // Ensure the user is the owner of the land before allowing updates
+    const land = await Land.findById(id);
+    if (!land) {
+      return res.status(404).json({ message: 'Land not found' });
+    }
+
+    if (land.ownerName !== req.user.username) {
+      return res.status(403).json({ message: 'Unauthorized to update this land' });
+    }
+
+    // Update land details
+    land.landtype = landtype || land.landtype;
+    land.city = city || land.city;
+    land.state = state || land.state;
+    land.pincode = pincode || land.pincode;
+
+    // Save updated land details
+    const updatedLand = await land.save();
+    res.status(200).json(updatedLand);
+  } catch (error) {
+    console.error('Error updating land:', error);
+    res.status(500).json({ message: 'Failed to update land' });
+  }
+});
 
 
 

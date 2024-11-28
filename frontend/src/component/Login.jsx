@@ -12,20 +12,21 @@ const Login = () => {
   const getLogin = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await API.post("/api/users/auth", {
-        email,
-        password,
-      });
-      if (data) {
-        localStorage.setItem("token", data?.token);
-        console.log(localStorage);
-        getUser();
-        navigate("/");
-      }
+        const { data } = await API.post("/api/users/auth", { email, password });
+        console.log(data);  // Check the response here
+        if (data) {
+            // Assuming data has user information
+            localStorage.setItem("token", data?.token);
+            localStorage.setItem("user", JSON.stringify(data?.user));  // Ensure correct data is being saved
+            getUser();  // Call getUser to update the context
+            navigate("/");  // Navigate after successful login
+        }
     } catch (error) {
-      console.log(error);
+        console.log(error);
     }
-  };
+};
+
+
 
   useEffect(() => {
     if (isAuthenticated) {

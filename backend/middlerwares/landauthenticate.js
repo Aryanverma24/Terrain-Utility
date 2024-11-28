@@ -4,34 +4,27 @@ import asyncHandler from './asyncHandler.js';
 
 const authenticate = asyncHandler(async (req, res, next) => {
   const userToken = req.headers.authorization;
-  console.log('Authorization header:', userToken); // Debugging token presence
-
+  console.log("Authorization header:", userToken); // Log the token being sent
   if (!userToken) {
     return res.status(401).json({ message: 'No token provided' });
   }
 
-  // Extract and validate the token
   const token = userToken.startsWith('Bearer ') ? userToken.split('Bearer ')[1].trim() : null;
   if (!token) {
     return res.status(401).json({ message: 'Token format is incorrect' });
   }
 
   try {
-    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded token:', decoded); // Debug the decoded token
-
-    // Validate the user
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
-    // Attach user information to the request object
     req.user = { id: user._id, username: user.username };
     next();
   } catch (error) {
-    console.error('Token verification failed:', error.message); // Debugging token error
+    console.error("Token verification failed:", error.message);
     return res.status(401).json({ message: 'Token verification failed' });
   }
 });

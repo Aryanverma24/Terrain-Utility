@@ -12,20 +12,27 @@ const AuthState = ({children}) => {
 
     const getUser = async () => {
         try {
-            const {data} = await API.get('/api/users/profile');
-            if(data?.data){
-                setUser(data.data);
-                setIsAuthenticated(true)
-            }
-            else{
-                setUser();
-                setIsAuthenticated(false)
+            const { data } = await API.get("/api/users/profile");
+            console.log(data);  // Log response to check if user data is returned
+            if (data?.data) {
+                setUser(data.data);  // Set user data in state
+                setIsAuthenticated(true);  // Set authenticated flag
+                localStorage.setItem("user", JSON.stringify(data.data));  // Ensure localStorage is updated
+            } else {
+                localStorage.removeItem("user");
+                localStorage.removeItem("token");
+                setUser(null);
+                setIsAuthenticated(false);
             }
         } catch (error) {
-            setIsAuthenticated(false)
-            setUser()
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            setUser(null);
+            setIsAuthenticated(false);
+            console.log(error);  // Log any errors
         }
-    }
+    };
+    
 
     const logout = ()=>{
         localStorage.removeItem("token");

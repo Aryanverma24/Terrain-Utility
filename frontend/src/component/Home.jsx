@@ -68,93 +68,104 @@ const Home = () => {
 
   return (
     <>
-      <div className="bg-black">
-        <h1 className="text-6xl text-green-500 text-center py-5 mb-0">
-          LAND STRIDE<i>R</i>
-        </h1>
-        <h3 className="mt-[-1.4rem] text-2xl semibold ml-[33rem] text-yellow-500 text-center">
-          Fast and Simple...
-        </h3>
+  {/* Header Section with Gradient Background */}
+  <div className="bg-gradient-to-r from-green-400 to-blue-500 py-6">
+    <h1 className="text-6xl text-white text-center font-bold leading-tight">
+      LAND STRIDE<i className="text-yellow-400">R</i>
+    </h1>
+    <h3 className="text-2xl font-medium text-center text-yellow-200 mt-2">
+      Fast and Simple...
+    </h3>
+  </div>
+
+  {/* Main Content Section */}
+  <div className="bg-black text-white min-h-screen flex flex-col justify-start items-center pt-10 pb-5">
+    {user?.username ? (
+      <div className="relative w-full max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* Welcome Message */}
+        <div className="text-5xl text-center font-semibold text-white mb-8">
+          <h2>
+            WELCOME{" "}
+            <span className="font-bold uppercase text-yellow-400">
+              {user?.username}
+            </span>
+          </h2>
+        </div>
+
+        {/* Upload Lands Button positioned at the top-right corner */}
+        <div className="absolute top-5 right-5 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+          <Link to="/uploads" className="font-semibold">
+            Upload Lands
+          </Link>
+        </div>
       </div>
-      <div className="bg-black text-white h-full">
-        {user?.username ? (
-          <>
-            <div className="flex justify-between mb-[1rem] mx-[2rem]">
-              <div className="text-2xl text-center ml-[28rem]">
-                <h2 className="pt-[3rem] font-semibold">
-                  WELCOME{" "}
-                  <span className="font-bold uppercase text-green-600">
-                    {user?.username}
-                  </span>
-                </h2>
-              </div>
-              <div
-                className="mt-[2.5rem] py-1 px-2 rounded-2xl font-bold text-xl bg-green-400
-                  hover:bg-green-600 hover:text-orange-400"
-              >
-                <Link to="/uploads">Upload Lands</Link>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="text-xl text-center">
-            <h2 className="pt-[3rem] font-semibold">WELCOME</h2>
-          </div>
-        )}
+    ) : (
+      <div className="text-xl text-center">
+        <h2 className="font-semibold">WELCOME</h2>
+      </div>
+    )}
 
-        <ul className="flex justify-evenly ml-[5rem] mr-[1rem] flex-wrap">
-          {Array.isArray(lands) && lands.length > 0 ? (
-            lands.map((land) => {
-              console.log("Land item:", land);
+    {/* Lands Section */}
+    <ul className="flex flex-wrap justify-center gap-8 mt-10 px-4">
+      {Array.isArray(lands) && lands.length > 0 ? (
+        lands.map((land) => {
+          const averageRating = calculateAverageRating(land.reviews);
 
-              const averageRating = calculateAverageRating(land.reviews);
+          return (
+            <div
+              key={land._id}
+              className="w-[20rem] p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-105"
+            >
+              <Link to={`/land/${land._id}`}>
+                <div className="p-4">
+                  {/* Image */}
+                  {land.image && (
+                    <img
+                      src={`http://localhost:5000/uploads/${land.image}`}
+                      alt={land.landtype || "land"}
+                      className="rounded-lg h-48 w-full object-cover mb-4"
+                    />
+                  )}
 
-              return (
-                <div key={land._id} className="w-[20rem]">
-                  {/* Link to SingleLand page with correct land id */}
-                  <Link to={`/land/${land._id}`}>
-                    <div className="bg-blue-200 p-[0.5rem] m-5 rounded-xl">
-                      {/* Image */}
-                      {land.image && (
-                        <img
-                          src={`http://localhost:5000/uploads/${land.image}`}
-                          alt={land.landtype || "land"}
-                          className="rounded-xl h-44"
-                        />
+                  {/* Land Info */}
+                  <div className="text-black text-md">
+                    <h2 className="font-semibold text-lg mb-2">
+                      LAND TYPE: <span className="font-normal">{land.landtype}</span>
+                    </h2>
+                    <p className="text-sm text-gray-600 mb-2">OWNER: {land.ownerName}</p>
+                    <p className="text-sm text-gray-600 mb-2">CITY: {land.city}</p>
+                    <p className="text-sm text-gray-600 mb-2">STATE: {land.state}</p>
+                    <p className="text-sm text-gray-600 mb-2">PINCODE: {land.pincode}</p>
+
+                    {/* Rating */}
+                    <div className="flex items-center mt-2">
+                      Rating:{" "}
+                      {averageRating > 0 ? (
+                        renderStars(averageRating)
+                      ) : (
+                        <span className="text-gray-400">No ratings yet</span>
                       )}
-                      <div className="text-black text-md mt-[0.5rem] px-[0.5rem] capitalize">
-                        <h2>
-                          LAND TYPE: <span>{land.landtype}</span>
-                        </h2>
-                        <p>OWNER: {land.ownerName}</p>
-                        <p>CITY: {land.city}</p>
-                        <p>STATE: {land.state}</p>
-                        <p>PINCODE: {land.pincode}</p>
-
-                        {/* Display the Average Rating */}
-                        <div className="flex items-center">
-                          Rating:{" "}
-                          {averageRating > 0 ? (
-                            renderStars(averageRating)
-                          ) : (
-                            <span>No ratings yet</span>
-                          )}
-                        </div>
-
-                        {/* Display Number of Reviews */}
-                        <p>Number of Reviews: {land.reviews ? land.reviews.length : 0}</p>
-                      </div>
                     </div>
-                  </Link>
+
+                    {/* Reviews Count */}
+                    <p className="mt-2 text-sm text-gray-400">
+                      Number of Reviews: {land.reviews ? land.reviews.length : 0}
+                    </p>
+                  </div>
                 </div>
-              );
-            })
-          ) : (
-            <p>No lands available to display.</p>
-          )}
-        </ul>
-      </div>
-    </>
+              </Link>
+            </div>
+          );
+        })
+      ) : (
+        <p>No lands available to display.</p>
+      )}
+    </ul>
+  </div>
+</>
+
+
+  
   );
 };
 

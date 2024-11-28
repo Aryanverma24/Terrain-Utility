@@ -1,211 +1,234 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
 
-const decodeToken = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return null;
-  }
-};
-
-const MyLands = () => {
-  const [lands, setLands] = useState([]);
-  const [selectedLand, setSelectedLand] = useState(null); // State to store the selected land for modification
+const MyLand = () => {
+  const [lands, setLands] = useState([]); // Store the list of lands
+  const [loading, setLoading] = useState(true); // Handle loading state
+  const [error, setError] = useState(null); // Handle error state
+  const [editingLand, setEditingLand] = useState(null); // Store the land being edited
   const [formData, setFormData] = useState({
     landtype: "",
     city: "",
     state: "",
+    pincode: "",
   });
 
+  // Fetch lands when the component mounts
   useEffect(() => {
-    const fetchLands = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("No token found");
-          return;
-        }
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.username) {
+      fetchUserLands(user.username);
+    } else {
+      console.error("User not logged in");
+      setError("User not logged in.");
+    }
+  }, []); // Run only once on component mount
 
-        const decoded = decodeToken(token);
-        if (!decoded || !decoded.userId) {
-          console.error("Invalid or missing userId in token");
-          return;
-        }
-
-        console.log("Decoded token:", decoded);
-
-        // Fetch lands for the logged-in user
-        const response = await axios.get(
-          `http://localhost:5000/api/lands/user/${decoded.userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        setLands(response.data);
-      } catch (error) {
-        console.error("Error fetching lands:", error);
+  const fetchUserLands = async (username) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/lands/user/${username}`);
+      const data = await response.json();
+  
+      const userLands = data.filter((land) => land.ownerName === username); // Filter lands for the logged-in user
+  
+      if (response.ok) {
+        setLands(userLands); // Set the state with filtered lands
+        setError(null);
+      } else {
+        setError(data.message || "Error fetching lands.");
       }
-    };
+    } catch (error) {
+      console.error("API call failed:", error);
+      setError("Failed to fetch lands. Please try again later.");
+    } finally {
+      setLoading(false); // Stop loading after API call
+    }
+  };
 
-    fetchLands();
-  }, []);
-
-  const handleModifyClick = (land) => {
-    setSelectedLand(land);
+  // Handle when an edit button is clicked
+  const handleEditClick = (land) => {
+    setEditingLand(land);
     setFormData({
       landtype: land.landtype,
       city: land.city,
       state: land.state,
+      pincode: land.pincode,
     });
   };
 
-  const handleInputChange = (e) => {
+  // Update form data when input fields change
+  const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
 
+  // Submit the form and save changes
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+  
+    const authToken = localStorage.getItem("token"); // Retrieve the token from localStorage
+  
+    if (!authToken) {
+      console.error("Authorization token is missing");
+      setError("Authorization token is missing"); // Display error if token is missing
+      return;
+    }
+  
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.put(
-        `http://localhost:5000/api/lands/${selectedLand._id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("Land details updated:", response.data);
-      // Optionally refresh the list of lands or update state
-      setLands((prevLands) =>
-        prevLands.map((land) =>
-          land._id === selectedLand._id ? { ...land, ...formData } : land
-        )
-      );
-      setSelectedLand(null); // Close the form
+      const response = await fetch(`http://localhost:5000/api/lands/${editingLand._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`, // Attach the token in the header
+        },
+        body: JSON.stringify(formData), // Send the updated land data
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        // Update the land data in the local state to reflect the changes
+        setLands((prevLands) =>
+          prevLands.map((land) =>
+            land._id === editingLand._id ? { ...land, ...formData } : land
+          )
+        );
+        setEditingLand(null); // Close the edit form
+        setError(null);
+      } else {
+        setError(data.message || "Error updating land.");
+      }
     } catch (error) {
-      console.error("Error updating land details:", error);
+      console.error("API call failed:", error);
+      setError("Failed to update land. Please try again later.");
     }
   };
+  
 
-  const toastmsg = () => {
-    toast.success("Land details updated successfully!!");
-  };
+  if (loading) return <p className="text-center text-lg font-semibold text-gray-700">Loading...</p>;
+  if (error) return <p className="text-center text-lg text-red-500">{error}</p>;
 
   return (
-    <div className="max-w-screen-lg mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">My Lands</h1>
-      {lands.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-4xl font-extrabold text-center text-gray-900 mb-8">My Lands</h1>
+
+      {Array.isArray(lands) && lands.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {lands.map((land) => (
-            <div
-              key={land._id}
-              className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-300"
+            <div 
+              key={land._id} 
+              className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition duration-300 ease-in-out"
             >
-              <h3 className="text-xl font-semibold mb-2 capitalize">
-                Type: {land.landtype}
-              </h3>
-              <p className="text-gray-600">City: {land.city}</p>
-              <p className="text-gray-600">State: {land.state}</p>
-              {land.image && (
-                <div className="mt-4">
-                  <img
-                    src={`http://localhost:5000/uploads/${land.image}`}
-                    alt={land.landtype}
-                    className="rounded-lg w-full h-40 object-cover"
-                  />
+              <img 
+                src={`http://localhost:5000/uploads/${land.image}`} 
+                alt={land.city} 
+                className="w-full h-48 object-cover rounded-t-lg"
+              />
+              <div className="p-6 space-y-4">
+                <h3 className="text-2xl font-semibold text-gray-900">{land.landtype}</h3>
+                <p className="text-lg text-gray-600">{land.city}, {land.state}</p>
+                <div className="text-sm text-gray-500">
+                  <p><strong>Owner Name:</strong> {land.ownerName}</p>
+                  <p><strong>Pincode:</strong> {land.pincode}</p>
+                  <p><strong>Created At:</strong> {new Date(land.createdAt).toLocaleString()}</p>
+                  <p><strong>Average Rating:</strong> {land.averageRating}</p>
                 </div>
-              )}
-              <button
-                onClick={() => handleModifyClick(land)}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                Modify Details
-              </button>
+
+                {/* Edit Button */}
+                <button
+                  className="w-full py-2 bg-yellow-500 text-white rounded-md mt-4 hover:bg-yellow-600"
+                  onClick={() => handleEditClick(land)}
+                >
+                  Edit
+                </button>
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-          <p className="text-center text-gray-600 mb-6 text-xl font-semibold">
-            No Lands Available
-          </p>
-          <img
-            src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png"
-            alt="No lands available"
-            className="w-full max-w-5xl h-auto rounded-lg shadow-lg border border-gray-300 hover:shadow-2xl transition-shadow duration-300 ease-in-out mt-4 mb-10"
-          />
-        </div>
+        <p className="text-center text-lg text-gray-600">No lands available.</p>
       )}
 
-      {selectedLand && (
-        <div className="mt-8 p-4 border rounded-lg shadow-lg bg-gray-100">
-          <h2 className="text-2xl font-semibold mb-4">Modify Land Details</h2>
-          <form onSubmit={handleFormSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Land Type:</label>
-              <input
-                type="text"
-                name="landtype"
-                value={formData.landtype}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">City:</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">State:</label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <button
-              type="submit"
-              onClick={toastmsg}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
-            >
-              Save Changes
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedLand(null)}
-              className="ml-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
-            >
-              Cancel
-            </button>
-          </form>
+      {/* Edit Land Form */}
+      {editingLand && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white rounded-lg p-8 w-96">
+            <h2 className="text-2xl font-semibold mb-4">Edit Land Details</h2>
+            <form onSubmit={handleFormSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-700" htmlFor="landtype">Land Type</label>
+                  <input
+                    type="text"
+                    id="landtype"
+                    name="landtype"
+                    value={formData.landtype}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700" htmlFor="city">City</label>
+                  <input
+                    type="text"
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700" htmlFor="state">State</label>
+                  <input
+                    type="text"
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-700" htmlFor="pincode">Pincode</label>
+                  <input
+                    type="text"
+                    id="pincode"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleFormChange}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-between">
+                <button
+                  type="button"
+                  className="py-2 px-4 bg-gray-300 text-black rounded-md hover:bg-gray-400"
+                  onClick={() => setEditingLand(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default MyLands;
+export default MyLand;
