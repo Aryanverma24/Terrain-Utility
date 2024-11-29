@@ -72,15 +72,18 @@ const getAllLands = asyncHandler(async (req, res) => {
 });
 
 // Get land by ID
-const getLandById = async (req, res) => {
-  try {
-    const { id } = req.params; // Extract the ID from the route parameters
+import mongoose from "mongoose";
 
-    if (!id) {
-      return res.status(400).json({ message: "Land ID is required." });
+const getLandById = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid land ID." });
     }
 
-    const land = await LandModel.findById(id); // Replace with your database call
+    const land = await Land.findById(id);
 
     if (!land) {
       return res.status(404).json({ message: "Land not found." });
@@ -91,7 +94,8 @@ const getLandById = async (req, res) => {
     console.error("Error fetching land:", error);
     res.status(500).json({ message: "An error occurred while fetching the land." });
   }
-};
+});
+
 
 
 // Get lands by user ID (this is now managed by req.user)
@@ -242,11 +246,35 @@ const deleteReview = async (req, res) => {
 
 
 // Get lands by type
-const getLandByType = asyncHandler(async (req, res) => {
-  const { landtype } = req.params;
-  const lands = await Land.find({ landtype: landtype });
-  res.json(lands);
-});
+// Backend: Controller to fetch lands by landtype
+const getLandByType = async (req, res) => {
+  const { landtype } = req.params;  // Get the landtype from the URL parameter
+
+  if (!landtype) {
+    return res.status(400).json({ message: "Land type is required" });  // Ensure landtype is provided
+  }
+
+  try {
+    // Use a case-insensitive regex query to find lands by landtype
+    const lands = await Land.find({
+      landtype: { $regex: new RegExp(`^${landtype}$`, 'i') } // 'i' makes the regex case-insensitive, '^' and '$' to match the exact value
+    });
+
+    if (lands.length === 0) {
+      return res.status(404).json({ message: `No lands found for type: ${landtype}` });
+    }
+
+    // Successfully found lands
+    res.status(200).json(lands);  
+  } catch (error) {
+    console.error('Error fetching lands:', error);
+    res.status(500).json({ message: 'Failed to fetch lands due to a server error.' });
+  }
+};
+
+
+
+
 
 
 export {

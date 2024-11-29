@@ -25,7 +25,7 @@ router.route("/:id")
   .delete(authenticate, deleteLandById); // Delete land by ID (protected route)
 
 // Route for getting land by type
-router.route("/type/:landtype").get(getLandByType); // Changed to `/type/:landtype` for clarity
+router.get('/type/:landtype', getLandByType); // Changed to `/type/:landtype` for clarity
 
 // Route for getting lands by user ID (owner)
 router.route("/owner/:userId").get(getLandByUserId); // Changed to `/owner/:userId` for clarity

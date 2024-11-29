@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";  // Import Toastify
 
 // Manual JWT decoding function
 const decodeJWT = (token) => {
@@ -35,9 +36,6 @@ const SingleLand = () => {
   const token = localStorage.getItem("token");
   const decoded = token ? decodeJWT(token) : null;
 
-  // Debugging: log the decoded JWT token and userId
-  console.log("Decoded JWT:", decoded);
-
   useEffect(() => {
     const fetchLandDetails = async () => {
       try {
@@ -54,16 +52,15 @@ const SingleLand = () => {
 
     fetchLandDetails();
   }, [id]);
-  
 
   const handleDeleteReview = async (reviewUserId) => {
     if (!decoded || !decoded.userId) {
-      alert("You must be logged in to delete a review.");
+      toast.error("You must be logged in to delete a review.");
       return;
     }
 
     if (decoded.userId !== reviewUserId) {
-      alert("You can only delete your own review.");
+      toast.error("You can only delete your own review.");
       return;
     }
 
@@ -81,24 +78,25 @@ const SingleLand = () => {
         `http://localhost:5000/api/lands/${id}/reviews-with-usernames`
       );
       setLand(data); // Update the land state with the new reviews
+      toast.success("Review deleted successfully!");
     } catch (err) {
       console.error("Error deleting review:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Failed to delete the review. Please try again.");
+      toast.error("Failed to delete the review. Please try again.");
     }
   };
 
   // Function to handle new review submission
   const handleSubmitReview = async () => {
     if (!newReview.trim() || !newRating) {
-      alert("Please provide a rating and a review.");
+      toast.error("Please provide a rating and a review.");
       return;
     }
-  
+
     if (!token) {
-      alert("You must be logged in to submit a review.");
+      toast.error("You must be logged in to submit a review.");
       return;
     }
-  
+
     try {
       setIsSubmitting(true);
       await axios.post(
@@ -113,24 +111,24 @@ const SingleLand = () => {
           },
         }
       );
-  
+
       // Fetch the updated reviews
       const { data } = await axios.get(
         `http://localhost:5000/api/lands/${id}/reviews-with-usernames`
       );
       setLand(data); // Update the land state with the refreshed reviews
-  
+
       // Clear the form
       setNewReview("");
       setNewRating(5);
+      toast.success("Review submitted successfully!");
     } catch (err) {
       console.error("Error submitting review:", err);
-      alert("Failed to submit the review. Please try again.");
+      toast.error("Failed to submit the review. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
-  
 
   // Render loading, error, or main content
   if (loading)
@@ -251,9 +249,6 @@ const SingleLand = () => {
     ))}
   </select>
 </div>
-
-
-
 
           {/* Submit Button */}
           <button

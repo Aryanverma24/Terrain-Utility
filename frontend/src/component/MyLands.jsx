@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";  // Import Toastify
 
 const MyLand = () => {
   const [lands, setLands] = useState([]); // Store the list of lands
@@ -97,15 +98,17 @@ const MyLand = () => {
         );
         setEditingLand(null); // Close the edit form
         setError(null);
+        toast.success("Land details updated successfully!");  // Success message
       } else {
         setError(data.message || "Error updating land.");
+        toast.error("Failed to update land details.");  // Error message
       }
     } catch (error) {
       console.error("API call failed:", error);
       setError("Failed to update land. Please try again later.");
+      toast.error("Failed to update land. Please try again later.");  // Error message
     }
   };
-  
 
   if (loading) return <p className="text-center text-lg font-semibold text-gray-700">Loading...</p>;
   if (error) return <p className="text-center text-lg text-red-500">{error}</p>;

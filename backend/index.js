@@ -16,7 +16,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 import User from "../backend/modals/UserModal.js"
-import { getLandsByUser } from "../backend/controllers/LandController.js";
+import { getLandsByUser,getLandByType } from "../backend/controllers/LandController.js";
+import landRoutes from './routes/landRoutes.js';  // Adjust the path based on your directory structure
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +63,8 @@ const upload = multer({ storage: storage });
 
 // Routes
 app.use("/api/users", userRoutes);
-app.use("/api/lands", landRouter);
+app.use("/api/lands", landRoutes);
+// app.use('/api/lands', landRoutes); 
 app.post("/create-land", authenticate, upload.single('image'), (req, res, next) => {
   console.log("req.body:", req.body); // Should log landtype, city, state, pincode
   console.log("req.file:", req.file); // Should log the uploaded image file
@@ -275,6 +277,14 @@ app.put('/api/lands/:id', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Failed to update land' });
   }
 });
+
+
+
+
+
+
+
+
 
 
 
