@@ -3,56 +3,58 @@ import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import multer from "multer";
-//utilities
-import asyncHandler from "./middlerwares/asyncHandler.js";
-import dbConnect from "./config/db.js";
-import userRoutes from "./routes/userRoutes.js";
-import landRouter from "./routes/landRoutes.js";
-import { authenticate } from "./middlerwares/landauthenticate.js";
-import {createLand} from "../backend/controllers/LandController.js";
-import { deleteReview } from '../backend/controllers/LandController.js';
-import Land from "./modals/LandModal.js";
-import path from 'path';
-import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
-import User from "../backend/modals/UserModal.js"
-import { getLandsByUser,getLandByType } from "../backend/controllers/LandController.js";
-import landRoutes from './routes/landRoutes.js';  // Adjust the path based on your directory structure
+import path from "path";
+import { fileURLToPath } from "url";
+import mongoose from "mongoose";
+import bodyParser from "body-parser";
 
+// Import utilities and routes
+
+import dbConnect from "./config/db.js";  // Custom DB connection
+import userRoutes from "./routes/userRoutes.js";
+import landRoutes from "./routes/landRoutes.js";
+import {chatRoutes} from "./routes/chatRoutes.js";  // Default import
+
+import { authenticate } from "./middlerwares/landauthenticate.js";
+import { createLand, deleteReview } from "../backend/controllers/LandController.js";
+import Land from "./modals/LandModal.js";
+import User from "./modals/UserModal.js"
+import { getMessagesForLand } from "./controllers/ChatController.js";
+import chatAuthenticate from "./middlerwares/chatMiddleware.js";
+// Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize app
+dotenv.config();
+const app = express();
+const port = process.env.PORT || 5000;
 
-
-
+// CORS options
 const corsOption = {
   origin: "http://localhost:5173",
   methods: "POST,GET,DELETE,PUT,PATCH",
   credentials: true,
 };
 
-const app = express();
-dotenv.config();
+// Middleware
 app.use(cors(corsOption));
-
-const port = process.env.PORT;
-
-dbConnect();
-
-
-
+app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-const uploadsPath = path.join(__dirname, '..', 'uploads');
 
-// Serve the 'uploads' folder statically
+// Connect to MongoDB using the custom dbConnect
+dbConnect();
+
+// Serve static files for uploaded images
+const uploadsPath = path.join(__dirname, '..', 'uploads');
 app.use('/uploads', express.static(uploadsPath));
 
-// File upload configuration with multer
+// Multer configuration for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + file.originalname;
@@ -64,18 +66,28 @@ const upload = multer({ storage: storage });
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
-// app.use('/api/lands', landRoutes); 
-app.post("/create-land", authenticate, upload.single('image'), (req, res, next) => {
-  console.log("req.body:", req.body); // Should log landtype, city, state, pincode
-  console.log("req.file:", req.file); // Should log the uploaded image file
-  next();
-}, createLand);
+app.use('/api', chatRoutes); 
+// Chat routes integration
+
+// Land-related APIs
+app.post(
+  "/create-land",
+  authenticate,
+  upload.single('image'),
+  (req, res, next) => {
+    console.log("req.body:", req.body); // Debug log
+    console.log("req.file:", req.file); // Debug log
+    next();
+  },
+  createLand
+);
+
 app.get("/get-land", async (req, res) => {
   try {
     const lands = await Land.find({});
     const landsWithImageUrl = lands.map(land => {
-      const imageURL = `/uploads/${land.image}`; // Constructing the image URL
-      console.log("Land image URL:", imageURL);  // Log the imageURL for debugging
+      const imageURL = `/uploads/${land.image}`;
+      console.log("Land image URL:", imageURL); // Debug log
       return { ...land._doc, imageURL };
     });
     res.send({ status: "ok", data: landsWithImageUrl });
@@ -87,13 +99,9 @@ app.get("/get-land", async (req, res) => {
 app.get("/api/lands/user/:username", async (req, res) => {
   try {
     const { username } = req.params;
-    console.log("Filtering lands for ownerName:", username); // Log the filtering condition
+    console.log("Filtering lands for ownerName:", username); // Debug log
 
-    // Find lands where ownerName matches the logged-in user's username (case-insensitive)
-    const lands = await Land.find({ ownerName: username });  // Assuming exact match is fine
-
-    console.log("Returned lands:", lands); // Log the lands returned from the query
-
+    const lands = await Land.find({ ownerName: username });
     if (lands.length === 0) {
       return res.status(404).json({ message: "No lands found for this user" });
     }
@@ -104,32 +112,45 @@ app.get("/api/lands/user/:username", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.get('/api/users/id/:username', async (req, res) => {
+  try {
+    const { username } = req.params;  // Get the username from the URL parameter
+    const user = await User.findOne({ username }); // Search for the user by username
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });  // If user not found
+    }
+
+    // Send back the user ID in the response
+    res.json({ userId: user._id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch user ID' });
+  }
+});
 
 
-// New API endpoint to get the username based on userId
+// Reviews and Update Land Details
 app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
   try {
-    // Find the land by ID
     const land = await Land.findById(req.params.id).populate({
-      path: 'reviews.user', // Populate the 'user' field in each review
-      select: 'username',   // Only include the 'username' field
+      path: 'reviews.user',
+      select: 'username',
     });
 
     if (!land) {
       return res.status(404).json({ error: 'Land not found' });
     }
 
-    // Format reviews to include username
     const formattedReviews = land.reviews.map((review) => ({
       review: review.review,
       rating: review.rating,
       user: {
-        id: review.user._id, // User ID
-        username: review.user.username || 'Anonymous', // Username or fallback
+        id: review.user._id,
+        username: review.user.username || 'Anonymous',
       },
     }));
 
-    // Return the land details along with formatted reviews
     res.json({
       landtype: land.landtype,
       city: land.city,
@@ -144,59 +165,17 @@ app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch land details with reviews' });
   }
 });
-// DELETE /api/lands/:landId/reviews/:userId
-// DELETE /api/lands/:landId/reviews/:userId
-// Backend route to delete review by userId or reviewId
-app.delete('/api/lands/:landId/reviews/:userId',authenticate, deleteReview);
 
+app.delete('/api/lands/:landId/reviews/:userId', authenticate, deleteReview);
 
-
-
-// app.get("/api/lands/:id", async (req, res) => {
-//   const { id } = req.params;
-
-//   console.log("Received land ID:", id); // Debugging log
-
-//   if (!mongoose.Types.ObjectId.isValid(id)) {
-//       return res.status(400).json({ success: false, message: "Invalid land ID" });
-//   }
-
-//   try {
-//       const land = await Land.findById(id)
-//           .populate("owner", "name email")
-//           .populate("reviews.user", "name");
-
-//       if (!land) {
-//           console.log(`Land with ID ${id} not found`);
-//           return res.status(404).json({ success: false, message: "Land not found" });
-//       }
-
-//       console.log("Found land:", land); // Debugging log
-//       res.status(200).json({ success: true, data: land });
-//   } catch (error) {
-//       console.error("Error fetching land details:", error);
-//       res.status(500).json({ success: false, message: "Server error" });
-//   }
-// });
-
- // Make sure mongoose is imported
-
- app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
+app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
   const { id } = req.params;
   const { rating, review } = req.body;
 
-  // Log the incoming request and user for debugging
-  console.log(`Adding review to land ID: ${id}`);
-  console.log("Request body:", req.body);
-  console.log("Request user:", req.user); // Log the user object
-
-  // Check if the land ID is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    console.log(`Invalid land ID: ${id}`); // Log invalid ID
     return res.status(400).json({ success: false, message: "Invalid land ID" });
   }
 
-  // Validate rating and review
   if (!rating || !review || rating < 1 || rating > 5) {
     return res.status(400).json({
       success: false,
@@ -205,34 +184,24 @@ app.delete('/api/lands/:landId/reviews/:userId',authenticate, deleteReview);
   }
 
   try {
-    // Find the land document
     const land = await Land.findById(id);
     if (!land) {
       return res.status(404).json({ success: false, message: "Land not found" });
     }
 
-    console.log('Land found:', land); // Log the land
-
-    // Ensure that req.user is populated before adding review
     if (!req.user) {
       return res.status(401).json({ success: false, message: "User is not authenticated" });
     }
 
-    // Add the review to the reviews array
     const newReview = {
-      user: req.user.id, // Attach the user ID to the review
+      user: req.user.id,
       rating,
       review,
     };
     land.reviews.push(newReview);
-    
-    // Save the updated document
-    await land.save();
-    console.log('Updated land with review:', land); // Log the updated land
 
-    // Populate user info in the response
+    await land.save();
     const updatedLand = await Land.findById(id).populate("reviews.user", "name");
-    console.log("Updated land with populated reviews:", updatedLand); // Log the populated land
 
     return res.status(200).json({
       success: true,
@@ -253,7 +222,6 @@ app.put('/api/lands/:id', authenticate, async (req, res) => {
     const { landtype, city, state, pincode } = req.body;
     const { id } = req.params;
 
-    // Ensure the user is the owner of the land before allowing updates
     const land = await Land.findById(id);
     if (!land) {
       return res.status(404).json({ message: 'Land not found' });
@@ -263,13 +231,11 @@ app.put('/api/lands/:id', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to update this land' });
     }
 
-    // Update land details
     land.landtype = landtype || land.landtype;
     land.city = city || land.city;
     land.state = state || land.state;
     land.pincode = pincode || land.pincode;
 
-    // Save updated land details
     const updatedLand = await land.save();
     res.status(200).json(updatedLand);
   } catch (error) {
@@ -279,19 +245,7 @@ app.put('/api/lands/:id', authenticate, async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.get('/api/messages/:landId', chatAuthenticate, getMessagesForLand);
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

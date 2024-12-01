@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { toast } from "react-toastify";  // Import Toastify
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router"; // Import Toastify
 
 const MyLand = () => {
   const [lands, setLands] = useState([]); // Store the list of lands
@@ -12,11 +13,13 @@ const MyLand = () => {
     state: "",
     pincode: "",
   });
+  const navigate = useNavigate(); // Initialize navigate for programmatic navigation
 
   // Fetch lands when the component mounts
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user && user.username) {
+      console.log("Fetching lands for user:", user.username);
       fetchUserLands(user.username);
     } else {
       console.error("User not logged in");
@@ -26,15 +29,18 @@ const MyLand = () => {
 
   const fetchUserLands = async (username) => {
     try {
+      console.log("Fetching user lands from API...");
       const response = await fetch(`http://localhost:5000/api/lands/user/${username}`);
       const data = await response.json();
   
       const userLands = data.filter((land) => land.ownerName === username); // Filter lands for the logged-in user
-  
+      console.log("Fetched lands:", userLands);
+
       if (response.ok) {
         setLands(userLands); // Set the state with filtered lands
         setError(null);
       } else {
+        console.error("Error fetching lands:", data.message);
         setError(data.message || "Error fetching lands.");
       }
     } catch (error) {
@@ -47,6 +53,7 @@ const MyLand = () => {
 
   // Handle when an edit button is clicked
   const handleEditClick = (land) => {
+    console.log("Editing land:", land);
     setEditingLand(land);
     setFormData({
       landtype: land.landtype,
@@ -59,6 +66,7 @@ const MyLand = () => {
   // Update form data when input fields change
   const handleFormChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Updating form field "${name}" to value:`, value);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -68,15 +76,16 @@ const MyLand = () => {
   // Submit the form and save changes
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-  
+    console.log("Submitting form data:", formData);
+
     const authToken = localStorage.getItem("token"); // Retrieve the token from localStorage
-  
+
     if (!authToken) {
       console.error("Authorization token is missing");
       setError("Authorization token is missing"); // Display error if token is missing
       return;
     }
-  
+
     try {
       const response = await fetch(`http://localhost:5000/api/lands/${editingLand._id}`, {
         method: "PUT",
@@ -86,10 +95,11 @@ const MyLand = () => {
         },
         body: JSON.stringify(formData), // Send the updated land data
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
+        console.log("Land updated successfully:", data);
         // Update the land data in the local state to reflect the changes
         setLands((prevLands) =>
           prevLands.map((land) =>
@@ -100,6 +110,7 @@ const MyLand = () => {
         setError(null);
         toast.success("Land details updated successfully!");  // Success message
       } else {
+        console.error("Error updating land:", data.message);
         setError(data.message || "Error updating land.");
         toast.error("Failed to update land details.");  // Error message
       }
@@ -109,6 +120,44 @@ const MyLand = () => {
       toast.error("Failed to update land. Please try again later.");  // Error message
     }
   };
+
+  // Handle the "Check Received Messages" button click
+  const handleCheckMessages = async (landId) => {
+    console.log("Fetching messages for land ID:", landId);  // Log the landId
+  
+    const token = localStorage.getItem('token');  // Get token from storage
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`http://localhost:5000/api/messages/${landId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      if (response.ok) {
+        const messages = await response.json();
+        if (messages.length === 0) {
+          console.log("No messages found for this land ID.");
+        } else {
+          console.log('Messages fetched:', messages);
+          // Process messages here
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Error fetching messages:', errorData);
+      }
+    } catch (error) {
+      console.error('API call failed:', error);
+    }
+  };
+  
+  
 
   if (loading) return <p className="text-center text-lg font-semibold text-gray-700">Loading...</p>;
   if (error) return <p className="text-center text-lg text-red-500">{error}</p>;
@@ -145,6 +194,14 @@ const MyLand = () => {
                   onClick={() => handleEditClick(land)}
                 >
                   Edit
+                </button>
+
+                {/* Check Received Messages Button */}
+                <button
+                  className="w-full py-2 bg-blue-500 text-white rounded-md mt-4 hover:bg-blue-600"
+                  onClick={() => handleCheckMessages(land._id)} // Pass the landId to the function
+                >
+                  Check Received Messages
                 </button>
               </div>
             </div>
@@ -210,22 +267,12 @@ const MyLand = () => {
                   />
                 </div>
               </div>
-
-              <div className="mt-6 flex justify-between">
-                <button
-                  type="button"
-                  className="py-2 px-4 bg-gray-300 text-black rounded-md hover:bg-gray-400"
-                  onClick={() => setEditingLand(null)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
-              </div>
+              <button
+                type="submit"
+                className="w-full py-2 bg-green-500 text-white rounded-md mt-4 hover:bg-green-600"
+              >
+                Save Changes
+              </button>
             </form>
           </div>
         </div>

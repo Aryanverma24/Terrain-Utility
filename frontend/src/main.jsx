@@ -1,9 +1,8 @@
-
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
-import { Route, RouterProvider , createRoutesFromElements } from 'react-router'
-import { createBrowserRouter} from "react-router-dom"
+import { Route, RouterProvider, createRoutesFromElements } from 'react-router'
+import { createBrowserRouter } from "react-router-dom"
 import Login from './component/Login.jsx'
 import Register from './component/Register.jsx'
 import AuthState from '../contexts/authContext.jsx'
@@ -13,29 +12,41 @@ import Lands from './component/LandsType.jsx'
 import WishList from './component/WishList.jsx'
 import MyLands from './component/MyLands.jsx'
 import SingleLand from './component/SingleLand.jsx'
+import Chat from './component/Chat.jsx'
+import Messages from './component/Messages.jsx'
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path='/' element={<App />} >
+    <Route path="/" element={<App />}>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
-      <Route path='/login' element={<Login />} />
-      <Route path='/register' element={<Register />} />
-
-      <Route index={true} path='/' element={<Home />} />
-      <Route path='/uploads' element={<CreateLand />} />
+      <Route index element={<Home />} />
+      <Route path="/uploads" element={<CreateLand />} />
       
-      <Route path='/mylands' element={<MyLands />} />
-      <Route path='/lands' element={<Lands />} />
-      <Route path='/wishlist' element={<WishList />} />
-      <Route path="/" element={<Home />} />
+      <Route path="/mylands" element={<MyLands />} />
+      <Route path="/lands" element={<Lands />} />
+      <Route path="/wishlist" element={<WishList />} />
+
+      {/* Land Details */}
       <Route path="/land/:id" element={<SingleLand />} />
+
+      {/* Chat Routes */}
+      <Route path="/chat/:landId/:buyerId/:ownerName" element={<Chat />} />
+
+      {/* Messages Routes */}
+      <Route path="/messages/:chatId" element={<Messages />} />
+
+      {/* Route for MyLands Details */}
+      <Route path="/land/:landId/messages" element={<Messages />} />
+      <Route path="/my-lands" element={<MyLands />} />
+      <Route path="/messages/:landId" element={<Messages />} />
     </Route>
   )
 );
 
 createRoot(document.getElementById('root')).render(
   <AuthState>
-
-  <RouterProvider router={router} />
+    <RouterProvider router={router} />
   </AuthState>
-)
+);
