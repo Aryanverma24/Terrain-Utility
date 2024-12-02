@@ -9,18 +9,19 @@ import mongoose from "mongoose";
 import bodyParser from "body-parser";
 
 // Import utilities and routes
-
 import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
-import {chatRoutes} from "./routes/chatRoutes.js";  // Default import
+import { chatRoutes } from "./routes/chatRoutes.js";  // Default import
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js"
+
 import { getMessagesForLand } from "./controllers/ChatController.js";
 import chatAuthenticate from "./middlerwares/chatMiddleware.js";
+
 // Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,19 +67,13 @@ const upload = multer({ storage: storage });
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
-app.use('/api', chatRoutes); 
-// Chat routes integration
+app.use('/api', chatRoutes);  // Chat routes integration
 
 // Land-related APIs
 app.post(
   "/create-land",
   authenticate,
   upload.single('image'),
-  (req, res, next) => {
-    console.log("req.body:", req.body); // Debug log
-    console.log("req.file:", req.file); // Debug log
-    next();
-  },
   createLand
 );
 
@@ -87,7 +82,6 @@ app.get("/get-land", async (req, res) => {
     const lands = await Land.find({});
     const landsWithImageUrl = lands.map(land => {
       const imageURL = `/uploads/${land.image}`;
-      console.log("Land image URL:", imageURL); // Debug log
       return { ...land._doc, imageURL };
     });
     res.send({ status: "ok", data: landsWithImageUrl });
@@ -96,22 +90,22 @@ app.get("/get-land", async (req, res) => {
   }
 });
 
-app.get("/api/lands/user/:username", async (req, res) => {
+app.get("/user/:username", async (req, res) => {
+  const { username } = req.params;
+
   try {
-    const { username } = req.params;
-    console.log("Filtering lands for ownerName:", username); // Debug log
-
-    const lands = await Land.find({ ownerName: username });
-    if (lands.length === 0) {
-      return res.status(404).json({ message: "No lands found for this user" });
+    const lands = await Land.find({ ownerName: username }); // Assuming 'ownerName' is stored in Land model
+    if (!lands) {
+      return res.status(404).send("No lands found for this user.");
     }
-
-    res.json(lands);
-  } catch (err) {
-    console.error("Error fetching lands:", err);
-    res.status(500).json({ message: "Server error" });
+    return res.status(200).json(lands);
+  } catch (error) {
+    console.error("Error fetching lands:", error);
+    return res.status(500).send("Server error");
   }
 });
+
+
 app.get('/api/users/id/:username', async (req, res) => {
   try {
     const { username } = req.params;  // Get the username from the URL parameter
@@ -128,7 +122,6 @@ app.get('/api/users/id/:username', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch user ID' });
   }
 });
-
 
 // Reviews and Update Land Details
 app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
@@ -245,7 +238,8 @@ app.put('/api/lands/:id', authenticate, async (req, res) => {
 });
 
 
-app.get('/api/messages/:landId', chatAuthenticate, getMessagesForLand);
+
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router"; // Import Toastify
+import { useNavigate } from "react-router";
+import axios from "axios";
 
 const MyLand = () => {
   const [lands, setLands] = useState([]); // Store the list of lands
@@ -20,7 +21,7 @@ const MyLand = () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user && user.username) {
       console.log("Fetching lands for user:", user.username);
-      fetchUserLands(user.username);
+      fetchUserLands(user.username); // Fetch lands by username
     } else {
       console.error("User not logged in");
       setError("User not logged in.");
@@ -29,25 +30,22 @@ const MyLand = () => {
 
   const fetchUserLands = async (username) => {
     try {
-      console.log("Fetching user lands from API...");
-      const response = await fetch(`http://localhost:5000/api/lands/user/${username}`);
-      const data = await response.json();
-  
-      const userLands = data.filter((land) => land.ownerName === username); // Filter lands for the logged-in user
-      console.log("Fetched lands:", userLands);
+      const response = await axios.get(`http://localhost:5000/api/lands/user/${username}`);
+      const data = response.data;
 
-      if (response.ok) {
-        setLands(userLands); // Set the state with filtered lands
-        setError(null);
+      // Check if data is an array before calling .filter()
+      if (Array.isArray(data)) {
+        console.log(data);  // Process the lands data
+        setLands(data);  // Set the lands state
+        setLoading(false); // Stop loading
       } else {
-        console.error("Error fetching lands:", data.message);
-        setError(data.message || "Error fetching lands.");
+        console.error("API response is not an array:", data);
+        setError("Failed to fetch lands.");
       }
     } catch (error) {
       console.error("API call failed:", error);
-      setError("Failed to fetch lands. Please try again later.");
-    } finally {
-      setLoading(false); // Stop loading after API call
+      setError("Failed to fetch lands.");
+      setLoading(false); // Stop loading in case of error
     }
   };
 
@@ -122,42 +120,61 @@ const MyLand = () => {
   };
 
   // Handle the "Check Received Messages" button click
-  const handleCheckMessages = async (landId) => {
-    console.log("Fetching messages for land ID:", landId);  // Log the landId
-  
-    const token = localStorage.getItem('token');  // Get token from storage
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-  
+  const handleCheckMessagesAndNavigate = async (landId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/messages/${landId}`, {
-        method: 'GET',
+      // Check if landId is valid
+      if (!landId) {
+        console.error("Land ID is missing");
+        toast.error("Land ID is missing. Cannot fetch messages.");
+        return;
+      }
+
+      // First event: Log or fetch messages for the land ID
+      console.log("Fetching messages for land ID:", landId);
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found");
+        toast.error("You must be logged in to view messages");
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/messages/land/${landId}`, {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Authorization": `Bearer ${token}`, // Add token to the header
+          "Content-Type": "application/json",
         },
       });
-  
+
+      // Check if response status is okay
       if (response.ok) {
-        const messages = await response.json();
-        if (messages.length === 0) {
-          console.log("No messages found for this land ID.");
+        const contentType = response.headers.get("Content-Type");
+
+        // Check if the response is in JSON format
+        if (contentType && contentType.includes("application/json")) {
+          const messages = await response.json();
+          console.log("Fetched messages:", messages);
         } else {
-          console.log('Messages fetched:', messages);
-          // Process messages here
+          // Handle unexpected non-JSON response
+          const errorText = await response.text(); // If response is not JSON (e.g., HTML)
+          console.error("Unexpected non-JSON response:", errorText);
+          toast.error("Unexpected response format received.");
         }
       } else {
-        const errorData = await response.json();
-        console.error('Error fetching messages:', errorData);
+        // Handle API error (non-2xx status)
+        const errorData = await response.text(); // For error responses that are not JSON
+        console.error("Error fetching messages:", errorData);
+        toast.error("Failed to fetch messages. Please try again.");
       }
+
+      // Second event: Navigate to the Messages page
+      navigate(`/messages/land/${landId}`);
     } catch (error) {
-      console.error('API call failed:', error);
+      console.error("Error handling messages or navigation:", error);
+      toast.error("Failed to fetch messages or navigate. Please try again.");
     }
   };
-  
-  
 
   if (loading) return <p className="text-center text-lg font-semibold text-gray-700">Loading...</p>;
   if (error) return <p className="text-center text-lg text-red-500">{error}</p>;
@@ -199,7 +216,7 @@ const MyLand = () => {
                 {/* Check Received Messages Button */}
                 <button
                   className="w-full py-2 bg-blue-500 text-white rounded-md mt-4 hover:bg-blue-600"
-                  onClick={() => handleCheckMessages(land._id)} // Pass the landId to the function
+                  onClick={() => handleCheckMessagesAndNavigate(land._id)} // Call the function on click
                 >
                   Check Received Messages
                 </button>
@@ -208,74 +225,7 @@ const MyLand = () => {
           ))}
         </div>
       ) : (
-        <p className="text-center text-lg text-gray-600">No lands available.</p>
-      )}
-
-      {/* Edit Land Form */}
-      {editingLand && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white rounded-lg p-8 w-96">
-            <h2 className="text-2xl font-semibold mb-4">Edit Land Details</h2>
-            <form onSubmit={handleFormSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-700" htmlFor="landtype">Land Type</label>
-                  <input
-                    type="text"
-                    id="landtype"
-                    name="landtype"
-                    value={formData.landtype}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700" htmlFor="city">City</label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700" htmlFor="state">State</label>
-                  <input
-                    type="text"
-                    id="state"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-700" htmlFor="pincode">Pincode</label>
-                  <input
-                    type="text"
-                    id="pincode"
-                    name="pincode"
-                    value={formData.pincode}
-                    onChange={handleFormChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                className="w-full py-2 bg-green-500 text-white rounded-md mt-4 hover:bg-green-600"
-              >
-                Save Changes
-              </button>
-            </form>
-          </div>
-        </div>
+        <p className="text-center text-lg text-gray-600">No lands found.</p>
       )}
     </div>
   );

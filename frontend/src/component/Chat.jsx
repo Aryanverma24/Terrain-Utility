@@ -4,100 +4,104 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const Chat = () => {
-  const { landId, buyerId, ownerName } = useParams();  // Access parameters
-  const [land, setLand] = useState(null);
+  const { landId, buyerId, ownerName } = useParams();
   const [messages, setMessages] = useState([]);
+  const [replies, setReplies] = useState({});
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [ownerId, setOwnerId] = useState(null);
 
   useEffect(() => {
-    console.log("landId:", landId);
-    console.log("buyerId:", buyerId);
-    console.log("ownerName:", ownerName);
-
-    if (!landId || !buyerId || !ownerName) {
-      toast.error("Invalid parameters. Cannot load chat.");
-      return;
-    }
-
-    const fetchOwnerDetails = async () => {
+    const fetchMessages = async () => {
       try {
-        console.log("Fetching owner details for:", ownerName);
-
-        // Fetch user ID based on username (ownerName)
-        const response = await axios.get(`http://localhost:5000/api/users/id/${ownerName}`);
-        console.log("Owner details fetched:", response.data);
-
-        // Save the user ID (ownerId) from the response
-        setOwnerId(response.data.userId);
+        const response = await axios.get(`http://localhost:5000/api/messages/${landId}`);
+        setMessages(response.data.messages);
       } catch (error) {
-        console.error("Error fetching owner details:", error.response?.data || error.message);
-        toast.error("Unable to fetch owner details.");
-      } finally {
-        setLoading(false);  // Set loading to false after fetching data
+        console.error("Error fetching messages:", error);
+        toast.error("Failed to fetch messages.");
       }
     };
 
-    // Fetch owner details if parameters are valid
-    if (landId && buyerId && ownerName) {
-      fetchOwnerDetails();
-    } else {
-      toast.error("Missing required parameters.");
-      setLoading(false); // Set loading to false if parameters are invalid
+    if (landId) fetchMessages();
+  }, [landId]);
+
+  const fetchReplies = async (messageId) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/messages/reply/${messageId}`);
+      setReplies((prev) => ({
+        ...prev,
+        [messageId]: response.data.replies,
+      }));
+    } catch (error) {
+      console.error(`Error fetching replies for message ${messageId}:`, error);
+      toast.error("Failed to fetch replies.");
     }
-  }, [landId, buyerId, ownerName]);
+  };
 
   const handleSendMessage = async () => {
     if (!message.trim()) {
       toast.error("Message cannot be empty.");
       return;
     }
-  
+
     try {
-      console.log("Sending message:", { landId, buyerId, ownerId, message }); // Log the data being sent
-  
       await axios.post(
         `http://localhost:5000/api/messages`,
-        {
-          landId, 
-          buyerId,
-          ownerId,
-          message,
-        },
+        { landId, buyerId, ownerId, message },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-  
-      setMessages([...messages, { message, senderId: buyerId,landId }]);
-      setMessage(""); // Clear the input field
+      setMessages([...messages, { message, senderId: buyerId, landId }]);
+      setMessage("");
     } catch (error) {
       toast.error("Failed to send message.");
-      console.error("Error sending message:", error); // Log the error on the client side
+      console.error("Error sending message:", error);
     }
   };
-  
-  if (loading) return <div className="text-center text-xl font-semibold mt-10">Loading chat...</div>;  // Show loading message until data is fetched
 
   return (
     <div className="flex flex-col max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-center text-gray-700 mb-4">Chat with {ownerName}</h2>
-      
       <div className="flex flex-col space-y-4 mb-4 overflow-y-auto h-96 p-4 border-b border-gray-300">
-        {messages.map((msg, index) => (
-          <div key={index} className={`flex ${msg.senderId === buyerId ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-xs p-3 rounded-lg ${msg.senderId === buyerId ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"}`}
-            >
-              <p>{msg.message}</p>
+        {messages.map((msg) => (
+          <div key={msg._id} className="flex flex-col">
+            {/* Message Display */}
+            <div className={`flex ${msg.senderId === buyerId ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`max-w-xs p-3 rounded-lg ${
+                  msg.senderId === buyerId ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
+                }`}
+              >
+                <p>{msg.message}</p>
+              </div>
             </div>
+
+            {/* Replies Section */}
+            {replies[msg._id] && (
+              <div className="ml-6 mt-2">
+                {replies[msg._id].map((reply) => (
+                  <div key={reply._id} className="bg-gray-100 p-2 rounded-lg text-sm mb-1">
+                    {reply.message}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* "View Replies" Button */}
+            {!replies[msg._id] && (
+              <button
+                onClick={() => fetchReplies(msg._id)}
+                className="text-blue-500 text-sm self-start mt-2"
+              >
+                View Replies
+              </button>
+            )}
           </div>
         ))}
       </div>
 
+      {/* Send Message Section */}
       <div className="flex items-center space-x-2">
         <textarea
           value={message}

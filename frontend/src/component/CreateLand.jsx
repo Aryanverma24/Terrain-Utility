@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -8,6 +8,21 @@ function CreateLand() {
   const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
   const [image, setImage] = useState(null);
+  const [owner, setOwner] = useState(null); // New state for owner
+
+  // Fetch the owner details from the token
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("No token found. Please login.");
+      return;
+    }
+
+    // Decode token to get user details (assuming token is a JWT)
+    const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decoding JWT payload
+    setOwner(decodedToken.userId); // Assuming `userId` is in the token payload
+  }, []);
 
   const uploadData = async (e) => {
     e.preventDefault();
@@ -17,9 +32,9 @@ function CreateLand() {
     formData.append("state", state);
     formData.append("pincode", pincode);
     formData.append("image", image);
-    // Log the formData for debugging
+    formData.append("owner", owner); // Include the owner in form data
 
-    const token = localStorage.getItem("token"); // Ensure token is set in localStorage before making the request
+    const token = localStorage.getItem("token");
 
     if (!token) {
       toast.error("No token found. Please login.");
@@ -30,7 +45,7 @@ function CreateLand() {
       const result = await axios.post("http://localhost:5000/create-land", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`, // Ensure Bearer token is correctly passed
+          Authorization: `Bearer ${token}`, // Pass token in the header
         },
       });
       console.log("Server response:", result.data);
