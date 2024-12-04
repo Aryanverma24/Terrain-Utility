@@ -1,38 +1,39 @@
-
-
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import User from '../modals/UserModal.js';  // Correct path depending on your folder structure
-
-
 import Land from "../modals/LandModal.js";
 import asyncHandler from "../middlerwares/asyncHandler.js";
+import { Types } from 'mongoose'; 
 
+// Create Land
 const createLand = asyncHandler(async (req, res) => {
   console.log("Body data received:", req.body);
   console.log("File data received:", req.file);
-  const { landtype, city, state, pincode ,image} = req.body;
-  const { userId, userName } = req; // From the authenticated user
 
-  // Check if all required fields are provided
-  // if (!landtype || !city || !state || !pincode||!image) {
-  //   return res.status(400).send("All fields are required!");
-  // }
+  const { landtype, city, state, pincode } = req.body;
+  const { userId, username: userName } = req.user;  // From the authenticated user (using req.user)
+
+  // Validate input fields
+  if (!landtype || !city || !state || !pincode || !req.file) {
+    return res.status(400).send("All fields are required, including image!");
+  }
 
   try {
+    // Create the land object with owner and ownerName
     const land = new Land({
       landtype,
       city,
       state,
       pincode,
-      image: req.file ? req.file.filename : null, // Save image filename
-      owner: userId,      // Owner ID from authenticated user
-      ownerName: userName // Owner name from authenticated user
+      image: req.file.filename, // Save image filename
+      owner: new mongoose.Types.ObjectId(userId), // Use 'new' for ObjectId
+      ownerName: userName      // Owner name from authenticated user
     });
-    console.log(land); 
-console.log(land);
-    // Save to the database
+
+    console.log("Created Land Object:", land);
+
+    // Save the land document to the database
     await land.save();
-    console.log(land);
+
     // Return the created land document as the response
     return res.status(201).json(land);
   } catch (error) {
@@ -40,41 +41,78 @@ console.log(land);
     return res.status(500).send("Unable to save in database");
   }
 });
+
+
+// Get all lands
 const getAllLands = asyncHandler(async (req, res) => {
-  const lands = await Land.find({});
-  res.status(200).send(lands);
+  try {
+    const lands = await Land.find({}); // Fetch all lands
+
+    // Calculate average rating for each land
+    const landsWithAverageRating = lands.map((land) => {
+      const ratings = land.ratings; // Assuming land has a 'ratings' field (array)
+      let averageRating = 0;
+      
+      if (ratings && ratings.length > 0) {
+        // Calculate average rating
+        averageRating = ratings.reduce((acc, rating) => acc + rating, 0) / ratings.length;
+      }
+
+      // Return land with calculated averageRating
+      return {
+        ...land.toObject(),
+        averageRating: averageRating || 0, // Default to 0 if no ratings
+      };
+    });
+
+    // Return lands with average ratings
+    res.status(200).json(landsWithAverageRating);
+  } catch (error) {
+    console.error("Error fetching lands:", error);
+    res.status(500).send("Error fetching land data");
+  }
 });
+
+// Get land by ID
+import mongoose from "mongoose";
 
 const getLandById = asyncHandler(async (req, res) => {
-  const land = await Land.findById(req.params.id);
-  if (land) {
-    res.status(200).send(land);
-  } else {
-    res.status(400).send("land not found!");
-  }
-});
-
-const getLandByUserId = asyncHandler(async (req, res) => {
   try {
-    // 1. Extract userId from req.params
     const { id } = req.params;
 
-    // 2. Query the Land model to find all lands where the owner is the provided userId
-    const lands = await Land.find({ owner: id }).populate("owner", "username"); // Optional: populate owner data (like username)
-
-    // 3. If no lands are found, return a 404 response
-    if (!lands || lands.length === 0) {
-      return res.status(404).json({ message: "No lands found for this user." });
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid land ID." });
     }
-    // 4. Return the lands if found
-    res.status(200).json(lands);
+
+    const land = await Land.findById(id);
+
+    if (!land) {
+      return res.status(404).json({ message: "Land not found." });
+    }
+
+    res.status(200).json(land);
   } catch (error) {
-    // 5. Handle server errors
-    console.error(error);
-    res.status(500).json({ message: "Error retrieving lands. Please try again later." });
+    console.error("Error fetching land:", error);
+    res.status(500).json({ message: "An error occurred while fetching the land." });
   }
 });
 
+
+
+// Get lands by user ID (this is now managed by req.user)
+const getLandByUserId = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user.id;  // From the authenticated user (req.user set by authenticate middleware)
+    const ownerLands = await Land.find({ owner: userId });
+    res.status(200).json(ownerLands);
+  } catch (error) {
+    res.status(400).send("User lands not found!");
+  }
+});
+
+
+// Update land by ID
 const updateLandById = asyncHandler(async (req, res) => {
   const land = await Land.findById(req.params.id);
 
@@ -104,54 +142,142 @@ const updateLandById = asyncHandler(async (req, res) => {
     const updatedLand = await land.save();
 
     // Return the updated data in the response
-    res.status(200).json({
-      _id: updatedLand._id,
-      landtype: updatedLand.landtype,
-      city: updatedLand.city,
-      pincode: updatedLand.pincode,
-      state: updatedLand.state,
-      owner: updatedLand.owner,
-      ownerName: updatedLand.ownerName,
-    });
+    res.status(200).json(updatedLand);
   } else {
     res.status(400).send("Land not found!");
   }
 });
 
-
+// Delete land by ID
 const deleteLandById = asyncHandler(async (req, res) => {
-  const landId = req.params;
+  const landId = req.params.id;
 
   if (landId) {
-    await Land.findByIdAndDelete(landId.id);
-    res.status(200).send("land successfully removed!");
+    await Land.findByIdAndDelete(landId);
+    res.status(200).send("Land successfully removed!");
   } else {
-    res.status(400).send("land not found");
+    res.status(400).send("Land not found");
   }
 });
 
-const getLandbyUser = asyncHandler(async (req, res) => {
+// Get lands by username (alternative method)
+const getLandsByUser = async (req, res) => {
   try {
-    const username = req.params.username;
+    const { username } = req.params;  // Fetch the username from the URL parameters
 
-    const user = await User.find({ username: username });
-    const userId = user[0]._id;
-    const owner = await Land.find({ owner: userId });
-    res.send(owner);
+    // Find lands where the ownerName matches the username
+    const lands = await Land.find({ ownerName: username });
+
+    if (!lands || lands.length === 0) {
+      return res.status(404).json({ message: "No lands found for this user." });
+    }
+
+    res.status(200).json(lands);
+  } catch (error) {
+    console.error("Error fetching lands:", error);
+    res.status(500).json({ message: "Server error while fetching lands." });
+  }
+};
+
+const getLandReviews = async (req, res) => {
+  try {
+    const land = await Land.findById(req.params.id).populate('reviews.user', 'username'); // Populate reviews with user details (username)
+    
+    if (!land) {
+      return res.status(404).json({ message: 'Land not found' });
+    }
+    
+    // Extracting and returning reviews from the land object
+    const reviews = land.reviews;
+
+    res.status(200).json(reviews); // Send the reviews as response
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error fetching lands" });
+    res.status(500).json({ message: 'Server error' });
   }
-});
+};
 
-//land type
 
-const getLandByType = asyncHandler(async (req, res) => {
-  const landtype = req.params;
-  console.log(landtype);
-  const lands = await Land.find({ landtype: landtype });
-  res.json(lands);
-});
+// Delete review by userId
+// Delete review// Delete review
+
+
+const deleteReview = async (req, res) => {
+  try {
+    const { landId, userId } = req.params;
+    const decodedUserId = req.user.id; // Access user ID from req.user.id
+
+    console.log("Decoded User ID:", decodedUserId);
+    console.log("User ID from request:", userId);
+
+    if (decodedUserId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You can only delete your own review." });
+    }
+
+    const land = await Land.findById(landId);
+    if (!land) {
+      return res.status(404).json({ message: "Land not found." });
+    }
+
+    const reviewIndex = land.reviews.findIndex(
+      (review) => review.user.toString() === userId
+    );
+
+    if (reviewIndex === -1) {
+      return res.status(404).json({ message: "Review not found." });
+    }
+
+    land.reviews.splice(reviewIndex, 1);
+    await land.save();
+
+    res.status(200).json({ message: "Review deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+// Get lands by type
+// Backend: Controller to fetch lands by landtype
+const getLandByType = async (req, res) => {
+  const { landtype } = req.params;  // Get the landtype from the URL parameter
+
+  if (!landtype) {
+    return res.status(400).json({ message: "Land type is required" });  // Ensure landtype is provided
+  }
+
+  try {
+    // Use a case-insensitive regex query to find lands by landtype
+    const lands = await Land.find({
+      landtype: { $regex: new RegExp(`^${landtype}$`, 'i') } // 'i' makes the regex case-insensitive, '^' and '$' to match the exact value
+    });
+
+    if (lands.length === 0) {
+      return res.status(404).json({ message: `No lands found for type: ${landtype}` });
+    }
+
+    // Successfully found lands
+    res.status(200).json(lands);  
+  } catch (error) {
+    console.error('Error fetching lands:', error);
+    res.status(500).json({ message: 'Failed to fetch lands due to a server error.' });
+  }
+};
+
+
+
+
+
 
 export {
   createLand,
@@ -160,6 +286,8 @@ export {
   getLandByUserId,
   updateLandById,
   deleteLandById,
-  getLandbyUser,
+  getLandReviews,
+  getLandsByUser,
   getLandByType,
+  deleteReview,
 };

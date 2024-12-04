@@ -1,177 +1,234 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router";
+import axios from "axios";
 
-const MyLands = () => {
-  const [lands, setLands] = useState([]);
-  const [selectedLand, setSelectedLand] = useState(null); // State to store the selected land for modification
+const MyLand = () => {
+  const [lands, setLands] = useState([]); // Store the list of lands
+  const [loading, setLoading] = useState(true); // Handle loading state
+  const [error, setError] = useState(null); // Handle error state
+  const [editingLand, setEditingLand] = useState(null); // Store the land being edited
   const [formData, setFormData] = useState({
     landtype: "",
     city: "",
     state: "",
+    pincode: "",
   });
+  const navigate = useNavigate(); // Initialize navigate for programmatic navigation
 
+  // Fetch lands when the component mounts
   useEffect(() => {
-    const fetchLands = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/lands/owner/671b8e8...", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setLands(response.data);
-      } catch (error) {
-        console.error("Error fetching lands:", error);
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.username) {
+      console.log("Fetching lands for user:", user.username);
+      fetchUserLands(user.username); // Fetch lands by username
+    } else {
+      console.error("User not logged in");
+      setError("User not logged in.");
+    }
+  }, []); // Run only once on component mount
+
+  const fetchUserLands = async (username) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/lands/user/${username}`);
+      const data = response.data;
+
+      // Check if data is an array before calling .filter()
+      if (Array.isArray(data)) {
+        console.log(data);  // Process the lands data
+        setLands(data);  // Set the lands state
+        setLoading(false); // Stop loading
+      } else {
+        console.error("API response is not an array:", data);
+        setError("Failed to fetch lands.");
       }
-    };
+    } catch (error) {
+      console.error("API call failed:", error);
+      setError("Failed to fetch lands.");
+      setLoading(false); // Stop loading in case of error
+    }
+  };
 
-    fetchLands();
-  }, []);
-
-  const handleModifyClick = (land) => {
-    setSelectedLand(land);
+  // Handle when an edit button is clicked
+  const handleEditClick = (land) => {
+    console.log("Editing land:", land);
+    setEditingLand(land);
     setFormData({
       landtype: land.landtype,
       city: land.city,
       state: land.state,
+      pincode: land.pincode,
     });
   };
 
-  const handleInputChange = (e) => {
+  // Update form data when input fields change
+  const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
+    console.log(`Updating form field "${name}" to value:`, value);
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
 
+  // Submit the form and save changes
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    console.log("Submitting form data:", formData);
+
+    const authToken = localStorage.getItem("token"); // Retrieve the token from localStorage
+
+    if (!authToken) {
+      console.error("Authorization token is missing");
+      setError("Authorization token is missing"); // Display error if token is missing
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.put(
-        `http://localhost:5000/api/lands/${selectedLand._id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("Land details updated:", response.data);
-      // Optionally refresh the list of lands or update state
-      setLands((prevLands) =>
-        prevLands.map((land) =>
-          land._id === selectedLand._id ? { ...land, ...formData } : land
-        )
-      );
-      setSelectedLand(null); // Close the form
+      const response = await fetch(`http://localhost:5000/api/lands/${editingLand._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`, // Attach the token in the header
+        },
+        body: JSON.stringify(formData), // Send the updated land data
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Land updated successfully:", data);
+        // Update the land data in the local state to reflect the changes
+        setLands((prevLands) =>
+          prevLands.map((land) =>
+            land._id === editingLand._id ? { ...land, ...formData } : land
+          )
+        );
+        setEditingLand(null); // Close the edit form
+        setError(null);
+        toast.success("Land details updated successfully!");  // Success message
+      } else {
+        console.error("Error updating land:", data.message);
+        setError(data.message || "Error updating land.");
+        toast.error("Failed to update land details.");  // Error message
+      }
     } catch (error) {
-      console.error("Error updating land details:", error);
+      console.error("API call failed:", error);
+      setError("Failed to update land. Please try again later.");
+      toast.error("Failed to update land. Please try again later.");  // Error message
     }
   };
 
-    const toastmsg =() => {
-      toast.success("Land details updated successfully!!")
+  // Handle the "Check Received Messages" button click
+  const handleCheckMessagesAndNavigate = async (landId) => {
+    try {
+      // Check if landId is valid
+      if (!landId) {
+        console.error("Land ID is missing");
+        toast.error("Land ID is missing. Cannot fetch messages.");
+        return;
+      }
+
+      // First event: Log or fetch messages for the land ID
+      console.log("Fetching messages for land ID:", landId);
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("No token found");
+        toast.error("You must be logged in to view messages");
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/messages/land/${landId}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`, // Add token to the header
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Check if response status is okay
+      if (response.ok) {
+        const contentType = response.headers.get("Content-Type");
+
+        // Check if the response is in JSON format
+        if (contentType && contentType.includes("application/json")) {
+          const messages = await response.json();
+          console.log("Fetched messages:", messages);
+        } else {
+          // Handle unexpected non-JSON response
+          const errorText = await response.text(); // If response is not JSON (e.g., HTML)
+          console.error("Unexpected non-JSON response:", errorText);
+          toast.error("Unexpected response format received.");
+        }
+      } else {
+        // Handle API error (non-2xx status)
+        const errorData = await response.text(); // For error responses that are not JSON
+        console.error("Error fetching messages:", errorData);
+        toast.error("Failed to fetch messages. Please try again.");
+      }
+
+      // Second event: Navigate to the Messages page
+      navigate(`/messages/land/${landId}`);
+    } catch (error) {
+      console.error("Error handling messages or navigation:", error);
+      toast.error("Failed to fetch messages or navigate. Please try again.");
     }
+  };
+
+  if (loading) return <p className="text-center text-lg font-semibold text-gray-700">Loading...</p>;
+  if (error) return <p className="text-center text-lg text-red-500">{error}</p>;
+
   return (
-    <div className="max-w-screen-lg mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-6">My Lands</h1>
-      {lands.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <h1 className="text-4xl font-extrabold text-center text-gray-900 mb-8">My Lands</h1>
+
+      {Array.isArray(lands) && lands.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {lands.map((land) => (
-            <div key={land._id} className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow duration-300">
-              <h3 className="text-xl font-semibold mb-2 capitalize">Type: {land.landtype}</h3>
-              <p className="text-gray-600">City: {land.city}</p>
-              <p className="text-gray-600">State: {land.state}</p>
-              {land.image && (
-                <div className="mt-4">
-                  <img
-                    src={`http://localhost:5000/uploads/${land.image}`}
-                    alt={land.landtype}
-                    className="rounded-lg w-full h-40 object-cover"
-                  />
+            <div 
+              key={land._id} 
+              className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition duration-300 ease-in-out"
+            >
+              <img 
+                src={`http://localhost:5000/uploads/${land.image}`} 
+                alt={land.city} 
+                className="w-full h-48 object-cover rounded-t-lg"
+              />
+              <div className="p-6 space-y-4">
+                <h3 className="text-2xl font-semibold text-gray-900">{land.landtype}</h3>
+                <p className="text-lg text-gray-600">{land.city}, {land.state}</p>
+                <div className="text-sm text-gray-500">
+                  <p><strong>Owner Name:</strong> {land.ownerName}</p>
+                  <p><strong>Pincode:</strong> {land.pincode}</p>
+                  <p><strong>Created At:</strong> {new Date(land.createdAt).toLocaleString()}</p>
+                  <p><strong>Average Rating:</strong> {land.averageRating}</p>
                 </div>
-              )}
-              <button
-                onClick={() => handleModifyClick(land)}
-                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                Modify Details
-              </button>
+
+                {/* Edit Button */}
+                <button
+                  className="w-full py-2 bg-yellow-500 text-white rounded-md mt-4 hover:bg-yellow-600"
+                  onClick={() => handleEditClick(land)}
+                >
+                  Edit
+                </button>
+
+                {/* Check Received Messages Button */}
+                <button
+                  className="w-full py-2 bg-blue-500 text-white rounded-md mt-4 hover:bg-blue-600"
+                  onClick={() => handleCheckMessagesAndNavigate(land._id)} // Call the function on click
+                >
+                  Check Received Messages
+                </button>
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-        <p className="text-center text-gray-600 mb-6 text-xl font-semibold">
-          No Lands Available
-        </p>
-        <img
-          src="https://easy-peasy.ai/cdn-cgi/image/quality=80,format=auto,width=700/https://fdczvxmwwjwpwbeeqcth.supabase.co/storage/v1/object/public/images/ea8599c8-a934-4179-9c82-94af93335418/c1481265-aff7-44c8-89c5-073d6bcc909f.png"
-          alt="No lands available"
-          className="w-full max-w-5xl h-auto rounded-lg shadow-lg border border-gray-300 hover:shadow-2xl transition-shadow duration-300 ease-in-out mt-4 mb-10"
-        />
-      </div>
-      
-
-      
-      )}
-
-      {selectedLand && (
-        <div className="mt-8 p-4 border rounded-lg shadow-lg bg-gray-100">
-          <h2 className="text-2xl font-semibold mb-4">Modify Land Details</h2>
-          <form onSubmit={handleFormSubmit}>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">Land Type:</label>
-              <input
-                type="text"
-                name="landtype"
-                value={formData.landtype}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">City:</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">State:</label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleInputChange}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <button
-              type="submit"
-              onClick={toastmsg}
-              className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
-            >
-              Save Changes
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedLand(null)}
-              className="ml-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
-            >
-              Cancel
-            </button>
-          </form>
-        </div>
+        <p className="text-center text-lg text-gray-600">No lands found.</p>
       )}
     </div>
   );
 };
 
-export default MyLands;
+export default MyLand;
