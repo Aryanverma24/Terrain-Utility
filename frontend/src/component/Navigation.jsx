@@ -19,8 +19,7 @@ const Navigation = () => {
   const toggleSidebar= () => {
     setSidebar(!sidebar);
   }
-  // const username= user?.username
-  // console.log(username)
+  
 
   const logoutUser =  async(e) => {
     try {
@@ -36,6 +35,15 @@ const Navigation = () => {
     }
   }
 
+  const adminDashboard = async(e) => {
+    try {
+      navigate('/adminDashboard')
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  console.log(user)
 
   return (
     <div
@@ -86,12 +94,19 @@ const Navigation = () => {
         <div className="relative top-20">
           <ul className="mt-[1rem]">
             {
-              user?.username ? <li className="mb-2 ml-[1rem]">
+              user?.username ? <li className="mb-5 ml-[1rem]">
+
+              {user?.isAdmin &&   <button
+              onClick={()=>{
+                adminDashboard()
+              }}
+              className="mb-5 rounded-xl px-2 py-1 font-semibold bg-white  hover:bg-slate-300 text-green-500">DashBoard</button>}
+
               <button
               onClick={()=>{
                 logoutUser()
               }}
-              className="mr-2 font-semibold text-green-500">Logout {user?.username}</button>
+              className=" font-semibold text-green-500">Logout {user?.username}</button>
             </li> :
             <>
             <li className="mb-2 ml-[1rem]">

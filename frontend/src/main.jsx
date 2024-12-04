@@ -9,7 +9,7 @@ import AuthState from '../contexts/authContext.jsx';
 import Home from './component/Home.jsx';
 import CreateLand from './component/CreateLand.jsx';
 import Lands from './component/LandsType.jsx';
-
+import AdminDashboard from './component/AdminDashboard.jsx';
 import MyLands from './component/MyLands.jsx';
 import SingleLand from './component/SingleLand.jsx';
 import Chat from './component/Chat.jsx';
@@ -25,7 +25,7 @@ const router = createBrowserRouter(
       <Route path="/uploads" element={<CreateLand />} />
       <Route path="/mylands" element={<MyLands />} />
       <Route path="/lands" element={<Lands />} />
-    
+      <Route path='/adminDashboard' element={<AdminDashboard />} />
       
       {/* Land Details Route */}
       <Route path="/land/:id" element={<SingleLand />} />

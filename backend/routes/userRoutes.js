@@ -17,7 +17,7 @@ const router = express.Router();
 import { authenticate,authorizeAdmin } from "../middlerwares/authMiddlewares.js";
 
 //home route
-router.route("/").get(authenticate, authorizeAdmin, getAllUser);
+router.route("/").get( getAllUser);
 router.route("/register").post(createUser)
 //login logout 
 router.route("/auth").post(loginUser)
@@ -32,7 +32,7 @@ router.route("/profile")
 //admin routes
 
 router.route("/:id")
-    .delete(authenticate,authorizeAdmin,deleteUser)
+    .delete(deleteUser)
     .get(authenticate,authorizeAdmin,getUserById)
     .put(authenticate,authorizeAdmin,updateUserById)
 
