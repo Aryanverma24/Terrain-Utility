@@ -8,6 +8,7 @@ import chatAuthenticate from '../middlerwares/chatMiddleware.js';
 const router = express.Router();
 
 
+
 // Create or fetch a chat session and send a message
 router.post('/messages', async (req, res) => {
   const { landId, buyerId, ownerId, message } = req.body;
@@ -131,6 +132,60 @@ router.get('/api/messages/reply/:messageId', async (req, res) => {
   } catch (err) {
     console.error('Error fetching replies:', err);
     res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+router.get('/messages/:landId', (req, res, next) => {
+  console.log("Request URL:", req.originalUrl); // Log the full request URL
+  next(); // Proceed to the actual route handler
+}, async (req, res) => {
+  const { landId } = req.params;
+  console.log("Fetching messages for landId:", landId); // Log the landId
+
+  try {
+    const landObjectId = mongoose.Types.ObjectId(landId);
+    const messages = await Message.find({ landId: landObjectId });
+    console.log("Messages found:", messages); // Log the results
+    if (!messages || messages.length === 0) {
+      return res.status(404).json({ error: "No messages found for this landId." });
+    }
+
+    res.json({ messages });
+  } catch (error) {
+    console.error("Error fetching messages:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+router.get('/messages/replies/:messageId', async (req, res) => {
+  const { messageId } = req.params;
+
+  try {
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ error: "Message not found." });
+    }
+
+    res.json({ replies: message.replies });
+  } catch (error) {
+    console.error("Error fetching replies:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+// Example of an endpoint for fetching replies
+router.get('/api/messages/:landId/:messageId/replies', async (req, res) => {
+  try {
+    const { landId, messageId } = req.params;
+    // Fetch the message and replies based on landId and messageId
+    const message = await Message.findOne({ landId, _id: messageId }).populate('replies');
+    
+    if (!message) {
+      return res.status(404).send('Message not found');
+    }
+
+    res.status(200).json({ replies: message.replies });
+  } catch (error) {
+    console.error("Error fetching replies:", error);
+    res.status(500).send('Internal Server Error');
   }
 });
 

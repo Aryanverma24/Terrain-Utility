@@ -1,122 +1,95 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import axios from "axios";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const Chat = () => {
-  const { landId, buyerId, ownerName } = useParams();
-  const [messages, setMessages] = useState([]);
-  const [replies, setReplies] = useState({});
-  const [message, setMessage] = useState("");
+const Chat = ({ landId }) => {
+  console.log('Land ID:', landId);
+  const [messages, setMessages] = useState([]);  // Ensure it's an empty array by default
+  const [replies, setReplies] = useState([]);     // Initialize replies as an empty array
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch messages for the land
+  const fetchMessages = async () => {
+    try {
+      const response = await axios.get(`/api/messages/${landId}`);
+      if (Array.isArray(response.data)) {
+        setMessages(response.data);
+      } else {
+        setMessages([]);
+      }
+    } catch (err) {
+      setError('Failed to fetch messages');
+    }
+  };
+
+  // Fetch replies for the land
+  const fetchReplies = async () => {
+    try {
+      const response = await axios.get(`/api/replies/${landId}`);
+      // Ensure replies is always treated as an array
+      if (Array.isArray(response.data)) {
+        setReplies(response.data);
+      } else {
+        setReplies([]); // Set to empty array if the data isn't an array
+      }
+    } catch (err) {
+      setError('Failed to fetch replies');
+    }
+  };
 
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/messages/${landId}`);
-        setMessages(response.data.messages);
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        toast.error("Failed to fetch messages.");
-      }
-    };
-
-    if (landId) fetchMessages();
+    fetchMessages();
+    fetchReplies();
+    
   }, [landId]);
 
-  const fetchReplies = async (messageId) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/messages/reply/${messageId}`);
-      setReplies((prev) => ({
-        ...prev,
-        [messageId]: response.data.replies,
-      }));
-    } catch (error) {
-      console.error(`Error fetching replies for message ${messageId}:`, error);
-      toast.error("Failed to fetch replies.");
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error("Message cannot be empty.");
-      return;
-    }
-
-    try {
-      await axios.post(
-        `http://localhost:5000/api/messages`,
-        { landId, buyerId, ownerId, message },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      setMessages([...messages, { message, senderId: buyerId, landId }]);
-      setMessage("");
-    } catch (error) {
-      toast.error("Failed to send message.");
-      console.error("Error sending message:", error);
-    }
-  };
-
   return (
-    <div className="flex flex-col max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-center text-gray-700 mb-4">Chat with {ownerName}</h2>
-      <div className="flex flex-col space-y-4 mb-4 overflow-y-auto h-96 p-4 border-b border-gray-300">
-        {messages.map((msg) => (
-          <div key={msg._id} className="flex flex-col">
-            {/* Message Display */}
-            <div className={`flex ${msg.senderId === buyerId ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-xs p-3 rounded-lg ${
-                  msg.senderId === buyerId ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
-                }`}
-              >
-                <p>{msg.message}</p>
-              </div>
+    <div>
+      <h2>Chat for Land ID: {landId}</h2>
+
+      {/* Display error message if fetching fails */}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {/* If no messages are found, show the replies */}
+      {messages.length === 0 ? (
+        <div>
+          <h3>No messages found for this land. Here are the replies:</h3>
+
+          {/* Display replies if there are any */}
+          {replies.length === 0 ? (
+            <p>No replies available yet.</p>
+          ) : (
+            <div>
+              <h4>Replies</h4>
+              {replies.map((reply) => (
+                <div key={reply._id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #ccc' }}>
+                  <p><strong>{reply.userId}:</strong></p>
+                  <p>{reply.replyText}</p>
+                </div>
+              ))}
             </div>
-
-            {/* Replies Section */}
-            {replies[msg._id] && (
-              <div className="ml-6 mt-2">
-                {replies[msg._id].map((reply) => (
-                  <div key={reply._id} className="bg-gray-100 p-2 rounded-lg text-sm mb-1">
-                    {reply.message}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* "View Replies" Button */}
-            {!replies[msg._id] && (
-              <button
-                onClick={() => fetchReplies(msg._id)}
-                className="text-blue-500 text-sm self-start mt-2"
-              >
-                View Replies
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Send Message Section */}
-      <div className="flex items-center space-x-2">
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message"
-          rows="3"
-          className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        />
-        <button
-          onClick={handleSendMessage}
-          className="p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Send
-        </button>
-      </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <h3>Messages:</h3>
+          {messages.map((message) => (
+            <div key={message._id}>
+              <p>{message.text}</p>
+              {message.replies && message.replies.length > 0 && (
+                <div style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                  <h5>Replies:</h5>
+                  {message.replies.map((reply) => (
+                    <div key={reply._id} style={{ padding: '5px', borderBottom: '1px solid #ddd' }}>
+                      <p>{reply.replyText}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
