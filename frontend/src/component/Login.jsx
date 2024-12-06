@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API } from "../../utils/API";
 import { AuthContext } from "../../contexts/authContext";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const { isAuthenticated, getUser } = useContext(AuthContext);
@@ -22,6 +23,7 @@ const Login = () => {
             navigate("/");  // Navigate after successful login
         }
     } catch (error) {
+        toast.error('invalid username or password')
         console.log(error);
     }
 };

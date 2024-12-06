@@ -14,6 +14,7 @@ import MyLands from './component/MyLands.jsx';
 import SingleLand from './component/SingleLand.jsx';
 import Chat from './component/Chat.jsx';
 import Messages from './component/Messages.jsx';
+// import UserProfile from './component/UserProfile.jsx';
 
 // Define the routes
 const router = createBrowserRouter(
@@ -26,6 +27,7 @@ const router = createBrowserRouter(
       <Route path="/mylands" element={<MyLands />} />
       <Route path="/lands" element={<Lands />} />
       <Route path='/adminDashboard' element={<AdminDashboard />} />
+      {/* <Route path='/userProfile' element={<UserProfile /> } /> */}
       
       {/* Land Details Route */}
       <Route path="/land/:id" element={<SingleLand />} />

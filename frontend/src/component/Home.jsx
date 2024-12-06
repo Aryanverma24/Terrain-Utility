@@ -79,6 +79,15 @@ const Home = () => {
     <>
       {/* Header Section with Gradient Background */}
       <div className="bg-gradient-to-r from-green-400 to-blue-500 py-6">
+        
+     {/* <div className="flex justify-end mr-6">
+     <div className="w-40 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+          <Link to="/userProfile" className="font-semibold">
+            User Profile
+          </Link>
+        </div> 
+     </div> */}
+     
         <h1 className="text-6xl text-white text-center font-bold leading-tight">
           LAND STRIDE<i className="text-yellow-400">R</i>
         </h1>
@@ -89,8 +98,17 @@ const Home = () => {
 
       {/* Main Content Section */}
       <div className="bg-black text-white min-h-screen flex flex-col justify-start items-center pt-10 pb-5 relative">
+
+
+      {user?.isAdmin && 
+      <div className="absolute top-8 left-5 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+          <Link to="/adminDashboard" className="font-semibold">
+            DashBoard
+          </Link>
+        </div>}
+
         {/* Upload Lands Button positioned at the top-right corner */}
-        <div className="absolute top-5 right-5 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+        <div className="absolute top-8 right-5 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
           <Link to="/uploads" className="font-semibold">
             Upload Lands
           </Link>
