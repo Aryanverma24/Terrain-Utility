@@ -71,6 +71,9 @@ const Messages = () => {
       setReplyContent(''); // Clear the reply content after submission
       setReplyingTo(null); // Close the reply form
   
+      // Optionally, re-fetch the messages if needed
+      // fetchMessages(); 
+
     } catch (error) {
       console.error('Error submitting reply:', error);
       alert(`Failed to submit reply: ${error.response ? error.response.data.error : error.message}`);
@@ -152,12 +155,13 @@ const Messages = () => {
               </div>
 
               {/* Display Replies */}
-              {message.replies.length > 0 && (
+              {message.replies && message.replies.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <h4 className="font-semibold text-gray-700">Replies:</h4>
                   {message.replies.map((reply, idx) => (
                     <div key={idx} className="p-4 bg-gray-50 rounded-md shadow-sm">
-                      <p className="text-gray-600">{reply.reply}</p> <p>{reply.replyContent}</p> {/* Display reply content */}
+                      <p className="text-gray-600">{reply.reply}</p>
+                      <p className="text-gray-600">{reply.replyContent}</p> {/* Display reply content */}
                       <span className="text-gray-400 text-sm">
                         {new Date(reply.createdAt).toLocaleString()}
                       </span>

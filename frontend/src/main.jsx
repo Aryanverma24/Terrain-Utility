@@ -14,7 +14,7 @@ import MyLands from './component/MyLands.jsx';
 import SingleLand from './component/SingleLand.jsx';
 import Chat from './component/Chat.jsx';
 import Messages from './component/Messages.jsx';
-// import UserProfile from './component/UserProfile.jsx';
+import MessagePage from './component/MessagePage.jsx';
 
 // Define the routes
 const router = createBrowserRouter(
@@ -34,14 +34,15 @@ const router = createBrowserRouter(
       
       {/* Chat Routes */}
       <Route path="/chat/:landId/:buyerId/:ownerName" element={<Chat />} />
-      <Route path="/messages/land/:landId" element={<Messages />} /> {/* Route to handle the message page */}
-        <Route path="/mylands" element={<MyLands />} />
-      
+      <Route path="/land/:id" element={<SingleLand />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/messages/land/:landId" element={<MessagePage />} />
+        <Route path="/my-lands" element={<MyLands />} />
       {/* Messages Routes */}
-      <Route path="/land/:landId/messages" element={<Messages />} />
-      <Route path="/messages/:chatId" element={<Messages />} />
+      <Route path="/" element={<MyLands />} />
      
-
+     
+      <Route path="/land/:landId/messages" element={<Messages />} />
     </Route>
   )
 );

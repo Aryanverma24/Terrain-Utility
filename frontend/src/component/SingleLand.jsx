@@ -39,14 +39,22 @@ const SingleLand = () => {
 
   const handleRedirectToChat = () => {
     if (land && decoded) {
-      const landId = land._id; // Make sure this is populated correctly
-      const buyerId = decoded.userId;
-      const ownerName = land.ownerName;
+      const landId = land._id;  // Make sure land._id is present
+      const senderId = decoded.userId || decoded._id;  // Sender is the logged-in user
+      const receiverId = land.owner;  // Land owner as receiver
   
-      console.log("Navigating with:", landId, buyerId, ownerName); // Log to check values
+      console.log("Navigating with:", landId, senderId, receiverId); // Log to check values
   
-      if (landId && buyerId && ownerName) {
-        navigate(`/chat/${landId}/${buyerId}/${ownerName}`);
+      if (landId && senderId && receiverId) {
+        // Pass the data to the next route
+        navigate("/chat", {
+          state: {
+            room: landId,         // Pass the land ID as room
+            senderId,             // Pass the logged-in user's ID as sender
+            receiverId,           // Pass the land owner as receiver
+            landDetails: land,     // Optionally, pass land details
+          },
+        });
       } else {
         toast.error("Missing parameters for chat.");
       }
@@ -58,26 +66,21 @@ const SingleLand = () => {
   
   
 
- 
-    
-      useEffect(() => {
-        const fetchLandDetails = async () => {
-          try {
-            const { data } = await axios.get(`http://localhost:5000/api/lands/${id}`);
-            console.log("Land data received:", data);  // Log to verify if _id is present
-            setLand(data);  // Set land state to the response data
-            setLoading(false);
-          } catch (err) {
-            setError("Failed to fetch land details. Please try again later.");
-            setLoading(false);
-          }
-        };
-      
-        fetchLandDetails();
-      }, [id]);
-      
- 
+  useEffect(() => {
+    const fetchLandDetails = async () => {
+      try {
+        const { data } = await axios.get(`http://localhost:5000/api/lands/${id}`);
+        console.log("Land data received:", data);  // Log to verify if _id is present
+        setLand(data);  // Set land state to the response data
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to fetch land details. Please try again later.");
+        setLoading(false);
+      }
+    };
 
+    fetchLandDetails();
+  }, [id]);
 
   const handleDeleteReview = async (reviewUserId) => {
     if (!decoded || !decoded.userId) {
@@ -234,68 +237,59 @@ const SingleLand = () => {
                     <svg
                       key={star}
                       xmlns="http://www.w3.org/2000/svg"
-                      className={`w-8 h-8 ${review.rating >= star ? "text-yellow-400" : "text-gray-300"}`}
-                      fill="currentColor"
+                      className={`h-5 w-5 ${star <= review.rating ? "text-yellow-500" : "text-gray-300"}`}
                       viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
                     >
-                      <path d="M10 15l-5.5 3L6 12 1 7l6.5-.5L10 1l2.5 5.5L20 7l-5 5 1.5 6.5z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 15l-5.454 2.858L5.918 11 1 6.857l6.182-.591L10 1l2.818 5.266L19 6.857l-4.918 4.143L15.454 17z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   ))}
                 </span>
               </span>
             </p>
-            <p className="text-gray-600 mt-2">
-              <strong>Review:</strong> {review.review}
-            </p>
+            <p>{review.review}</p>
           </div>
         ))
       ) : (
-        <p className="text-gray-600 text-2xl">No reviews yet.</p>
+        <p>No reviews yet. Be the first to leave a review!</p>
       )}
 
-      {/* Review Submission Form */}
-      {decoded && (
-        <div className="mt-8">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">Submit a Review:</h3>
-
-          {/* Review Textarea */}
-          <textarea
-            className="w-full p-4 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500"
-            placeholder="Write your review here..."
-            value={newReview}
-            onChange={(e) => setNewReview(e.target.value)}
-            rows="4"
-          ></textarea>
-
-          {/* Star Rating */}
-          <div className="mb-4">
-            <label htmlFor="rating" className="text-gray-700 mr-4">
-              Rating:
-            </label>
-            <select
-              id="rating"
-              value={newRating}
-              onChange={(e) => setNewRating(Number(e.target.value))}
-              className="w-64 p-2 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500"
-            >
-              {Array.from({ length: 5 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} Star{i === 0 ? "" : "s"}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Submit Button */}
+      {/* Review form */}
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Add Your Review:</h3>
+        <textarea
+          value={newReview}
+          onChange={(e) => setNewReview(e.target.value)}
+          rows="4"
+          className="w-full border border-gray-300 rounded-lg p-4 mb-4"
+          placeholder="Write your review here..."
+        />
+        <div className="flex justify-between">
+          <select
+            value={newRating}
+            onChange={(e) => setNewRating(parseInt(e.target.value))}
+            className="w-32 border border-gray-300 rounded-lg p-2"
+          >
+            {[5, 4, 3, 2, 1].map((rating) => (
+              <option key={rating} value={rating}>
+                {rating} Stars
+              </option>
+            ))}
+          </select>
           <button
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition duration-200"
             onClick={handleSubmitReview}
             disabled={isSubmitting}
+            className="bg-green-500 text-white px-6 py-2 rounded-lg shadow-lg hover:bg-green-600 transition duration-200 disabled:bg-gray-400"
           >
             {isSubmitting ? "Submitting..." : "Submit Review"}
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
