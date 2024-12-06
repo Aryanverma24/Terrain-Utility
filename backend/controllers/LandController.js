@@ -18,19 +18,20 @@ const createLand = asyncHandler(async (req, res) => {
   }
 
   try {
+    // Create the land object with owner and ownerName
     const land = new Land({
       landtype,
       city,
       state,
       pincode,
       image: req.file.filename, // Save image filename
-      owner: userId,      // Owner ID from authenticated user
-      ownerName: userName // Owner name from authenticated user
+      owner: new mongoose.Types.ObjectId(userId), // Use 'new' for ObjectId
+      ownerName: userName      // Owner name from authenticated user
     });
 
-    console.log("Created Land:", land);
+    console.log("Created Land Object:", land);
 
-    // Save to the database
+    // Save the land document to the database
     await land.save();
 
     // Return the created land document as the response
@@ -40,6 +41,7 @@ const createLand = asyncHandler(async (req, res) => {
     return res.status(500).send("Unable to save in database");
   }
 });
+
 
 // Get all lands
 const getAllLands = asyncHandler(async (req, res) => {
@@ -161,10 +163,10 @@ const deleteLandById = asyncHandler(async (req, res) => {
 // Get lands by username (alternative method)
 const getLandsByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { username } = req.params;  // Fetch the username from the URL parameters
 
-    // Find lands where the owner matches the userId
-    const lands = await Land.find({ owner: userId });
+    // Find lands where the ownerName matches the username
+    const lands = await Land.find({ ownerName: username });
 
     if (!lands || lands.length === 0) {
       return res.status(404).json({ message: "No lands found for this user." });
