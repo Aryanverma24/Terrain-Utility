@@ -19,7 +19,6 @@ const MyLand = () => {
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch user lands on component mount
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (user?.username) {
@@ -32,7 +31,9 @@ const MyLand = () => {
 
   const fetchUserLands = async (username) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/lands/user/${username}`);
+      const response = await axios.get(
+        `http://localhost:5000/api/lands/user/${username}`
+      );
       if (Array.isArray(response.data)) {
         setLands(response.data);
       } else {
@@ -102,19 +103,19 @@ const MyLand = () => {
   const handleCheckMessagesAndNavigate = async (landId) => {
     try {
       const token = localStorage.getItem("token");
-  
-      const response = await axios.get(`http://localhost:5000/api/messages/land/${landId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
+
+      const response = await axios.get(
+        `http://localhost:5000/api/messages/land/${landId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       if (response.status === 200) {
         console.log("Fetched messages:", response.data);
-        setMessages(response.data); // Set messages state
-        navigate(`/messages/land/${landId}`); // Navigate to the chat page
+        setMessages(response.data);
+        navigate(`/messages/land/${landId}`);
       }
-
-      // Second event: Navigate to the Messages page
-      navigate(`/messages/land/${landId}`);
     } catch (error) {
       console.error("Error fetching messages:", error);
       if (error.response) {
@@ -129,11 +130,6 @@ const MyLand = () => {
       }
     }
   };
-  
-  
-  
-  
-  
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
@@ -156,13 +152,21 @@ const MyLand = () => {
               />
               <div className="p-6">
                 <h3 className="text-2xl font-semibold">{land.landtype}</h3>
-                <p>{land.city}, {land.state}</p>
+                <p>
+                  {land.city}, {land.state}
+                </p>
                 <p>Owner: {land.ownerName}</p>
                 <button
                   className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md"
                   onClick={() => handleCheckMessagesAndNavigate(land._id)}
                 >
                   Check Received Messages
+                </button>
+                <button
+                  className="mt-4 w-full bg-green-500 text-white py-2 rounded-md"
+                  onClick={() => handleEditClick(land)}
+                >
+                  Edit
                 </button>
               </div>
             </div>
@@ -172,8 +176,72 @@ const MyLand = () => {
         <p>No lands found.</p>
       )}
 
-      {/* Render Chat Component */}
-      {selectedLand && <Chat landId={selectedLand} messages={messages} />}
+      {/* Edit Form */}
+      {editingLand && (
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
+          <form
+            onSubmit={handleFormSubmit}
+            className="bg-white p-6 rounded shadow-lg"
+          >
+            <h2 className="text-xl font-bold mb-4">Edit Land Details</h2>
+            <div>
+              <label className="block font-semibold">Land Type</label>
+              <input
+                type="text"
+                name="landtype"
+                value={formData.landtype}
+                onChange={handleFormChange}
+                className="w-full border rounded p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold">City</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleFormChange}
+                className="w-full border rounded p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold">State</label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleFormChange}
+                className="w-full border rounded p-2"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold">Pincode</label>
+              <input
+                type="text"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleFormChange}
+                className="w-full border rounded p-2"
+              />
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setEditingLand(null)}
+                className="mr-2 bg-gray-500 text-white py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-500 text-white py-2 px-4 rounded"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
