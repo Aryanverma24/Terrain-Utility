@@ -112,6 +112,9 @@ const MyLand = () => {
         setMessages(response.data); // Set messages state
         navigate(`/messages/land/${landId}`); // Navigate to the chat page
       }
+
+      // Second event: Navigate to the Messages page
+      navigate(`/messages/land/${landId}`);
     } catch (error) {
       console.error("Error fetching messages:", error);
       if (error.response) {
