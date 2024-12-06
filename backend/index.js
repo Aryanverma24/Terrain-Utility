@@ -12,27 +12,17 @@ import bodyParser from "body-parser";
 import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
-<<<<<<< HEAD
 import chatRoutes from "./routes/ChatRoutes.js";  // Default import
-=======
-import { chatRoutes } from "./routes/chatRoutes.js";  // Default import
->>>>>>> fee9ba12695b5b8fe15a6179bfea51c7ad557344
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
-<<<<<<< HEAD
 import User from "./modals/UserModal.js";
 import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
 
 
-=======
-import User from "./modals/UserModal.js"
-
-import { getMessagesForLand } from "./controllers/ChatController.js";
->>>>>>> fee9ba12695b5b8fe15a6179bfea51c7ad557344
 import chatAuthenticate from "./middlerwares/chatMiddleware.js";
 
 // Get __dirname for ES Module compatibility
@@ -138,7 +128,6 @@ const upload = multer({ storage: storage });
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
-<<<<<<< HEAD
 app.use('/api/messages', chatRoutes);  // Chat routes integration
 
 app.get('/api/messages/:landId/:userId/:ownerId', async (req, res) => {
@@ -156,9 +145,6 @@ app.get('/api/messages/:landId/:userId/:ownerId', async (req, res) => {
       res.status(500).json({ error: 'Server error' });
   }
 });
-=======
-app.use('/api', chatRoutes);  // Chat routes integration
->>>>>>> fee9ba12695b5b8fe15a6179bfea51c7ad557344
 
 // Land-related APIs
 app.post(
@@ -190,27 +176,6 @@ app.get("/user/:username", async (req, res) => {
       return res.status(404).send("No lands found for this user.");
     }
     return res.status(200).json(lands);
-<<<<<<< HEAD
-=======
-  } catch (error) {
-    console.error("Error fetching lands:", error);
-    return res.status(500).send("Server error");
-  }
-});
-
-
-app.get('/api/users/id/:username', async (req, res) => {
-  try {
-    const { username } = req.params;  // Get the username from the URL parameter
-    const user = await User.findOne({ username }); // Search for the user by username
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });  // If user not found
-    }
-
-    // Send back the user ID in the response
-    res.json({ userId: user._id });
->>>>>>> fee9ba12695b5b8fe15a6179bfea51c7ad557344
   } catch (error) {
     console.error("Error fetching lands:", error);
     return res.status(500).send("Server error");
@@ -335,15 +300,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 
-<<<<<<< HEAD
 // Start server
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
-=======
-
-
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
->>>>>>> fee9ba12695b5b8fe15a6179bfea51c7ad557344
 });
