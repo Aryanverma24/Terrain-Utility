@@ -64,7 +64,6 @@ const LandsType = () => {
         >
           <option value="">-- Select --</option>
           <option value="Residential">Residential</option>
-          <option value="Commercial">Commercial</option>
           <option value="Agriculture">Agriculture</option>
           <option value="Industrial">Industrial</option>
         </select>

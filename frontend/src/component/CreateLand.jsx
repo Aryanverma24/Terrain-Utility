@@ -83,7 +83,7 @@ function CreateLand() {
                 Select Land Type
               </option>
               <option value="industrial">Industrial</option>
-              <option value="agricultural">Agricultural</option>
+              <option value="agricultural">Agriculture</option>
               <option value="residential">Residential</option>
             </select>
           </div>

@@ -26,6 +26,27 @@ const userSchema = new mongoose.Schema(
             type : Boolean,
             required :true,
             default : false
+        },
+
+        City : {
+            type : String,
+            default : "", 
+            required : true
+        },
+        state : {
+            type :String,
+            default : "",
+            required : true
+        },
+        gender : {
+            type : String ,
+            default : "unknown",
+            required : true
+        },
+        age : {
+            type : Number,
+            default : 20,
+            required : true
         }
     },
     {

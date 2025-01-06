@@ -92,6 +92,12 @@ const Navigation = () => {
 
       <div className="relative top-20">
         <ul className="mt-[1rem]">
+
+        <li className="mb-2 ml-[1rem]">
+                <Link to='/userProfile' className="mr-2 font-semibold text-green-600">
+                  Profile
+                </Link>
+          </li>
           {user?.username ? (
             <li className="mb-5 ml-[1rem]">
               <button
