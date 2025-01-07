@@ -30,23 +30,23 @@ const userSchema = new mongoose.Schema(
 
         City : {
             type : String,
-            default : "", 
-            required : true
+            default : "unknown", 
+          
         },
         state : {
             type :String,
-            default : "",
-            required : true
+            default : "unknown",
+            
         },
         gender : {
             type : String ,
             default : "unknown",
-            required : true
+          
         },
         age : {
             type : Number,
             default : 20,
-            required : true
+           
         }
     },
     {

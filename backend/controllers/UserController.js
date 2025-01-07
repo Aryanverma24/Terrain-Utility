@@ -4,32 +4,39 @@ import bcrypt from 'bcryptjs'
 import createToken from '../utils/createToken.js'
 import jwt from 'jsonwebtoken' 
 
-const createUser = asyncHandler(async(req,res) => {
-    const {username , email , password , contactNumber , isAdmin } = req.body
+const createUser = asyncHandler(async (req, res) => {
+    const { username, email, password, contactNumber, isAdmin } = req.body;
 
-    // console.log(username)
-
-    if(!username || !email || !password || !contactNumber || !isAdmin){
-        res.status(400).json({"message" : "all feilds are required"})
+    if (!username || !email || !password || !contactNumber) {
+        return res.status(400).json({ message: "All fields are required" });
     }
-    const existingUser = await User.findOne({email});
-    if(existingUser) res.status(400).json("user already exist!");
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+        return res.status(400).json({ message: "User already exists!" });
+    }
 
     const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const hashedPassword = await bcrypt.hash(password,salt)
+    const newUser = new User({
+        username,
+        email,
+        password: hashedPassword,
+        contactNumber,
+        isAdmin,
+    });
 
-    const newUser = new User({username,email,password :  hashedPassword ,contactNumber,isAdmin})
+    try {
+        await newUser.save();
+        const token = createToken(res, newUser._id);
+        return res.status(201).send({ user: newUser, token });
+    } catch (error) {
+        res.status(500);
+        throw new Error("Invalid user creation");
+    }
+});
 
-     try {
-        await newUser.save()
-        const token = createToken(res,newUser._id);
-        res.status(200).send({user:newUser, token})
-     } catch (error) {
-        res.status(500)
-        throw new error("invalid user")
-     }
-})
 
 
 const loginUser = asyncHandler(async(req,res) =>{
@@ -91,40 +98,60 @@ const getCurrentUserProfile = asyncHandler( async (req,res) => {
     }
 })
 
-const updateCurrentUserProfile = asyncHandler(async(req,res)=>{
+const updateCurrentUserProfile = asyncHandler(async (req, res) => {
+    const { username, email, password, contactNumber, city, state, totalLands, age, gender } = req.body;
+    const userToken = req.headers.authorization && req.headers.authorization.startsWith('Bearer')
+        ? req.headers.authorization.split(' ')[1]
+        : null;
 
-    const {username , email, password, contactNumber} = req.body
-    const userToken = req.cookies.jwt;
-    const decoded = jwt.verify(userToken,process.env.JWT_SECRET)
-    const user = await User.findById(decoded.userId).select("-password")
-
-    if(user){
-        user.username = username  || user.username
-        user.email = email || user.email
-        user.contactNumber = contactNumber || user.contactNumber
-
-        if(password){
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password,salt);
-            user.password = hashedPassword
-        }
-        const updatedUser = await user.save();
-
-        res.status(200)
-        .json(
-            {
-                _id : updatedUser._id,
-                username : updatedUser.username,
-                email : updatedUser.email,
-                isAdmin : updatedUser.isAdmin,
-                contactNumber : updatedUser.contactNumber
-            }
-        )
-    }else{
-        res.status(404)
-        throw new Error("user nor found")
+    if (!userToken) {
+        res.status(401);
+        throw new Error("Not authorized, token missing");
     }
-})
+
+    try {
+        const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.userId).select("-password");
+
+        if (user) {
+            user.username = username || user.username;
+            user.email = email || user.email;
+            user.contactNumber = contactNumber || user.contactNumber;
+            user.City = city || user.City;
+            user.state = state || user.state;
+            user.totalLands = totalLands || user.totalLands;
+            user.gender = gender || user.gender;
+            user.age = age || user.age;
+
+            if (password) {
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(password, salt);
+                user.password = hashedPassword;
+            }
+
+            const updatedUser = await user.save();
+
+            res.status(200).json({
+                _id: updatedUser._id,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                isAdmin: updatedUser.isAdmin,
+                contactNumber: updatedUser.contactNumber,
+                gender: updatedUser.gender,
+                City: updatedUser.City,
+                state: updatedUser.state,
+                age: updatedUser.age,
+            });
+        } else {
+            res.status(404);
+            throw new Error("User not found");
+        }
+    } catch (error) {
+        res.status(401);
+        throw new Error("Not authorized, token failed");
+    }
+});
+
 
 const deleteUser = asyncHandler ( async (req,res)=>{
     const user = await User.findById(req.params.id)

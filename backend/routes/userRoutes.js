@@ -18,6 +18,7 @@ import { authenticate,authorizeAdmin } from "../middlerwares/authMiddlewares.js"
 
 //home route
 router.route("/").get( getAllUser);
+
 router.route("/register").post(createUser)
 //login logout 
 router.route("/auth").post(loginUser)
