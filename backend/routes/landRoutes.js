@@ -10,6 +10,7 @@ import {
   getLandsByUser,
   deleteReview,
   getLandByType,
+  updateLandsBySameUser
 } from "../controllers/LandController.js";
 import { authenticate } from "../middlerwares/landauthenticate.js"; // Import the authenticate middleware
 
@@ -28,10 +29,14 @@ router.route("/:id")
 router.get('/type/:landtype', getLandByType); // Changed to `/type/:landtype` for clarity
 
 // Route for getting lands by user ID (owner)
-router.route("/owner/:userId").get(getLandByUserId); // Changed to `/owner/:userId` for clarity
+router.route("/owner/:userId")
+.get(getLandByUserId)
+.put(updateLandsBySameUser); // Changed to `/owner/:userId` for clarity
 
 // Route for getting lands by username
 router.route("/user/:username").get(getLandsByUser); // Username-based search
+
+
 
 // Protected route for creating land
 router.route("/create-land").post(authenticate, createLand);

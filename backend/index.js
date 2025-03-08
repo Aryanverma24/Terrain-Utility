@@ -12,6 +12,7 @@ import bodyParser from "body-parser";
 import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js"
 import chatRoutes from "./routes/ChatRoutes.js";  // Default import
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
@@ -128,7 +129,89 @@ const upload = multer({ storage: storage });
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
+app.use("/api/wishlist",wishlistRoutes)
 app.use('/api/messages', chatRoutes);  // Chat routes integration
+
+
+//add user face data
+
+app.post('/api/add-face',async(req,res)=>{
+  const {email , faceDescriptor}= req.body;
+
+  console.log(email)
+  console.log(faceDescriptor)
+
+if(!email || !faceDescriptor) return res.status(400).json({message : "all fields are required"})
+
+    try {
+      const user = await User.findOneAndUpdate(
+          { email: req.body.email },
+          { $set: { faceDescriptor : req.body.faceDescriptor } },
+          { new: true, upsert: true }
+      );
+
+      console.log("✅ Data Saved in DB:", user);
+      res.status(200).json({ success: true, message: "Face data stored successfully!" });
+
+  } catch (error) {
+      console.error("❌ Error Saving Face Data:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
+
+})
+
+
+// euclidean distance formula
+
+const euclideanDistance = (arr1, arr2) => {
+  if (arr1.length !== arr2.length) return Infinity;
+  return Math.sqrt(arr1.reduce((sum, val, i) => sum + Math.pow(val - arr2[i], 2), 0));
+};
+
+
+// facial authentication
+
+app.post("/api/face-login", async(req,res) => {
+  const { faceDescriptor } = req.body;
+
+  if (!faceDescriptor) {
+      return res.status(400).json({ message: "Face Data is required!" });
+  }
+
+  try {
+      const users = await User.find();
+      let bestMatch = null;
+      let minDistance = Infinity;
+
+      const inputDescriptor = new Float32Array(faceDescriptor); // Fix variable name
+
+      users.forEach(user => {
+          if (user.faceDescriptor) {
+              const dbDescriptor = new Float32Array(user.faceDescriptor);
+              const distance = euclideanDistance(dbDescriptor, inputDescriptor); // Use custom function
+
+              if (distance < minDistance) {
+                  minDistance = distance;
+                  bestMatch = user;
+              }
+          }
+      });
+
+      console.log("🔍 Best Match Distance:", minDistance);
+
+      const THRESHOLD = 0.5; // Adjust based on testing
+      if (bestMatch && minDistance < THRESHOLD) {
+          return res.status(200).json({ success: true, message: "Face Recognized!", user: bestMatch });
+      } else {
+          return res.status(401).json({ success: false, message: "Face Not Recognized!" });
+      }
+  } catch (error) {
+      console.error("❌ Face Login Error:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 app.get('/api/messages/:landId/:userId/:ownerId', async (req, res) => {
   const { landId, userId, ownerId } = req.params;
@@ -199,7 +282,7 @@ app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
       rating: review.rating,
       user: {
         id: review.user._id,
-        username: review.user.username || 'Anonymous',
+        username: review?.user?.username || 'Anonymous',
       },
     }));
 
@@ -271,10 +354,10 @@ app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
 
 app.put('/api/lands/:id/update-details', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { city, state, pincode } = req.body;
+  const { city, state, pincode, ownerName } = req.body;
 
   try {
-    const updatedLand = await Land.findByIdAndUpdate(id, { city, state, pincode }, { new: true });
+    const updatedLand = await Land.findByIdAndUpdate(id, { city, state, pincode ,ownerName }, { new: true });
 
     if (!updatedLand) {
       return res.status(404).json({ message: 'Land not found' });

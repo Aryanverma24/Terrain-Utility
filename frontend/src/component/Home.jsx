@@ -1,10 +1,18 @@
 import { AuthContext } from "../../contexts/authContext";
 import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import { FaStar } from "react-icons/fa";
+import { API } from "../../utils/API";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
   const [lands, setLands] = useState([]);
+
+  const [wishlist, setWishlist] = useState([]); 
+
+  const navigate = useNavigate()
 
   // Fetch land data from backend
   useEffect(() => {
@@ -16,6 +24,23 @@ const Home = () => {
       })
       .catch((error) => console.error("Error fetching data:", error));
   }, []);
+
+  
+
+  useEffect(() => {
+    if(user){
+      API.get(`/api/wishlist/${user._id}`).then((response)=> {
+        setWishlist(response.data[0].lands)
+        console.log("fetching done")
+        console.log(response.data[0].lands)
+      }).catch((error)=>{
+        console.log("error while fetching wishlist",error)
+        toast.error("something went wrong while fetching wishlist")
+      })
+    }
+  }, [user]);
+
+
 
   // Function to calculate average rating
   const calculateAverageRating = (reviews) => {
@@ -66,28 +91,52 @@ const Home = () => {
     );
   };
 
-  const handleAddToWishlist = async (landId) => {
+
+
+  // Handle adding/removing a land to/from wishlist
+  const handleWishlist = async (land) => {
+    
+
+    const userId = user?._id;
+  
+    if (!userId) {
+      toast.error("Please log in first.");
+      navigate("/login");
+      return;
+    }
+  
+    const isInWishlist = wishlist.some((item) => item === land._id);
+  
     try {
-      await API.post(`/api/wishlist/${landId}/`, user._id);
-      alert("Land added to wishlist!");
+      if (isInWishlist) {
+        // Remove from wishlist
+        await API.delete(`/api/wishlist/${userId}/${land._id}`);
+        toast.success("Land removed from wishlist!");
+        
+        // Update the local wishlist state (not strictly necessary, but good for UI consistency)
+        setWishlist(wishlist.filter((item) => item !== land._id));
+  
+      } else {
+        // Add to wishlist
+        await API.post(`/api/wishlist/${user._id}/${land._id}`);
+        toast.success("Land added to wishlist!");
+  
+        // Update the local wishlist state
+        setWishlist([...wishlist, land._id]);
+      }
+      navigate('/')
     } catch (error) {
-      console.error("Error adding to wishlist:", error);
+      console.log("Error while updating the wishlist:", error);
+      toast.error("Something went wrong while updating the wishlist.");
     }
   };
+  
+
+
 
   return (
     <>
-      {/* Header Section with Gradient Background */}
       <div className="bg-gradient-to-r from-green-400 to-blue-500 py-6">
-        
-     {/* <div className="flex justify-end mr-6">
-     <div className="w-40 py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-400 to-green-500 text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
-          <Link to="/userProfile" className="font-semibold">
-            User Profile
-          </Link>
-        </div> 
-     </div> */}
-     
         <h1 className="text-6xl text-white text-center font-bold leading-tight">
           LAND STRIDE<i className="text-yellow-400">R</i>
         </h1>
@@ -131,61 +180,73 @@ const Home = () => {
         )}
 
         {/* Lands Section */}
-        <ul className="flex flex-wrap justify-center gap-8 mt-10 px-4">
-          {Array.isArray(lands) && lands.length > 0 ? (
-            lands.map((land) => {
-              const averageRating = calculateAverageRating(land.reviews);
-
-              return (
-                <div
-                  key={land._id}
-                  className="w-[20rem] p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-105"
-                >
-                  <Link to={`/land/${land._id}`}>
-                    <div className="p-4">
-                      {/* Image */}
-                      {land.image && (
-                        <img
-                          src={`http://localhost:5000/uploads/${land.image}`}
-                          alt={land.landtype || "land"}
-                          className="rounded-lg h-48 w-full object-cover mb-4"
-                        />
-                      )}
-
-                      {/* Land Info */}
-                      <div className="text-black text-md">
-                        <h2 className="font-semibold text-lg mb-2">
-                          LAND TYPE: <span className="font-normal">{land.landtype}</span>
-                        </h2>
-                        <p className="text-sm text-gray-600 mb-2">OWNER: {land.ownerName}</p>
-                        <p className="text-sm text-gray-600 mb-2">CITY: {land.city}</p>
-                        <p className="text-sm text-gray-600 mb-2">STATE: {land.state}</p>
-                        <p className="text-sm text-gray-600 mb-2">PINCODE: {land.pincode}</p>
-
-                        {/* Rating */}
-                        <div className="flex items-center mt-2">
-                          Rating:{" "}
-                          {averageRating > 0 ? (
-                            renderStars(averageRating)
-                          ) : (
-                            <span className="text-gray-400">No ratings yet</span>
+        {wishlist && 
+              <ul className="flex flex-wrap justify-center gap-8 mt-10 px-4">
+              {Array.isArray(lands) && lands.length > 0 ? (
+                lands.map((land) => {
+                  const averageRating = calculateAverageRating(land.reviews);
+                  return (
+                    <div
+                      key={land._id}
+                      className="w-[20rem] p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-105"
+                    >
+                     <div className="relative"> 
+                        <FaStar
+                        onClick={() => handleWishlist(land)}
+                        className={`absolute  right-1 w-8 h-8 cursor-pointer ${wishlist.some((item)=>item===land._id) ? " text-yellow-500" :  "text-gray-500"}`}
+                      /> 
+                    
+                   
+                      <Link to={`/land/${land._id}`}>
+                        <div className="p-4">
+                          {/* Image */}
+                          {land.image && (
+                           <div>
+                            
+                             <img
+                              src={`http://localhost:5000/uploads/${land.image}`}
+                              alt={land.landtype || "land"}
+                              className="rounded-lg h-48 w-full object-cover mb-4"
+                            />
+                           </div>
                           )}
+    
+                          {/* Land Info */}
+                          <div className="text-black text-md">
+                            <h2 className="font-semibold text-lg mb-2">
+                              LAND TYPE: <span className="font-normal">{land.landtype}</span>
+                            </h2>
+                            <p className="text-sm text-gray-600 mb-2 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">OWNER: {land.ownerName}</p>
+                            <p className="text-sm text-gray-600 mb-2 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">CITY: {land.city}</p>
+                            <p className="text-sm text-gray-600 mb-2 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">STATE: {land.state}</p>
+                            <p className="text-sm text-gray-600 mb-2 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">PINCODE: {land.pincode}</p>
+    
+                            {/* Rating */}
+                            <div className="flex items-center mt-2 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">
+                              Rating:{" "}
+                              {averageRating > 0 ? (
+                                renderStars(averageRating)
+                              ) : (
+                                <span className="text-gray-400">No ratings yet</span>
+                              )}
+                            </div>
+    
+                            {/* Reviews Count */}
+                            <p className="mt-2 text-sm text-gray-400 hover:bg-gradient-to-r from-blue-500 to-purple-500 hover:bg-clip-text hover:text-transparent hover:font-bold">
+                              Number of Reviews: {land.reviews ? land.reviews.length : 0}
+                            </p>
+                          </div>
                         </div>
-
-                        {/* Reviews Count */}
-                        <p className="mt-2 text-sm text-gray-400">
-                          Number of Reviews: {land.reviews ? land.reviews.length : 0}
-                        </p>
+                      </Link>
                       </div>
                     </div>
-                  </Link>
-                </div>
-              );
-            })
-          ) : (
-            <p>No lands available to display.</p>
-          )}
-        </ul>
+                  );
+                })
+              ) : (
+                <p>No lands available to display.</p>
+              )}
+            </ul>
+        }
       </div>
     </>
   );

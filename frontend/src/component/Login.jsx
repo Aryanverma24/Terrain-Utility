@@ -86,6 +86,12 @@ const Login = () => {
           >
             Sign In
           </button>
+         <Link to='/facial-auth'>
+         <button 
+            className="w-full mt-4 bg-green-600 hover:bg-green-800 py-2 rounded-lg text-white font-semibold">
+            Facial Login
+          </button>
+         </Link>
         </form>
 
         <div className="mt-4 text-center">

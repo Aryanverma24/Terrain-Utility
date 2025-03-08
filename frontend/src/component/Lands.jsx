@@ -29,8 +29,7 @@ const Lands = () => {
                 className='text-green-600 border-none outline-none focus:ring-2 px-2 mx-1 rounded-xl'>
                 <option value="Residental" onChange={e =>setLandtype(e.target.value)}>Residental</option>
                 <option value="Industrial" onChange={e =>setLandtype(e.target.value)}>Industrial</option>
-                <option value="Agriculture" onChange={e=>setLandtype(e.target.value)}>Agriculture</option>
-                <option value="Farm" onChange={e=>setLandtype(e.target.value)}>Farm</option>                
+                <option value="Agricultural" onChange={e=>setLandtype(e.target.value)}>Agricultural</option>  
              </select>
         </div>
        {lands.map(land=>(

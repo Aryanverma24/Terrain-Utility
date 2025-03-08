@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import User from '../modals/UserModal.js';  // Correct path depending on your folder structure
 import Land from "../modals/LandModal.js";
 import asyncHandler from "../middlerwares/asyncHandler.js";
-import { Types } from 'mongoose'; 
+import { mongo, Types } from 'mongoose'; 
 
 // Create Land
 const createLand = asyncHandler(async (req, res) => {
@@ -103,14 +103,41 @@ const getLandById = asyncHandler(async (req, res) => {
 // Get lands by user ID (this is now managed by req.user)
 const getLandByUserId = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user.id;  // From the authenticated user (req.user set by authenticate middleware)
-    const ownerLands = await Land.find({ owner: userId });
-    res.status(200).json(ownerLands);
+    const {userId} = req.params;
+    if(!mongoose.Types.ObjectId.isValid(userId)){
+      return res.status(400).json({
+        message : "User Id is not matched!!"
+      })
+    }
+    const username = await Land.findOne({owner : userId})
+
+    const land = await Land.find({ownerName : username.ownerName})
+     res.status(200).json(land)
   } catch (error) {
-    res.status(400).send("User lands not found!");
+    res.send("error occured")
   }
 });
 
+
+const updateLandsBySameUser = asyncHandler(async(req,res) => {
+
+    try {
+      const {userId} = req.params;
+      const {username} = req.body;
+      if(!mongoose.Types.ObjectId.isValid(userId)){
+        return res.status(400).send("unexpected error occured")
+      }
+
+    const filteredLands = await Land.updateMany({
+      owner : userId
+    }, {
+      $set : { ownerName : username || ownerName}
+    })
+      res.status(200).json({filteredLands})
+    } catch (error) {
+      res.status(500).send({message : "error ocuured"})
+    }
+})
 
 // Update land by ID
 const updateLandById = asyncHandler(async (req, res) => {
@@ -169,7 +196,7 @@ const getLandsByUser = async (req, res) => {
     const lands = await Land.find({ ownerName: username });
 
     if (!lands || lands.length === 0) {
-      return res.status(404).json({ message: "No lands found for this user." });
+      return res.status(200).json({ message: "No lands found for this user." });
     }
 
     res.status(200).json(lands);
@@ -290,4 +317,5 @@ export {
   getLandsByUser,
   getLandByType,
   deleteReview,
+  updateLandsBySameUser
 };

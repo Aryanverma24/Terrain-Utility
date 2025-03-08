@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router";
 import axios from "axios";
-import Chat from "./Chat";
+import './fallBounce.css'
+
 
 const MyLand = () => {
   const [lands, setLands] = useState([]);
@@ -34,11 +36,11 @@ const MyLand = () => {
       const response = await axios.get(
         `http://localhost:5000/api/lands/user/${username}`
       );
-      if (Array.isArray(response.data)) {
+      console.log(response);
+      if (Array.isArray(response.data && response.data.length > 0) ) {
         setLands(response.data);
-      } else {
-        toast.error("Failed to fetch lands.");
-        setError("Failed to fetch lands.");
+      } else{
+        setLands([])
       }
     } catch (error) {
       console.error("Error fetching lands:", error);
@@ -131,13 +133,20 @@ const MyLand = () => {
     }
   };
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <>
+    <div className="text-green-700 bg-gray-800 flex flex-col pt-3 pl-[15%] h-screen">
+      <h1 className="text-3xl font-semi-bold mt-[1rem] mb-[1rem] pl-[15%]">User not logged  in <span> </span>
+        <Link to='/login' className="text-yellow-600 underline underline-offset-4 hover:text-orange-400">Login</Link> please...</h1>
+      <img className="w-[600px] h-[350px] rounded-2xl shadow-sm" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRf6ElDgp_-OzsHJ19TPFgYnLrzUJXVj7qOdA&s" alt='sad kitten' />
+      </div>
+  </>;
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 bg-slate-950 text-white h-screen">
       <h1 className="text-4xl font-extrabold text-center mb-8">My Lands</h1>
 
+     
       {lands.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {lands.map((land) => (
@@ -173,7 +182,12 @@ const MyLand = () => {
           ))}
         </div>
       ) : (
-        <p>No lands found.</p>
+      <>
+        <div className="flex justify-center">
+        <img className="w-[520px] absolute z-10 h-[365px] rounded-2xl shadow-sm" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRf6ElDgp_-OzsHJ19TPFgYnLrzUJXVj7qOdA&s" alt='sad kitten' />
+        </div>
+        <p className="text-3xl left-[46%] absolute bottom-8  mt-3 fall-bounce">No lands found.</p>
+      </>
       )}
 
       {/* Edit Form */}

@@ -3,6 +3,7 @@ import asyncHandler from "../middlerwares/asyncHandler.js";
 import bcrypt from 'bcryptjs'
 import createToken from '../utils/createToken.js'
 import jwt from 'jsonwebtoken' 
+import Land from "../modals/LandModal.js";
 
 const createUser = asyncHandler(async (req, res) => {
     const { username, email, password, contactNumber, isAdmin } = req.body;
@@ -129,7 +130,12 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
                 user.password = hashedPassword;
             }
 
+     
+
+        }
+
             const updatedUser = await user.save();
+
 
             res.status(200).json({
                 _id: updatedUser._id,
@@ -141,12 +147,10 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
                 City: updatedUser.City,
                 state: updatedUser.state,
                 age: updatedUser.age,
+               
             });
-        } else {
-            res.status(404);
-            throw new Error("User not found");
-        }
-    } catch (error) {
+        } 
+         catch (error) {
         res.status(401);
         throw new Error("Not authorized, token failed");
     }

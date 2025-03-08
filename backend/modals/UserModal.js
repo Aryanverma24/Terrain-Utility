@@ -47,7 +47,11 @@ const userSchema = new mongoose.Schema(
             type : Number,
             default : 20,
            
-        }
+        },
+        faceDescriptor: { 
+            type: [Number], 
+            default: [] 
+        },
     },
     {
         timestamps : true

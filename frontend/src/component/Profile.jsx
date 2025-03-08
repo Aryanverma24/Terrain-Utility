@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { API } from '../../utils/API';
+import { useNavigate } from 'react-router';
 import {toast} from 'react-toastify'
+import Lands from './Lands';
+import { Link } from 'react-router-dom';
 
 const Profile = () => {
 
@@ -9,6 +12,8 @@ const Profile = () => {
   const [error,setError] = useState(null)
   const [lands,setLands] = useState([])
   
+  const navigate = useNavigate();
+
   const [toggleInput , setToggleInput] = useState(false)
   
   const [username,setUsername] = useState('')
@@ -18,7 +23,7 @@ const Profile = () => {
   const [city,SetCity] = useState('')
   const [state,setState] = useState('')
   const [contactNumber,setContactNumber] = useState('')
-  
+   
   useEffect(() => {
     API.get("/api/users/profile")
     .then((response) => {
@@ -30,6 +35,7 @@ const Profile = () => {
         setLoading(false);
       });
   }, []);
+
   useEffect(() => {
     fetch("http://localhost:5000/get-land")
       .then((response) => response.json())
@@ -40,7 +46,9 @@ const Profile = () => {
       .catch((error) => console.error("Error fetching data:", error));
     }, []);
 
+    
     const handleToggleInput = () => {
+
       setToggleInput(true);
       toast.success("Edit mode enabled");
       setUsername(userdata.data.username);
@@ -65,12 +73,15 @@ const Profile = () => {
   
       try {
         const response = await API.put("/api/users/profile", updatedData);
+
+    
         toast.success("Profile updated successfully!");
         setUserdata({ data: response.data }); // Update the local state with the new data
         setToggleInput(false);
       } catch (error) {
         toast.error(error.response?.data?.message || "Error updating profile");
       }
+      navigate("/userProfile")
     };
   
 
@@ -83,7 +94,7 @@ const Profile = () => {
   return (
       <>
        {userdata?.data && 
-         <div className='text-white  bg-[#1a1a1a] '>
+         <div className='text-white  bg-[#1a1a1a] mb-0 pb-[4rem]'>
          <div className='image-container'>
              <img src="https://www.green.earth/hubfs/What%20is%20sustainable%20land%20management%20-Pillar%20%20Combating%20Desertification_featured.png" alt="background-image" 
              className='bg-cover ml-[0.7rem] h-[18rem] w-[99%]'/>
@@ -98,7 +109,7 @@ const Profile = () => {
                  </div>
              </div>
          </div>
-         <div className=" relative mt-[12rem] ml-[6rem] bg-[#2f2f2f] mr-[4rem] mb-5 rounded-xl">
+         <div className=" relative mt-[14rem] ml-[6rem] bg-[#2f2f2f] mr-[4rem] mb-5 rounded-xl">
                 <h2 className='font-semibold text-center text-green-500 text-2xl py-5'>Details</h2>
 
                 <div className="flex flex-col px-4 py-2">
@@ -245,7 +256,7 @@ const Profile = () => {
                 )}
              </div>
 
-
+                <Link to='/add-face' className='flex justify-center bg-green-700 '>Face Upload</Link>
      </div>
        }
       </>

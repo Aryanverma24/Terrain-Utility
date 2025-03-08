@@ -16,6 +16,10 @@ import Chat from './component/Chat.jsx';
 import Messages from './component/Messages.jsx';
 import MessagePage from './component/MessagePage.jsx';
 import Profile from './component/Profile.jsx';
+import Wishlist from './component/Wishlist.jsx';
+import FaceSetup from './component/FaceSetup.jsx';
+import FaceAuthentication from './component/FaceAuthentication.jsx';
+
 
 // Define the routes
 const router = createBrowserRouter(
@@ -23,10 +27,13 @@ const router = createBrowserRouter(
     <Route path="/" element={<App />}>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path='/facial-auth' element={<FaceAuthentication /> } />
+
       <Route path="/userProfile" element={<Profile />} />
       <Route index element={<Home />} />
       <Route path="/uploads" element={<CreateLand />} />
       <Route path="/mylands" element={<MyLands />} />
+      <Route path='/wishlist' element={<Wishlist  />} />
       <Route path="/lands" element={<Lands />} />
       <Route path='/adminDashboard' element={<AdminDashboard />} />
       {/* <Route path='/userProfile' element={<UserProfile /> } /> */}
@@ -43,6 +50,7 @@ const router = createBrowserRouter(
       {/* Messages Routes */}
       <Route path="/" element={<MyLands />} />
      
+     <Route path='/add-face' element={<FaceSetup />} />
      
       <Route path="/land/:landId/messages" element={<Messages />} />
     </Route>
