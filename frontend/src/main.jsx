@@ -21,6 +21,7 @@ import FaceSetup from './component/FaceSetup.jsx';
 import FaceAuthentication from './component/FaceAuthentication.jsx';
 
 
+
 // Define the routes
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -49,8 +50,10 @@ const router = createBrowserRouter(
         <Route path="/my-lands" element={<MyLands />} />
       {/* Messages Routes */}
       <Route path="/" element={<MyLands />} />
-     
+     {/* add face for facial authentication */}
      <Route path='/add-face' element={<FaceSetup />} />
+
+
      
       <Route path="/land/:landId/messages" element={<Messages />} />
     </Route>

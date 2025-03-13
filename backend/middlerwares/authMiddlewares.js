@@ -11,7 +11,7 @@ const authenticate = asyncHandler(async(req,res,next)=>{
         res.status(401)
         throw new Error("Not Authorized. token failed")
     }
-   const token = userToken?.split("Bearer ")[1]
+   const token = userToken?.split(" ")[1]
      
     if(token){
         try {
@@ -20,8 +20,7 @@ const authenticate = asyncHandler(async(req,res,next)=>{
             console.log(req.user)
             next();
         } catch (error) {
-            res.status(401)
-            throw new Error("Not Authorized. token failed")
+            res.status(401).json({ message: "Not Authorized. token failed" })
         }
     }
     else{

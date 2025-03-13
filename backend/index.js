@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 
+import jwt from "jsonwebtoken";
 // Import utilities and routes
 import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
@@ -19,6 +20,7 @@ import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
+import { loginUser } from "./controllers/UserController.js";
 import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
@@ -168,10 +170,7 @@ const euclideanDistance = (arr1, arr2) => {
   return Math.sqrt(arr1.reduce((sum, val, i) => sum + Math.pow(val - arr2[i], 2), 0));
 };
 
-
-// facial authentication
-
-app.post("/api/face-login", async(req,res) => {
+app.post("/api/face-login", async (req, res) => {
   const { faceDescriptor } = req.body;
 
   if (!faceDescriptor) {
@@ -183,12 +182,12 @@ app.post("/api/face-login", async(req,res) => {
       let bestMatch = null;
       let minDistance = Infinity;
 
-      const inputDescriptor = new Float32Array(faceDescriptor); // Fix variable name
+      const inputDescriptor = new Float32Array(faceDescriptor); 
 
       users.forEach(user => {
           if (user.faceDescriptor) {
               const dbDescriptor = new Float32Array(user.faceDescriptor);
-              const distance = euclideanDistance(dbDescriptor, inputDescriptor); // Use custom function
+              const distance = euclideanDistance(dbDescriptor, inputDescriptor);
 
               if (distance < minDistance) {
                   minDistance = distance;
@@ -199,9 +198,36 @@ app.post("/api/face-login", async(req,res) => {
 
       console.log("🔍 Best Match Distance:", minDistance);
 
-      const THRESHOLD = 0.5; // Adjust based on testing
+      const THRESHOLD = 0.5;
       if (bestMatch && minDistance < THRESHOLD) {
-          return res.status(200).json({ success: true, message: "Face Recognized!", user: bestMatch });
+          // ✅ JWT Token Generate 
+          const token = jwt.sign(
+              { userId: bestMatch._id },
+              process.env.JWT_SECRET,
+              { expiresIn: "1h" }
+          );
+          req.body.email = bestMatch.email;
+          // return loginUser(req,res,true)
+
+          return res.status(200).json({ 
+              success: true, 
+              message: "Face Recognized!", 
+              token,
+              user: {
+                  _id: bestMatch._id,
+                  username: bestMatch.username,
+                  email: bestMatch.email,
+                  city: bestMatch.city,
+                  state: bestMatch.state,
+                  contactNumber: bestMatch.contactNumber,
+                  age: bestMatch.age,
+                  gender: bestMatch.gender,
+                  isAdmin: bestMatch.isAdmin,
+                  createdAt: bestMatch.createdAt,
+                  updatedAt: bestMatch.updatedAt
+              },
+      });
+
       } else {
           return res.status(401).json({ success: false, message: "Face Not Recognized!" });
       }
