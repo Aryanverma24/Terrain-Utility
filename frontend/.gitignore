@@ -10,7 +10,43 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
+*.local# Node.js related
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build files
+dist/
+build/
+out/
+.cache/
+
+# VS Code settings
+.vscode/
+.idea/
+.DS_Store
+
+# Others
+*.swp
+*.swo
+
 .env
 
 # Editor directories and files
