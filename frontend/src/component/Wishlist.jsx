@@ -28,10 +28,10 @@ const Wishlist = () => {
 
   return (
         <>
-             <div className='bg-black text-white h-screen'>
-                <h1 className='text-4xl text-center pt-[2rem]'>Favorite <span className='text-green-500'>Lands</span></h1>
+             <div className='bg-mintGreen text-white min-h-screen mt-[3rem]'>
+                <h1 className='text-4xl font-bold text-center pt-[2rem] text-amber-800'>Favorite <span className=''>Lands</span></h1>
                 <div className='mt-[3rem]'>
-                    <div className="flex flex-wrap ml-4">
+                    <div className="flex flex-wrap justify-center">
                       {Wishlist.length==0 && 
                       <>
                         <div className="flex  flex-1 justify-around mr-[4rem]">

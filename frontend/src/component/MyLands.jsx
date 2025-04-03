@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useContext } from "react";
+import { AuthContext } from "../../contexts/authContext";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router";
@@ -17,14 +18,19 @@ const MyLand = () => {
     state: "",
     pincode: "",
   });
+
+  const {user} = useContext(AuthContext)
+  
+
   const [selectedLand, setSelectedLand] = useState(null);
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
 
+  
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
     if (user?.username) {
-      fetchUserLands(user.username);
+      
+      fetchUserLands(user?.username);
     } else {
       toast.error("User not logged in.");
       setError("User not logged in.");
@@ -36,8 +42,8 @@ const MyLand = () => {
       const response = await axios.get(
         `http://localhost:5000/api/lands/user/${username}`
       );
-      console.log(response);
-      if (Array.isArray(response.data && response.data.length > 0) ) {
+      console.log(response.data);
+      if (Array.isArray(response.data) && response.data.length > 0)  {
         setLands(response.data);
       } else{
         setLands([])
@@ -105,7 +111,6 @@ const MyLand = () => {
   const handleCheckMessagesAndNavigate = async (landId) => {
     try {
       const token = localStorage.getItem("token");
-
       const response = await axios.get(
         `http://localhost:5000/api/messages/land/${landId}`,
         {
@@ -143,8 +148,8 @@ const MyLand = () => {
   if (error) return <p>{error}</p>;
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 bg-slate-950 text-white h-screen">
-      <h1 className="text-4xl font-extrabold text-center mb-8">My Lands</h1>
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 bg-mintGreen text-black h-screen pt-[5rem]">
+      <h1 className="text-5xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500 animate-pulse mb-8">My Lands</h1>
 
      
       {lands.length > 0 ? (
@@ -152,31 +157,35 @@ const MyLand = () => {
           {lands.map((land) => (
             <div
               key={land._id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden"
+              className="bg-cardGreen p-4 rounded-lg shadow-lg overflow-hidden"
             >
-              <img
-                src={`http://localhost:5000/uploads/${land.image}`}
-                alt={land.city}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <h3 className="text-2xl font-semibold">{land.landtype}</h3>
+              <Link to={`/land/${land._id}`} >
+                  <img
+                    src={`http://localhost:5000/uploads/${land.image}`}
+                    alt={land.city}
+                    className="w-full h-44 object-cover rounded-xl"
+                  />
+              </Link>
+              <div className="p-4">
+                <h3 className="text-2xl font-semibold">{land.landtype[0].toUpperCase() + land.landtype.substring(1)}</h3>
                 <p>
-                  {land.city}, {land.state}
+                  {land.city}, {land.state} 
                 </p>
                 <p>Owner: {land.ownerName}</p>
-                <button
+               <div className="flex gap-8">
+               <button
                   className="mt-4 w-full bg-blue-500 text-white py-2 rounded-md"
                   onClick={() => handleCheckMessagesAndNavigate(land._id)}
                 >
-                  Check Received Messages
+                  Check Messages
                 </button>
                 <button
-                  className="mt-4 w-full bg-green-500 text-white py-2 rounded-md"
+                  className="mt-4 w-full px-2 bg-green-500 text-white py-2 rounded-md"
                   onClick={() => handleEditClick(land)}
                 >
-                  Edit
+                  Edit Land
                 </button>
+               </div>
               </div>
             </div>
           ))}

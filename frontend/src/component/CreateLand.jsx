@@ -69,9 +69,11 @@ function CreateLand() {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-center mb-6">Create New Land</h2>
+    <div className="flex justify-center items-center h-screen pt-[4rem] bg-mintGreen">
+      <div className="bg-cardGreen p-8 pt-4 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-semibold text-center mb-4" style={{ textShadow: "4px 4px 4px rgba(0,0,0,0.3)" }}>
+          Create New Land
+          </h2>
         <form onSubmit={uploadData} className="space-y-4">
           <div>
             <select
@@ -164,7 +166,7 @@ function CreateLand() {
           </div>
           <button
             type="submit"
-            className="w-full py-3 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full py-3 bg-gold text-white font-semibold rounded-lg hover:bg-[#DAA630] focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             Upload
           </button>

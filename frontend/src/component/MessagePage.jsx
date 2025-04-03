@@ -21,7 +21,7 @@ const MessagePage = ({ landId }) => {
   }, [landId]);
 
   return (
-    <div>
+    <div className='pt-[6rem] bg-mintGreen min-h-screen text-black font-semibold text-lg px-6 pb-[1rem]'>
       <h1>Messages for Land {landId}</h1>
       {error && <p className="error">{error}</p>}
       <div>

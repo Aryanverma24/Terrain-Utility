@@ -4,6 +4,7 @@ import * as faceapi from "face-api.js";
 import axios from "axios";  
 import { API } from "../../utils/API";  
 import { AuthContext } from "../../contexts/authContext";
+import { toast } from "react-toastify";
 
 
 const FaceSetup = () => {
@@ -65,7 +66,7 @@ const FaceSetup = () => {
          const response  = await API.post("/api/add-face",faceData);
 
         console.log("✅ Face Data Saved Successfully!", response.data);
-        alert("Face data saved successfully!");
+        toast.success("Face data saved successfully!");
 
     } catch (error) {
         console.error("❌ Error saving face data:", error);

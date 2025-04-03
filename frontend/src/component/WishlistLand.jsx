@@ -144,7 +144,7 @@ const WishlistLand = ({ landId }) => {
     <>
       {land && (
         <div className="w-[20rem] ml-[2.5rem] mb-[2rem]">
-          <div className="bg-[#ededed] rounded-xl relative">
+          <div className="bg-cardGreen text-black rounded-xl relative">
             <FaStar
               onClick={() => handleWishlist(land)}
               className={`absolute  right-1 w-8 h-8 cursor-pointer text-yellow-500`}
@@ -169,16 +169,16 @@ const WishlistLand = ({ landId }) => {
                     LAND TYPE:{" "}
                     <span className="font-normal">{land.landtype}</span>
                   </h2>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm  mb-2">
                     OWNER: {land.ownerName}
                   </p>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm  mb-2">
                     CITY: {land.city}
                   </p>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm  mb-2">
                     STATE: {land.state}
                   </p>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm  mb-2">
                     PINCODE: {land.pincode}
                   </p>
 
@@ -188,12 +188,12 @@ const WishlistLand = ({ landId }) => {
                     {averageRating > 0 ? (
                       renderStars(averageRating)
                     ) : (
-                      <span className="text-gray-400">No ratings yet</span>
+                      <span className="">No ratings yet</span>
                     )}
                   </div>
 
                   {/* Reviews Count */}
-                  <p className="mt-2 text-sm text-gray-400">
+                  <p className="mt-2 text-sm ">
                     Number of Reviews: {land.reviews ? land.reviews.length : 0}
                   </p>
                 </div>

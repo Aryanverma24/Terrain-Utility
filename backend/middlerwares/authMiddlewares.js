@@ -7,6 +7,7 @@ const authenticate = asyncHandler(async(req,res,next)=>{
     //  const token = req.cookies.jwt;
     const userToken = req.headers.authorization;
     console.log(userToken);
+    
     if(!userToken){
         res.status(401)
         throw new Error("Not Authorized. token failed")

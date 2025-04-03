@@ -17,11 +17,11 @@ function App() {
   return (
     <>
       <ToastContainer />
-      <div className="flex">
-        <div className="w-1/12 bg-gray-800">
+      <div className="flex flex-col">
+        <div className="bg-gray-800">
           <Navigation />
         </div>
-        <main className="w-11/12 bg-[#eeecec] h-full">
+        <main className="bg-[#eeecec] h-full">
           <Outlet />
         </main>
       </div>

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import "./Navigation.css";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHome } from "react-icons/fa";
+import { FaHome, FaShopify } from "react-icons/fa";
 import { PiIslandBold } from "react-icons/pi";
 import { MdLandscape } from "react-icons/md";
 import { IoStorefrontOutline } from "react-icons/io5";
@@ -40,94 +40,172 @@ const Navigation = () => {
   };
 
   const getIconColor = (path) => {
-    return location.pathname === path ? "text-green-500" : "text-gray-400"; // Conditionally apply green or gray
+    return location.pathname === path ? "text-gold" : "text-beige"; // Conditionally apply green or gray
   };
 
-  console.log(user);
-
   return (
-    <div
-      className={`${
-        sidebar ? "hidden" : "flex"
-      } nav-container lg:flex xl:flex justify- z-40 sm:hidden md:hidden bg-black text-blue-200 flex-wrap w-[9%] fixed hover:w-[15%] h-screen`}
-    >
-      <div className="flex flex-col">
-        <div className="image-container w-full h-10 flex m-2 mt-[2rem]">
+    // <div
+    //   className="nav-container fixed top-0 w-full bg-slate-800 text-yellow-600 flex z-40"
+    // >
+    //   <div className="flex items-center">
+    //     <div className="image-container w-full h-10 flex m-2 mt-[2rem]">
+    //       <img
+    //         src="https://www.shutterstock.com/image-vector/abstract-farm-land-food-crop-260nw-1746992270.jpg"
+    //         alt="logo"
+    //         className={`${sidebar ? "" : ""} rounded-full h-[40px]`}
+    //       />
+    //       <h2 className="texts font-semibold ml-2 mt-1 text-2xl">LandStrider</h2>
+    //     </div>
+
+    //     <div className="m-4 mt-[3rem] ">
+    //       <Link to="/" className="flex items-center">
+    //         <FaHome className={`mr-3 icons ${getIconColor("/")}`} />
+    //         <span className={`texts ${getIconColor("/")}`}>Home</span>
+    //       </Link>
+    //     </div>
+
+    //     <div className="m-4 mt-5">
+    //       <Link to="/lands" className="flex items-center">
+    //         <MdLandscape className={`mr-3 icons ${getIconColor("/lands")}`} />
+    //         <span className={`texts ${getIconColor("/lands")}`}>Lands</span>
+    //       </Link>
+    //     </div>
+
+    //     <div className="m-4 mt-5">
+    //       <Link to="/wishlist" className="flex items-center">
+    //         <IoStorefrontOutline className={`mr-3 icons ${getIconColor("/wishlist")}`} />
+    //         <span className={`texts ${getIconColor("/wishlist")}`}>Wishlist</span>
+    //       </Link>
+    //     </div>
+
+    //     <div className="m-4 mt-5">
+    //       <Link to="/MyLands" className="flex items-center">
+    //         <PiIslandBold className={`mr-3 icons ${getIconColor("/MyLands")}`} />
+    //         <span className={`texts ${getIconColor("/MyLands")}`}>My Lands</span>
+    //       </Link>
+    //     </div>
+    //   </div>
+
+    //   <div className="relative top-20">
+    //     <ul className="mt-[1rem]">
+
+    //       {user?.username ? (
+    //         <>
+    //          <li className="mb-2 ml-[1rem]">
+    //          <Link to='/userProfile' className="mr-2 font-semibold text-green-600">
+    //            Profile
+    //          </Link>
+    //         </li>
+    //         <li className="mb-5 ml-[1rem]">
+    //           <button
+    //             onClick={() => {
+    //               logoutUser();
+    //             }}
+    //             className="font-semibold text-green-500"
+    //           >
+    //             Logout {user?.username}
+    //           </button>
+    //         </li>
+    //         </>
+    //       ) : (
+    //         <>
+    //           <li className="mb-2 ml-[1rem]">
+    //             <Link to='/login' className="mr-2 font-semibold text-gold">
+    //               Login
+    //             </Link>
+    //           </li>
+    //           <li className="mb-2 ml-[1rem]">
+    //             <Link to='/register' className="mr-2 font-semibold text-gold">
+    //               Register
+    //             </Link>
+    //           </li>
+    //         </>
+    //       )}
+    //     </ul>
+    //   </div>
+    // </div>
+
+    <>
+      {console.log(location.pathname)}
+      {(location.pathname === '/login' || location.pathname === '/register' ) ? (
+        <>  
+        </>
+      ) : (
+      <>
+      <div className="nav-container fixed z-10 min-w-full flex bg-slate-800 justify-between">
+        <ul className="flex py-3 px-4 gap-[40px]">
+          <li className="flex mr-[2rem]">
           <img
-            src="https://www.shutterstock.com/image-vector/abstract-farm-land-food-crop-260nw-1746992270.jpg"
-            alt="logo"
-            className={`${sidebar ? "" : ""} rounded-full h-[40px]`}
-          />
-          <h2 className="texts font-semibold ml-2 mt-1">LandStrider</h2>
-        </div>
-
-        <div className="m-4 mt-5">
-          <Link to="/" className="flex items-center">
-            <FaHome className={`mr-3 icons ${getIconColor("/")}`} />
-            <span className={`texts ${getIconColor("/")}`}>Home</span>
-          </Link>
-        </div>
-
-        <div className="m-4 mt-5">
-          <Link to="/lands" className="flex items-center">
-            <MdLandscape className={`mr-3 icons ${getIconColor("/lands")}`} />
-            <span className={`texts ${getIconColor("/lands")}`}>Lands</span>
-          </Link>
-        </div>
-
-        <div className="m-4 mt-5">
-          <Link to="/wishlist" className="flex items-center">
-            <IoStorefrontOutline className={`mr-3 icons ${getIconColor("/wishlist")}`} />
-            <span className={`texts ${getIconColor("/wishlist")}`}>Wishlist</span>
-          </Link>
-        </div>
-
-        <div className="m-4 mt-5">
-          <Link to="/MyLands" className="flex items-center">
-            <PiIslandBold className={`mr-3 icons ${getIconColor("/MyLands")}`} />
-            <span className={`texts ${getIconColor("/MyLands")}`}>My Lands</span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="relative top-20">
-        <ul className="mt-[1rem]">
-
-          {user?.username ? (
-            <>
-             <li className="mb-2 ml-[1rem]">
-             <Link to='/userProfile' className="mr-2 font-semibold text-green-600">
-               Profile
-             </Link>
-            </li>
-            <li className="mb-5 ml-[1rem]">
-              <button
-                onClick={() => {
-                  logoutUser();
-                }}
-                className="font-semibold text-green-500"
-              >
-                Logout {user?.username}
-              </button>
-            </li>
-            </>
-          ) : (
-            <>
-              <li className="mb-2 ml-[1rem]">
-                <Link to='/login' className="mr-2 font-semibold text-green-600">
-                  Login
-                </Link>
-              </li>
-              <li className="mb-2 ml-[1rem]">
-                <Link to='/register' className="mr-2 font-semibold text-green-600">
-                  Register
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
-      </div>
+               src="https://www.shutterstock.com/image-vector/abstract-farm-land-food-crop-260nw-1746992270.jpg"
+               alt="logo"
+               className="rounded-full h-[40px]"
+            />
+          <h2 className="texts font-semibold ml-2 mt-1 text-2xl text-gold">LandStrider</h2>
+          </li>
+          <li className="text-xl">  
+              <Link to="/" className="flex items-center py-2">
+              <FaHome className={`mr-3 icons ${getIconColor("/")}`} />
+              <span className={`texts ${getIconColor("/")}`}>Home</span>
+              </Link>
+          </li>
+          <li className="text-xl">  
+              <Link to="/lands" className="flex items-center py-2">
+              <MdLandscape className={`mr-3 icons ${getIconColor("/lands")}`} />
+              <span className={`texts ${getIconColor("/lands")}`}>Lands</span>
+              </Link>
+          </li>
+          <li className="text-xl">  
+              <Link to="/wishlist" className="flex items-center py-2">
+              <IoStorefrontOutline className={`mr-3 icons ${getIconColor("/wishlist")}`} />
+              <span className={`texts ${getIconColor("/wishlist")}`}>Wishlist</span>
+              </Link>
+          </li>
+          <li className="text-xl">  
+              <Link to="/MyLands" className="flex items-center py-2">
+              <PiIslandBold className={`mr-3 icons ${getIconColor("/MyLands")}`} />
+              <span className={`texts ${getIconColor("/MyLands")}`}>My Lands</span>
+              </Link>
+          </li>
+          </ul>
+          
+          <ul className="text-white flex gap-5 items-center justify-end mr-[2rem] text-xl">
+              {user?.username ? (
+                  <>
+                    <li>
+                    <Link to='/userProfile' className="font-semibold text-white hover:text-gold">
+                        Profile
+                    </Link>
+                    </li>
+                    <li>
+                    <button
+                      onClick={() => {
+                      logoutUser();
+                      }}
+                    className="font-semibold text-white hover:text-gold"
+                    >
+                      Logout {user?.username}
+                    </button>
+                  </li>
+                  </>
+              ) : (
+                  <>
+                      <li>
+                      <Link to='/login' className="font-semibold text-gold">
+                      Login
+                      </Link>
+                      </li>
+                      <li>
+                      <Link to='/register' className="font-semibold text-gold">
+                        Register
+                      </Link>
+                      </li>
+                  </>
+              )}
+          </ul>
     </div>
+      </>
+    ) }  
+    </>
   );
 };
 

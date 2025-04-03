@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { API } from "../../utils/API";
 import { AuthContext } from "../../contexts/authContext";
 import { toast } from "react-toastify";
+import { FaArrowLeft } from "react-icons/fa";
 
 const Login = () => {
   const { isAuthenticated, getUser } = useContext(AuthContext);
@@ -42,6 +43,10 @@ const Login = () => {
         <h1 className="text-4xl text-green-600 font-semibold mb-6 text-center">
           SIGN IN
         </h1>
+        <Link to={'/'}
+          className="bg-gold flex gap-2 px-4 py-4 rounded-3xl absolute top-[2rem]" 
+        > <FaArrowLeft className="mt-1"/> <span>Go to Home</span>
+        </Link>
 
         <div className="flex justify-around">
           <div className="p-2">

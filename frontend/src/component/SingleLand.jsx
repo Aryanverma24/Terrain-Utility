@@ -181,10 +181,11 @@ const SingleLand = () => {
       </div>
     );
 
+   
   return (
-    <div className="container mx-auto p-6 bg-white rounded-lg shadow-xl mt-8">
+    <div className="container mx-auto p-6 pt-[6rem] bg-mintGreen  rounded-lg shadow-xl">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-4xl font-semibold text-gray-800">{land.landtype || "Land Type Not Specified"}</h1>
+        <h1 className="text-5xl font-semibold text-gray-800">{land.landtype[0].toUpperCase() + land.landtype.substring(1) + " Lands" || "Land Type Not Specified"}</h1>
         <button
           className="bg-blue-500 text-white px-6 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition duration-200"
           onClick={handleRedirectToChat}
@@ -194,7 +195,7 @@ const SingleLand = () => {
       </div>
 
       {land.image && (
-        <div className="relative w-full max-w-3xl mx-auto mb-8 rounded-lg overflow-hidden shadow-md">
+        <div className="relative w-[28rem] p-4 bg-cardGreen max-w-3xl mx-auto mb-8 rounded-lg overflow-hidden shadow-md">
           <img
             src={`http://localhost:5000/uploads/${land.image}`}
             alt={land.landtype || "Land"}
@@ -205,7 +206,7 @@ const SingleLand = () => {
 
       <h3 className="text-2xl font-semibold text-gray-800 mb-4">Reviews:</h3>
       <div className="single-land-container">
-        <h2>{land.landtype} in {land.city}</h2>
+        <h2>{land.landtype} Land in {land.city}</h2>
         <p>{land.description}</p>
       </div>
 
@@ -213,11 +214,12 @@ const SingleLand = () => {
         land.reviews.map((review, index) => (
           <div
             key={index}
-            className="border border-gray-200 p-6 mb-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 text-2xl"
+            className="border bg-cardGreen mt-2 border-gray-200 p-6 mb-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300 text-2xl"
           >
             <div className="flex justify-between items-center mb-4">
               <p className="text-gray-700 font-semibold">
-                <strong>User:</strong> {review.user.username || "Anonymous"}
+                {console.log(review.user)}
+                <strong>User:</strong> {review.username || "Anonymous"}
               </p>
               {decoded && decoded.userId === review.user.id && (
                 <button

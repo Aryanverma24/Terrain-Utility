@@ -31,12 +31,15 @@ const OwnerChat = ({ landId, ownerId }) => {
       setMessages((prev) => [...prev, { sender: ownerId, message: newMessage }]);
       setNewMessage(""); // Clear input field
     }
+
   };
 
+  
   return (
-    <div>
+    <div >
       <h2>Chat for Land ID: {landId}</h2>
       <div className="chat-messages">
+      
         {messages.map((msg, index) => (
           <div key={index}>
             <strong>{msg.sender}</strong>: {msg.message}

@@ -47,7 +47,7 @@ const LandsType = () => {
   };
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 mt-[3rem] bg-mintGreen min-h-screen">
       <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500 text-center mb-12 animate-pulse">
         Land Listings
       </h1>
@@ -60,7 +60,7 @@ const LandsType = () => {
           id="landType"
           value={landType}
           onChange={handleLandTypeChange}
-          className="p-4 w-full border-2 border-teal-500 rounded-lg text-lg focus:ring-2 focus:ring-teal-500 transition duration-300 ease-in-out shadow-md hover:shadow-xl"
+          className="p-4 w-full border-2 border-teal-500 rounded-lg text-lg focus:ring-2 focus:ring-teal-500 transition duration-300 ease-in-out shadow-md hover:shadow-xl mb-3"
         >
           <option value="">-- Select --</option>
           <option value="Residential">Residential</option>
@@ -74,15 +74,15 @@ const LandsType = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {lands.map((land) => (
-          <Link to={`/land/${land._id}`} key={land._id} className="bg-white p-4 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 ease-in-out">
+          <Link to={`/land/${land._id}`} key={land._id} className="bg-cardGreen p-4 rounded-lg shadow-lg hover:scale-105 hover:shadow-xl transition-transform duration-300 ease-in-out">
             <img 
               src={land.image ? `http://localhost:5000/uploads/${land.image}` : '/default-image.jpg'}
               alt={`${land.city} - ${land.state}`}
               className="w-full h-48 object-cover rounded-lg mb-4"
             />
-            <h3 className="text-xl font-semibold text-gray-800">{land.city}, {land.state}</h3>
-            <p className="text-sm text-gray-500">Type: {land.landtype}</p>
-            <p className="text-sm text-gray-500">Pincode: {land.pincode}</p>
+            <h3 className="text-xl font-semibold text-black">{land.city}, {land.state}</h3>
+            <p className="text-md text-black">Type: {land.landtype[0].toUpperCase()+land.landtype.substring(1)}</p>
+            <p className="text-md text-black">Pincode: {land.pincode}</p>
           </Link>
         ))}
       </div>

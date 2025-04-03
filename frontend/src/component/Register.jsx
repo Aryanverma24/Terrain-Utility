@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { API } from "../../utils/API";
 import { AuthContext } from "../../contexts/authContext";
 import { useContext } from "react";
+import { FaArrowLeft } from "react-icons/fa";
 
 const Register = () => {
   const { isAuthenticated, registerUser } = useContext(AuthContext);
@@ -52,6 +53,10 @@ const Register = () => {
           <h1 className="text-4xl font-bold text-green-600 text-center mb-4">
             REGISTER
           </h1>
+          <Link to={'/'}
+          className="bg-gold flex gap-2 px-4 py-4 rounded-3xl absolute top-[2rem] right-[2rem]" 
+        > <FaArrowLeft className="mt-1"/> <span>Go to Home</span>
+        </Link>
           <form className="space-y-3" onSubmit={submitForm}>
             {/** Name Input */}
             <div>
