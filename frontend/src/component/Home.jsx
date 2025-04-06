@@ -1,10 +1,11 @@
-import { AuthContext } from "../../contexts/authContext";
+import { AuthContext } from "../../contexts/AuthContext";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FaStar } from "react-icons/fa";
 import { API } from "../../utils/API";
+import BackToTop from "./BackToTop";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -113,21 +114,12 @@ const Home = () => {
 
   return (
     <>
-      {/* <div className="bg-gradient-to-r from-blue-500 to-pink-500 py-6">
-        <h1 className="text-5xl text-white text-center font-extrabold leading-tight">
-          LAND STRIDE<i className="text-yellow-300">R</i>
-        </h1>
-        <h3 className="text-2xl font-medium text-center text-yellow-200 mt-2">
-          Fast and Simple...
-        </h3>
-      </div> */}
-
       <div className="min-h-screen flex flex-col justify-start items-center pt-[3rem]  pb-5 relative">
 
           <div className="bg-olive min-w-full p-4 mx-0">
             
           <div className="flex justify-end mt-[1rem]"> 
-            <div className="bg-beige rounded-bl-3xl rounded-tr-3xl px-5 py-5 mt-4 w-[60%]">
+            <div className="bg-beige rounded-bl-3xl h-[27.5rem] rounded-tr-3xl px-5 py-5 mt-4 w-[60%]">
               <img 
                   src="https://www.cyberswift.com/blog/wp-content/uploads/2024/09/the-evolving-landscape-of-land-management-harnessing-technology-for-sustainable-growth.jpg" 
                   alt="home image"
@@ -148,22 +140,6 @@ const Home = () => {
 
         <div className="bg-mintGreen pb-10">
 
-
-        {/* {user?.username ? (
-          <div className="text-4xl text-center font-semibold text-gold pt-[2rem]">
-            <h2>
-              WELCOME{" "}
-              <span className="font-bold uppercase">
-                {user?.username}
-              </span>
-            </h2>
-          </div>
-        ) : (
-          <div className="text-xl text-center">
-            <h2 className="font-semibold">WELCOME</h2>
-          </div>
-        )} */}
-
   <div className="relative">
   
       {user?.isAdmin && (
@@ -174,17 +150,25 @@ const Home = () => {
           </div>
          )}
 
-          <div className="absolute top-8 right-5 py-2 px-6 rounded-lg text-lg bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
-          <Link to="/uploads" className="font-semibold">
-            Upload Lands
-          </Link>
-          </div>    
+        
+
     </div>
+        {!user ? (
+            <div className="absolute right-8 mt-[2rem] w-[7rem] py-2 px-6 rounded-lg text-xl bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md text-center">
+              <Link to="/login" className="font-semibold">Login</Link>
+            </div> ) : (
+               <div className="absolute mt-[1rem] right-5 py-2 px-6 rounded-lg text-lg bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+               <Link to="/uploads" className="font-semibold">
+                 Upload Lands
+               </Link>
+               </div> 
+            )
+          }
 
           <div className="text-4xl text-center font-semibold pt-[2rem] text-darkGreen">
             <h2>Trend Lands</h2>
           </div>
-
+         <BackToTop  />
         {lands && (
           <ul className="flex flex-wrap justify-center gap-8 mt-10 px-4 mb-0">
             {lands.length > 0 ? (
@@ -242,9 +226,7 @@ const Home = () => {
           </ul>
         )}
       </div>
-
       </div>
-
     </>
   );
 };

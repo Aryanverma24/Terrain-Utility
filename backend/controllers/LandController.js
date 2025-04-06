@@ -8,33 +8,30 @@ import { mongo, Types } from 'mongoose';
 const createLand = asyncHandler(async (req, res) => {
   console.log("Body data received:", req.body);
   console.log("File data received:", req.file);
+  console.log("Authenticated user:", req.user); // 👈 Debug this
 
   const { landtype, city, state, pincode } = req.body;
-  const { userId, username: userName } = req.user;  // From the authenticated user (using req.user)
+  const { id, username } = req.user;  // ✅ Correct destructuring
 
-  // Validate input fields
   if (!landtype || !city || !state || !pincode || !req.file) {
     return res.status(400).send("All fields are required, including image!");
   }
 
   try {
-    // Create the land object with owner and ownerName
     const land = new Land({
       landtype,
       city,
       state,
       pincode,
-      image: req.file.filename, // Save image filename
-      owner: new mongoose.Types.ObjectId(userId), // Use 'new' for ObjectId
-      ownerName: userName      // Owner name from authenticated user
+      image: req.file.filename,
+      owner: id,            // ✅ Fixed: use direct id
+      ownerName: username
     });
 
     console.log("Created Land Object:", land);
 
-    // Save the land document to the database
     await land.save();
 
-    // Return the created land document as the response
     return res.status(201).json(land);
   } catch (error) {
     console.error("Error during land creation:", error);
@@ -103,20 +100,27 @@ const getLandById = asyncHandler(async (req, res) => {
 // Get lands by user ID (this is now managed by req.user)
 const getLandByUserId = asyncHandler(async (req, res) => {
   try {
-    const {userId} = req.params;
-    if(!mongoose.Types.ObjectId.isValid(userId)){
-      return res.status(400).json({
-        message : "User Id is not matched!!"
-      })
-    }
-    const username = await Land.findOne({owner : userId})
+    const { userId } = req.params;
 
-    const land = await Land.find({ownerName : username.ownerName})
-     res.status(200).json(land)
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid User ID" });
+    }
+
+    const allands = await Land.find();
+    
+    const lands = allands.filter((land) => land.owner.toString() === userId)
+   // console.log(lands)
+    if (!lands.length) {
+      return res.status(404).json({ message: "No lands found for this user" });
+    }
+
+    res.status(200).json({ data: lands });
   } catch (error) {
-    res.send("error occured")
+    console.error("Error fetching lands by userId:", error);
+    res.status(500).json({ message: "Server error occurred" });
   }
 });
+
 
 
 const updateLandsBySameUser = asyncHandler(async(req,res) => {

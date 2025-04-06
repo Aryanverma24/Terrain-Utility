@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import {  useNavigate } from "react-router";
 
 function CreateLand() {
   const [landtype, setLandtype] = useState("");
@@ -10,6 +11,7 @@ function CreateLand() {
   const [image, setImage] = useState(null);
   const [owner, setOwner] = useState(null); // New state for owner
 
+  const navigate = useNavigate()
   // Fetch the owner details from the token
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -52,6 +54,7 @@ function CreateLand() {
 
       // On success, show a success message
       toast.success("Land created successfully!");
+      navigate("/")
     } catch (error) {
       console.error("Error uploading data:", error.response || error.message);
 

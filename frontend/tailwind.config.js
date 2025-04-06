@@ -15,6 +15,12 @@ export default {
         mintGreen : "#E8F5E9" ,
         cardGreen : "#A5D6A7",
         darkGreen : "#1B5E20",
+
+        // browns Shades 
+        lightTan : "#F5F5DC",
+        sandBrown : "#EBD9B4",
+        richBrown : "#8B5E3C",
+        darkWalnut : "#4E342E",
       },
     },
   },
