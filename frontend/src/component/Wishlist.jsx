@@ -1,6 +1,6 @@
 import { useEffect, useState ,useContext } from 'react'
 import { API } from '../../utils/API'
-import {AuthContext} from '../../contexts/authContext';
+import {AuthContext} from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import WishlistLand from './WishlistLand';
 

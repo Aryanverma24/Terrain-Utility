@@ -293,12 +293,12 @@ app.get("/user/:username", async (req, res) => {
 
 // Reviews and Update Land Details
 app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
+  console.log(req.params)
   try {
     const land = await Land.findById(req.params.id).populate({
       path: 'reviews.user',
       select: 'username',
     });
-
     if (!land) {
       return res.status(404).json({ error: 'Land not found' });
     }
@@ -329,6 +329,7 @@ app.get('/api/lands/:id/reviews-with-usernames', async (req, res) => {
 
 app.delete('/api/lands/:landId/reviews/:userId', authenticate, deleteReview);
 
+
 app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
   const { id } = req.params;
   const { rating, review } = req.body;
@@ -336,6 +337,7 @@ app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ success: false, message: "Invalid land ID" });
   }
+
 
   if (!rating || !review || rating < 1 || rating > 5) {
     return res.status(400).json({
@@ -354,10 +356,12 @@ app.post("/api/lands/:id/reviews", authenticate, async (req, res) => {
       return res.status(401).json({ success: false, message: "User is not authenticated" });
     }
 
+    
     const newReview = {
       user: req.user.id,
       rating,
       review,
+      username : req.user.username
     };
     land.reviews.push(newReview);
 

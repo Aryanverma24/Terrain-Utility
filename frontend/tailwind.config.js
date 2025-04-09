@@ -21,6 +21,7 @@ export default {
         sandBrown : "#EBD9B4",
         richBrown : "#8B5E3C",
         darkWalnut : "#4E342E",
+        
       },
     },
   },

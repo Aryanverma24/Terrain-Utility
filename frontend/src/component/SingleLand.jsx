@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify"; // Import Toastify
+import { API } from "../../utils/API";
 
 // Manual JWT decoding function
 const decodeJWT = (token) => {
@@ -26,7 +27,7 @@ const SingleLand = () => {
   const [land, setLand] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
   // Review form states
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(5);
@@ -69,7 +70,7 @@ const SingleLand = () => {
   useEffect(() => {
     const fetchLandDetails = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/lands/${id}`);
+        const { data } = await API.get(`http://localhost:5000/api/lands/${id}`);
         console.log("Land data received:", data);  // Log to verify if _id is present
         setLand(data);  // Set land state to the response data
         setLoading(false);
@@ -94,7 +95,7 @@ const SingleLand = () => {
     }
 
     try {
-      await axios.delete(
+      await API.delete(
         `http://localhost:5000/api/lands/${id}/reviews/${reviewUserId}`,
         {
           headers: {
@@ -103,10 +104,13 @@ const SingleLand = () => {
         }
       );
       // Refresh reviews after successful deletion
-      const { data } = await axios.get(
+      const { data } = await API.get(
         `http://localhost:5000/api/lands/${id}/reviews-with-usernames`
       );
-      setLand(data); // Update the land state with the new reviews
+      setLand((prev) => ({
+        ...prev,
+        reviews: data.reviews,
+      })); // Update the land state with the new reviews
       toast.success("Review deleted successfully!");
     } catch (err) {
       console.error("Error deleting review:", err.response?.data || err.message);
@@ -120,7 +124,6 @@ const SingleLand = () => {
       toast.error("Please provide a rating and a review.");
       return;
     }
-
     if (!token) {
       toast.error("You must be logged in to submit a review.");
       return;
@@ -128,7 +131,7 @@ const SingleLand = () => {
 
     try {
       setIsSubmitting(true);
-      await axios.post(
+     const res = await API.post(
         `http://localhost:5000/api/lands/${id}/reviews`,
         {
           review: newReview,
@@ -140,12 +143,18 @@ const SingleLand = () => {
           },
         }
       );
-
+  
       // Fetch the updated reviews
-      const { data } = await axios.get(
+      const { data } = await API.get(
         `http://localhost:5000/api/lands/${id}/reviews-with-usernames`
       );
-      setLand(data); // Update the land state with the refreshed reviews
+
+      setLand((prev) => ({
+        ...prev,
+        reviews: data.reviews,
+      }));
+      // Update the land state with the refreshed reviews
+      console.log(data)
 
       // Clear the form
       setNewReview("");
@@ -221,10 +230,10 @@ const SingleLand = () => {
                 {console.log(review.user)}
                 <strong>User:</strong> {review.username || "Anonymous"}
               </p>
-              {decoded && decoded.userId === review.user.id && (
+              {decoded && decoded.userId === review.user && (
                 <button
                   className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-200"
-                  onClick={() => handleDeleteReview(review.user.id)}
+                  onClick={() => handleDeleteReview(review.user)}
                 >
                   Delete
                 </button>

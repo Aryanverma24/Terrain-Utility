@@ -124,7 +124,8 @@ const getCurrentUserProfile = asyncHandler( async (req,res) => {
 })
 
 const updateCurrentUserProfile = asyncHandler(async (req, res) => {
-    const { username, email, password, contactNumber, city, state, totalLands, age, gender } = req.body;
+    const { username, email, password, contactNumber, city, state, totalLands, age, gender, bio } = req.body;
+
     const userToken = req.headers.authorization && req.headers.authorization.startsWith('Bearer')
         ? req.headers.authorization.split(' ')[1]
         : null;
@@ -138,47 +139,67 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
         const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
         const user = await User.findById(decoded.userId).select("-password");
 
-        if (user) {
-            user.username = username || user.username;
-            user.email = email || user.email;
-            user.contactNumber = contactNumber || user.contactNumber;
-            user.City = city || user.City;
-            user.state = state || user.state;
-            user.totalLands = totalLands || user.totalLands;
-            user.gender = gender || user.gender;
-            user.age = age || user.age;
-
-            if (password) {
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(password, salt);
-                user.password = hashedPassword;
-            }
-
-     
-
+        if (!user) {
+            res.status(404);
+            throw new Error("User not found");
         }
 
-            const updatedUser = await user.save();
+        // Update user fields
+        user.username = username || user.username;
+        user.email = email || user.email;
+        user.contactNumber = contactNumber || user.contactNumber;
+        user.City = city || user.City;
+        user.state = state || user.state;
+        user.totalLands = totalLands || user.totalLands;
+        user.gender = gender || user.gender;
+        user.age = age || user.age;
+        user.bio = bio || user.bio;
 
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+            user.password = hashedPassword;
+        }
 
-            res.status(200).json({
-                _id: updatedUser._id,
-                username: updatedUser.username,
-                email: updatedUser.email,
-                isAdmin: updatedUser.isAdmin,
-                contactNumber: updatedUser.contactNumber,
-                gender: updatedUser.gender,
-                City: updatedUser.City,
-                state: updatedUser.state,
-                age: updatedUser.age,
-               
-            });
-        } 
-         catch (error) {
+        // Save updated user
+        const updatedUser = await user.save();
+
+        // ✅ Now update Land model using user._id
+        await Land.updateMany(
+            { owner: user._id },
+            { $set: { ownerName: updatedUser.username } }
+        );
+
+        // ✅ Update reviews[].username where user id matches
+        await Land.updateMany(
+            { "reviews.user": user._id },
+            {
+                $set: { "reviews.$[elem].username": updatedUser.username }
+            },
+            {
+                arrayFilters: [{ "elem.user": user._id }]
+            }
+        );
+
+        res.status(200).json({
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            isAdmin: updatedUser.isAdmin,
+            contactNumber: updatedUser.contactNumber,
+            gender: updatedUser.gender,
+            City: updatedUser.City,
+            state: updatedUser.state,
+            age: updatedUser.age,
+            bio: updatedUser.bio
+        });
+    } catch (error) {
+        console.error(error);
         res.status(401);
         throw new Error("Not authorized, token failed");
     }
 });
+
 
 
 const deleteUser = asyncHandler ( async (req,res)=>{
