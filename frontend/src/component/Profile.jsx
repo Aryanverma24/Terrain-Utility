@@ -234,47 +234,34 @@ const Profile = () => {
 
                   <div className='bg-sandBrown mb-5 w-[38%] rounded-xl'>
                       <h2 className="text-center pt-4 text-2xl font-semibold text-darkWalnut">
-                          PERSONAL DETAILS
+                          {userdata && userdata.data.username}'s Lands
                       </h2>
-                      <div className="flex flex-col gap-3 pt-5 text-lg px-6 text-richBrown font-semibold">
-                      <div className='flex'>
-                              <MdLocationOn className='mt-1 mr-2'/>
-                              <h2 className='mr-2'>Address :</h2>
-                              {userdata.data.city ? userdata.data.city[0].toUpperCase() + userdata.data.city.substring(1) : "Unknown"  } 
-                               {userdata.data.state!=="unknown" &&  userdata.data?.state[0].toUpperCase() + userdata?.data.state.substring(1) }
-                          </div>
+                      <div className="flex flex-col gap-4 pt-5 text-lg px-4 text-richBrown font-semibold">
+                          {lands && lands.map(
+                            (land) => (
+                              <>
+                             <Link to={`/land/${land._id}`}>
+                             <div className='bg-sand500 rounded-lg px-2 py-1'>
+                                {land.image && (
+                               <div className=" flex items-center">
+                                 <img
+                                src={`http://localhost:5000/uploads/${land.image}`}
+                                 alt={land.landtype || "land"}
+                                className="rounded-lg pt-3 w-[32%] object-cover mb-4"
+                            />  
+                                <div className="container ml-3 text-white text-md font-normal">
+                                  <h3>Land Type : {land.landtype[0].toUpperCase() + land.landtype.substring(1)}</h3>
+                                  <h3>City : {land.city[0].toUpperCase() + land.city.substring(1)}</h3>
+                                  <h3>Owner : {land.ownerName[0].toUpperCase() + land.ownerName.substring(1)}</h3>
 
-
-                          <div className='flex'>
-                              <MdEmail className='mt-2 mr-2'/>
-                              <h2 className='mr-2'>Email :</h2>
-                              {userdata?.data.email}
-                          </div>
-
-                     
-                           <div className='flex'>
-                              <MdCall className='mt-2 mr-2'/>
-                              <h2 className='mr-2'>Contact :</h2>
-                              {userdata?.data.contactNumber}
-                          </div>
-
-                          <div className='flex'>
-                              <MdCalendarMonth className='mt-[0.38rem] mr-2'/>
-                              <h2 className='mr-2'>Age :</h2>
-                              {userdata?.data.age}
-                          </div>    
-
-                          <div className='flex'>
-                              <TiUser className='mt-2 mr-2'/>
-                              <h2 className='mr-2'>Gender :</h2>
-                              {userdata?.data.gender}
-                          </div>
-                          <div className='flex'>
-                              <MdLandscape className='mt-2 mr-2'/>
-                              <h2 className='mr-2'>Total Lands :</h2>
-                              {lands?.length}
-                          </div>
-                          
+                                </div>
+                               </div>
+                          )}
+                                </div>
+                             </Link>
+                              </>
+                            )
+                          )}
                       </div>
                   </div>
           </div>
