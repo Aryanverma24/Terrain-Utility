@@ -3,7 +3,7 @@ import Message from "../modals/messageModel.js"; // Ensure correct path
 import { authenticate } from '../middlerwares/landauthenticate.js';
 
 import User from "../modals/UserModal.js";
-import getMessagesForLand from '../controllers/Chatcontroller.js';
+import getMessagesByLand  from '../controllers/ChatController.js'
 const router = express.Router();  // Initialize router
 
 // Define your route for fetching messages
