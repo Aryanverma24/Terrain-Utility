@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@tensorflow/tfjs": "^3.21.0",
     "axios": "^1.8.2",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.7",
@@ -37,6 +38,10 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "daisyui": "^5.0.40"
+  },
+  "overrides": {
+    "node-fetch": "2.6.9"
   }
 }

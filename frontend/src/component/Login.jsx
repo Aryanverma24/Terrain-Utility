@@ -79,6 +79,7 @@ const Login = () => {
               type="password"
               id="password"
               value={password}
+              required
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               className="w-full p-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 shadow-md"
@@ -91,12 +92,12 @@ const Login = () => {
           >
             Sign In
           </button>
-         <Link to='/facial-auth'>
+         {/* <Link to='/facial-auth'>
          <button 
             className="w-full mt-4 bg-green-600 hover:bg-green-800 py-2 rounded-lg text-white font-semibold">
             Facial Login
           </button>
-         </Link>
+         </Link> */}
         </form>
 
         <div className="mt-4 text-center">

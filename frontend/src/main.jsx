@@ -5,7 +5,7 @@ import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
 import { createBrowserRouter } from "react-router-dom";
 import Login from './component/Login.jsx';
 import Register from './component/Register.jsx';
-import AuthState from '../contexts/authContext.jsx';
+import AuthState from '../contexts/AuthContext.jsx';
 import Home from './component/Home.jsx';
 import CreateLand from './component/CreateLand.jsx';
 import Lands from './component/LandsType.jsx';
