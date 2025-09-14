@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^8.6.0",
-    "@reduxjs/toolkit": "^2.2.7",
-    "@tensorflow/tfjs": "^3.18.0",
+    "@reduxjs/toolkit": "^2.9.0",
     "axios": "^1.7.7",
     "face-api.js": "^0.20.0",
     "flowbite": "^2.5.1",
