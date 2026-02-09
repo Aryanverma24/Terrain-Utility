@@ -6,9 +6,10 @@ import jwt from 'jsonwebtoken'
 import Land from "../modals/LandModal.js";
 
 const createUser = asyncHandler(async (req, res) => {
-    const { username, email, password, contactNumber, isAdmin } = req.body;
+    const { username, email, password, contactNumber, isAdmin, role } = req.body;
 
-    if (!username || !email || !password || !contactNumber) {
+
+    if (!username || !email || !password || !contactNumber|| !role) {
         return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -21,16 +22,18 @@ const createUser = asyncHandler(async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-        username,
-        email,
-        password: hashedPassword,
-        contactNumber,
-        isAdmin,
-    });
+    username,
+    email,
+    password: hashedPassword,
+    contactNumber,
+    isAdmin,
+    role,  // ⭐ Add this
+});
 
     try {
         await newUser.save();
-        const token = createToken(res, newUser._id);
+        const token = createToken(res, newUser);
+
         return res.status(201).send({ user: newUser, token });
     } catch (error) {
         res.status(500);
@@ -82,16 +85,18 @@ const loginUser = asyncHandler(async(req,res, skipPasswordCheck = false) =>{
         }
     }
 
-    const token = createToken(res, existUser._id);
+    const token = createToken(res, existUser);
 
-    return res.status(200).json({
-        _id: existUser._id,
-        username: existUser.username,
-        email: existUser.email,
-        isAdmin: existUser.isAdmin,
-        contactNumber: existUser.contactNumber,
-        token
-    });
+return res.status(200).json({
+    _id: existUser._id,
+    username: existUser.username,
+    email: existUser.email,
+    role: existUser.role,   // ⭐ Send role
+    isAdmin: existUser.isAdmin,
+    contactNumber: existUser.contactNumber,
+    token
+});
+
 
 })
 
