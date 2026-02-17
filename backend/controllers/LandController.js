@@ -1,21 +1,40 @@
 import jwt from "jsonwebtoken";
-import User from '../modals/UserModal.js';  // Correct path depending on your folder structure
+import User from '../modals/UserModal.js';  
 import Land from "../modals/LandModal.js";
 import asyncHandler from "../middlerwares/asyncHandler.js";
 import { mongo, Types } from 'mongoose'; 
+import calculateAverageRating from "../utils/calculateAverageRating.js";
+import mongoose from "mongoose";
+import { approveOrRejectLand,getPendingLands } from "./LawyerController.js";
+import { getRequesterFromHeader } from "../utils/getRequesterheader.js";
+import Document  from "../modals/DocumentModal.js";
+import Notification from "../modals/NotificationModal.js";
+import { io } from "../index.js";
+import { notifyLawyers } from "../utils/notifylawyers.js";
+// ----------------------------------------------
 
-// Create Land
-const createLand = asyncHandler(async (req, res) => {
+
+
+// CREATE LAND
+// ----------------------------------------------
+// ----------------------------------------------
+// CREATE LAND (Pending lawyer approval)
+// ----------------------------------------------
+ const createLand = asyncHandler(async (req, res) => {
   console.log("Body data received:", req.body);
   console.log("File data received:", req.file);
-  console.log("Authenticated user:", req.user); // 👈 Debug this
+  console.log("Authenticated user:", req.user);
 
-  const { landtype, city, state, pincode } = req.body;
-  const { id, username } = req.user;  // ✅ Correct destructuring
+  const { landtype, city, state, pincode, price, length, breadth, description } = req.body;
+  const { id, username } = req.user;
 
-  if (!landtype || !city || !state || !pincode || !req.file) {
-    return res.status(400).send("All fields are required, including image!");
+  // Validate required fields
+  if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
+    return res.status(400).send("All fields are required, including price, length, breadth, and image!");
   }
+
+  // Build dimensionsString correctly
+  const dimensionsString = `${length}*${breadth}`;
 
   try {
     const land = new Land({
@@ -23,163 +42,440 @@ const createLand = asyncHandler(async (req, res) => {
       city,
       state,
       pincode,
+      price,
+      dimensions: { length, breadth },     // ⬅️ Correct nested object
+      dimensionsString,                    // ⬅️ Correct string form
+      description,
       image: req.file.filename,
-      owner: id,            // ✅ Fixed: use direct id
-      ownerName: username
+      owner: id,
+      ownerName: username,
+      status: "pending",
+      approvedBy: null,
     });
 
-    console.log("Created Land Object:", land);
-
     await land.save();
+    // Notify lawyers
+const assignedLawyers = await User.find({ role: "lawyer" }); // or your logic to get assigned lawyers
+    assignedLawyers.forEach(async (lawyer) => {
+      const notif = new Notification({
+        userId: lawyer._id,
+        title: "Land requires review",
+        message: "A land document needs your review",
+        targetRole: "lawyer"
+      });
+      await notif.save();
+      io.to(lawyer._id.toString()).emit("receive-notification", notif);
+    });
 
-    return res.status(201).json(land);
+
+    return res.status(201).json({
+      message: "Land submitted successfully! Waiting for lawyer approval.",
+      land
+    });
+
   } catch (error) {
-    console.error("Error during land creation:", error);
+    console.error("Error in createLand:", error);
     return res.status(500).send("Unable to save in database");
   }
 });
 
-
-// Get all lands
-const getAllLands = asyncHandler(async (req, res) => {
+// Upload documents
+const uploadDocuments = async (req, res) => {
   try {
-    const lands = await Land.find({}); // Fetch all lands
+    const { landId } = req.params;
 
-    // Calculate average rating for each land
-    const landsWithAverageRating = lands.map((land) => {
-      const ratings = land.ratings; // Assuming land has a 'ratings' field (array)
-      let averageRating = 0;
-      
-      if (ratings && ratings.length > 0) {
-        // Calculate average rating
-        averageRating = ratings.reduce((acc, rating) => acc + rating, 0) / ratings.length;
-      }
+    const land = await Land.findById(landId);
+    if (!land) return res.status(404).json({ message: "Land not found" });
+    if (!req.files || req.files.length === 0)
+      return res.status(400).json({ message: "No files uploaded." });
 
-      // Return land with calculated averageRating
-      return {
-        ...land.toObject(),
-        averageRating: averageRating || 0, // Default to 0 if no ratings
-      };
+    const documentsArray = req.files.map((file) => ({
+      type: file.fieldname,
+      file: file.filename,
+    }));
+
+    const newDocument = new Document({
+      land: land._id,
+      owner: req.user.id,
+      documents: documentsArray,
     });
 
-    // Return lands with average ratings
-    res.status(200).json(landsWithAverageRating);
+    await newDocument.save();
+    land.documents.push(newDocument._id);
+    await land.save();
+
+    // Notify all lawyers
+    const lawyers = await User.find({ role: "lawyer" });
+    for (const lawyer of lawyers) {
+      const notif = new Notification({
+        userId: lawyer._id,
+        title: "New Document Uploaded",
+        message: `${req.user.username} uploaded documents for land in ${land.city}.`,
+        targetRole: "lawyer",
+      });
+      await notif.save();
+      io.to(lawyer._id.toString()).emit("receive-notification", notif);
+    }
+
+    res.status(200).json({
+      message: "Documents uploaded successfully!",
+      documentId: newDocument._id,
+      landDocuments: land.documents,
+    });
+  } catch (error) {
+    console.error("Error uploading documents:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// ----------------------------------------------
+// GET ALL LANDS (Updated with calculateAverageRating)
+// ----------------------------------------------
+// REPLACEMENT: GET ALL LANDS
+const getAllLands = asyncHandler(async (req, res) => {
+  try {
+    // Fetch all approved lands for normal users, all lands for lawyers
+    const requester = getRequesterFromHeader(req);
+    let lands;
+    if (requester?.role === "lawyer") {
+      lands = await Land.find({})
+        .populate({
+          path: "documents",
+          populate: { path: "documents" }
+        })
+        .lean();
+    } else {
+      // Everyone else sees only approved lands
+      lands = await Land.find({ status: "approved" })
+        .populate({
+          path: "documents",
+          populate: { path: "documents" }
+        })
+        .lean();
+    }
+
+    // Add average rating
+    const landsWithAverageRating = lands.map((land) => ({
+      ...land,
+      averageRating: calculateAverageRating(land.reviews)
+    }));
+
+    return res.status(200).json({ data: landsWithAverageRating });
   } catch (error) {
     console.error("Error fetching lands:", error);
-    res.status(500).send("Error fetching land data");
+    return res.status(500).send("Error fetching land data");
   }
 });
 
-// Get land by ID
-import mongoose from "mongoose";
 
+
+
+// ----------------------------------------------
+// REPLACEMENT: GET LAND BY ID
+// GET LAND BY ID (UPDATED FULLY)
 const getLandById = asyncHandler(async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid land ID." });
-    }
-
-    const land = await Land.findById(id);
-
-    if (!land) {
-      return res.status(404).json({ message: "Land not found." });
-    }
-
-    res.status(200).json(land);
-  } catch (error) {
-    console.error("Error fetching land:", error);
-    res.status(500).json({ message: "An error occurred while fetching the land." });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid land ID." });
   }
+
+  const land = await Land.findById(id)
+    .populate("reviews.user", "username")
+    .populate("approvedBy", "username");
+
+  if (!land) return res.status(404).json({ message: "Land not found." });
+
+  // Determine requester (works for both logged-in and header token)
+  let requester = null;
+  if (req.user) {
+    requester = { id: req.user._id?.toString(), role: req.user.role };
+  } else {
+    const decoded = getRequesterFromHeader(req);
+    if (decoded) {
+      requester = {
+        id: (decoded.userId || decoded.id || decoded._id || "").toString(),
+        role: decoded.role,
+      };
+    }
+  }
+
+  const averageRating = calculateAverageRating(land.reviews);
+
+  // -------------------------------------------------------
+  // 🔥 FETCH DOCUMENTS (for lawyer & owner only)
+  // -------------------------------------------------------
+  const fetchDocuments = async () => {
+    const documentCollections = await Document.find({ land: land._id }).lean();
+
+    return documentCollections.flatMap(dc =>
+      (dc.documents || []).map(d => ({
+        _id: dc._id,            // DocumentModel ID (for approval/rejection API)
+        type: d.type,
+        file: d.file,
+        uploadedAt: d.uploadedAt,
+        status: dc.status       // pending / approved / rejected
+      }))
+    );
+  };
+
+  // -------------------------------------------------------
+  // Lawyer access — full visibility
+  // -------------------------------------------------------
+  if (requester?.role === "lawyer") {
+    const docs = await fetchDocuments();
+
+    return res.status(200).json({
+      ...land.toObject(),
+      averageRating,
+      documents: docs,
+    });
+  }
+
+  // -------------------------------------------------------
+  // Owner access — must also see documents & statuses
+  // -------------------------------------------------------
+  if (requester?.id && land.owner?.toString() === requester.id) {
+    const docs = await fetchDocuments();
+
+    return res.status(200).json({
+      ...land.toObject(),
+      averageRating,
+      documents: docs,
+    });
+  }
+
+  // -------------------------------------------------------
+  // Buyer/public access — ONLY approved land, NO documents
+  // -------------------------------------------------------
+  // Buyer/public access — show only land photos
+// Buyer/public access — ONLY approved land, ONLY land photos
+if (requester?.role !== "owner" && requester?.role !== "lawyer" && land.status === "approved") {
+  const docs = await fetchDocuments();
+  
+  // Filter only documents with type "land photo"
+  const landPhotos = docs.filter(d => d.type === "LandPhotos");
+  
+  return res.status(200).json({
+    ...land.toObject(),
+    averageRating,
+    documents: landPhotos, // Only land photos sent
+  });
+
+}
+
+  return res.status(403).json({ message: "You are not authorized to view this land." });
+});
+
+// api for reconsider button shown to user 
+const resubmitLand = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid land ID" });
+  }
+
+  const land = await Land.findById(id);
+  if (!land) return res.status(404).json({ message: "Land not found" });
+
+  if (String(land.owner) !== String(req.user.id)) {
+    return res.status(403).json({ message: "Unauthorized" });
+  }
+
+  if (land.status !== "rejected") {
+    return res.status(400).json({ message: "Only rejected land can be resubmitted" });
+  }
+
+  console.log("\n=== RESUBMISSION STARTED ===");
+
+  // 1️⃣ Reset land status
+  land.status = "pending";
+  land.rejectionReason = "";
+
+  // 2️⃣ Loop through each linked Document collection record
+  for (const docRef of land.documents) {
+    const docRecord = await Document.findById(docRef._id);
+
+    if (!docRecord) continue;
+
+    console.log(`Processing Document Record: ${docRecord._id}`);
+
+    let changed = false;
+
+    docRecord.documents.forEach((singleDoc) => {
+      if (singleDoc.status === "rejected") {
+        console.log(`→ resetting ${singleDoc._id} rejected → pending`);
+        singleDoc.status = "pending";
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      await docRecord.save();
+      console.log(`✔ Saved updates in Document Record ${docRecord._id}`);
+    } else {
+      console.log(`⚠ No rejected files inside Document Record ${docRecord._id}`);
+    }
+  }
+
+  // 3️⃣ Save land
+  await land.save();
+ const assignedLawyers = await User.find({ role: "lawyer" }); // get all lawyers
+
+assignedLawyers.forEach(async (lawyer) => {
+  const notif = new Notification({
+    userId: lawyer._id,
+    title: "Land Resubmitted",
+    message: `${req.user.username} has resubmitted the land in ${land.city}.`,
+    targetRole: "lawyer",
+  });
+
+  await notif.save();
+  io.to(lawyer._id.toString()).emit("receive-notification", notif);
+});
+
+  console.log("✔ Land saved and all rejected documents reset\n");
+
+  res.json({
+    message: "Land resubmitted. All rejected documents reset to pending.",
+  });
 });
 
 
 
-// Get lands by user ID (this is now managed by req.user)
-const getLandByUserId = asyncHandler(async (req, res) => {
+
+// ----------------------------------------------
+// GET LAND BY USER ID (Updated with averageRating)
+// ----------------------------------------------
+const getLandsByUser = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { username } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid User ID" });
+    const lands = await Land.find({ ownerName: username });
+
+    if (!lands || lands.length === 0) {
+      return res.status(200).json({ message: "No lands found for this user." });
     }
 
-    const allands = await Land.find();
-    
-    const lands = allands.filter((land) => land.owner.toString() === userId)
-   // console.log(lands)
-    if (!lands.length) {
-      return res.status(404).json({ message: "No lands found for this user" });
-    }
+    const landsWithRatings = lands.map((land) => ({
+      ...land.toObject(),
+      averageRating: calculateAverageRating(land.reviews)
+    }));
 
-    res.status(200).json({ data: lands });
+    res.status(200).json(landsWithRatings);
+
   } catch (error) {
-    console.error("Error fetching lands by userId:", error);
-    res.status(500).json({ message: "Server error occurred" });
+    console.error("Error fetching lands:", error);
+    res.status(500).json({ message: "Server error while fetching lands." });
   }
-});
+};
 
 
 
+
+// ----------------------------------------------
 const updateLandsBySameUser = asyncHandler(async(req,res) => {
-
     try {
       const {userId} = req.params;
       const {username} = req.body;
+
       if(!mongoose.Types.ObjectId.isValid(userId)){
         return res.status(400).send("unexpected error occured")
       }
 
-    const filteredLands = await Land.updateMany({
-      owner : userId
-    }, {
-      $set : { ownerName : username || ownerName}
-    })
+      const filteredLands = await Land.updateMany({
+        owner : userId
+      }, {
+        $set : { ownerName : username || ownerName}
+      })
+
       res.status(200).json({filteredLands})
     } catch (error) {
       res.status(500).send({message : "error ocuured"})
     }
 })
 
-// Update land by ID
+
+// ----------------------------------------------
+// UPDATE LAND
+// ----------------------------------------------
 const updateLandById = asyncHandler(async (req, res) => {
-  const land = await Land.findById(req.params.id);
+  const { id } = req.params;
 
-  const { landtype, city, pincode, state, owner } = req.body;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid land ID." });
+  }
 
-  if (land) {
-    // Update fields if provided, otherwise keep current values
+  const land = await Land.findById(id);
+  if (!land) {
+    return res.status(404).json({ message: "Land not found!" });
+  }
+
+  try {
+    const {
+      landtype,
+      city,
+      pincode,
+      state,
+      owner,
+      price,
+      dimensions,
+      dimensionsString,
+      length,
+      breadth,
+      description,
+      ratings,
+      reviews,
+      ...rest
+    } = req.body;
+
     land.landtype = landtype || land.landtype;
     land.city = city || land.city;
     land.state = state || land.state;
     land.pincode = pincode || land.pincode;
+    land.description=description|| land.description;
 
-    if (owner) {
-      // Fetch the user if owner update is requested
-      const checkOwner = await User.find({ username: owner });
-      if (checkOwner && checkOwner.length > 0) {
-        const ownerId = checkOwner[0]._id;
-        const ownerName = checkOwner[0].username;
-        land.owner = ownerId || land.owner;
-        land.ownerName = ownerName || land.ownerName;
-      } else {
-        return res.status(400).send("User not found");
-      }
+    if (price !== undefined) {
+      const p = Number(price);
+      land.price = Number.isNaN(p) ? land.price : p;
     }
 
-    // Save the updated land to the database
-    const updatedLand = await land.save();
+    if (dimensions && typeof dimensions === "string") {
+      const cleaned = dimensions.replace(/\s+/g, "");
+      const sepMatch = cleaned.match(/(\d+)[\*xX](\d+)/);
 
-    // Return the updated data in the response
+      if (!sepMatch) {
+        return res.status(400).json({ message: "Invalid dimensions format!" });
+      }
+
+      land.dimensions = {
+        length: Number(sepMatch[1]),
+        breadth: Number(sepMatch[2])
+      };
+      land.dimensionsString = dimensions;
+    }
+
+    if (owner) {
+      const checkOwner = await User.find({ username: owner });
+      if (!checkOwner.length) return res.status(400).send("User not found");
+
+      land.owner = checkOwner[0]._id;
+      land.ownerName = checkOwner[0].username;
+    }
+
+    const updatedLand = await land.save();
     res.status(200).json(updatedLand);
-  } else {
-    res.status(400).send("Land not found!");
+
+  } catch (err) {
+    console.error("Error updating land:", err);
+    res.status(500).json({ message: "Server error while updating land." });
   }
 });
 
-// Delete land by ID
+
+// ----------------------------------------------
+// DELETE LAND
+// ----------------------------------------------
 const deleteLandById = asyncHandler(async (req, res) => {
   const landId = req.params.id;
 
@@ -191,75 +487,90 @@ const deleteLandById = asyncHandler(async (req, res) => {
   }
 });
 
-// Get lands by username (alternative method)
-const getLandsByUser = async (req, res) => {
-  try {
-    const { username } = req.params;  // Fetch the username from the URL parameters
 
-    // Find lands where the ownerName matches the username
-    const lands = await Land.find({ ownerName: username });
+// ----------------------------------------------
+// GET LANDS BY USERNAME (UPDATED WITH averageRating)
+// ----------------------------------------------
 
-    if (!lands || lands.length === 0) {
-      return res.status(200).json({ message: "No lands found for this user." });
-    }
 
-    res.status(200).json(lands);
-  } catch (error) {
-    console.error("Error fetching lands:", error);
-    res.status(500).json({ message: "Server error while fetching lands." });
-  }
-};
-
+// ----------------------------------------------
 const getLandReviews = async (req, res) => {
   try {
-    const land = await Land.findById(req.params.id).populate('reviews.user', 'username'); // Populate reviews with user details (username)
+    const land = await Land.findById(req.params.id).populate('reviews.user', 'username');
     
     if (!land) {
       return res.status(404).json({ message: 'Land not found' });
     }
-    
-    // Extracting and returning reviews from the land object
-    const reviews = land.reviews;
 
-    res.status(200).json(reviews); // Send the reviews as response
+    res.status(200).json(land.reviews);
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 };
+//create review
+const createReview = asyncHandler(async (req, res) => {
+  const { id: landId } = req.params;
+  const { review, rating } = req.body;
+  const userId = req.user.id;
 
+  const land = await Land.findById(landId);
+  if (!land) return res.status(404).json({ message: "Land not found" });
 
-// Delete review by userId
-// Delete review// Delete review
+  // Make sure to include username
+  const newReview = {
+    user: userId,
+    username: req.user.username,  // ✅ add this
+    review,
+    rating,
+    createdAt: new Date(),
+  };
 
+  land.reviews.push(newReview);
+  await land.save();
 
+  // Notify owner
+  const ownerNotification = new Notification({
+    userId: land.owner,
+    title: "New Review Received",
+    message: `${req.user.username} has posted a review for your land in ${land.city}.`,
+    targetRole: "owner",
+  });
+  await ownerNotification.save();
+  io.to(land.owner.toString()).emit("receive-notification", ownerNotification);
+
+  res.status(201).json({ createdReview: newReview });
+});
+
+// ----------------------------------------------
 const deleteReview = async (req, res) => {
   try {
     const { landId, userId } = req.params;
-    const decodedUserId = req.user.id; // Access user ID from req.user.id
 
-    console.log("Decoded User ID:", decodedUserId);
-    console.log("User ID from request:", userId);
-
-    if (decodedUserId.toString() !== userId.toString()) {
+    if (req.user.id.toString() !== userId.toString()) {
       return res.status(403).json({ message: "You can only delete your own review." });
     }
 
     const land = await Land.findById(landId);
-    if (!land) {
-      return res.status(404).json({ message: "Land not found." });
-    }
+    if (!land) return res.status(404).json({ message: "Land not found." });
 
-    const reviewIndex = land.reviews.findIndex(
+    const index = land.reviews.findIndex(
       (review) => review.user.toString() === userId
     );
 
-    if (reviewIndex === -1) {
+    if (index === -1)
       return res.status(404).json({ message: "Review not found." });
-    }
 
-    land.reviews.splice(reviewIndex, 1);
+    land.reviews.splice(index, 1);
     await land.save();
+    const ownerNotification = new Notification({
+  userId: land.owner,
+  title: "Review Deleted",
+  message: `${req.user.username} has deleted their review for your land in ${land.city}.`,
+  targetRole: "owner",
+});
+await ownerNotification.save();
+
+io.to(land.owner.toString()).emit("receive-notification", ownerNotification);
 
     res.status(200).json({ message: "Review deleted successfully." });
   } catch (error) {
@@ -269,47 +580,63 @@ const deleteReview = async (req, res) => {
 };
 
 
+// ----------------------------------------------
+const getLandByType = asyncHandler(async (req, res) => {
+  const { landtype } = req.params;
 
-
-
-
-
-
-
-
-
-// Get lands by type
-// Backend: Controller to fetch lands by landtype
-const getLandByType = async (req, res) => {
-  const { landtype } = req.params;  // Get the landtype from the URL parameter
-
-  if (!landtype) {
-    return res.status(400).json({ message: "Land type is required" });  // Ensure landtype is provided
-  }
+  if (!landtype) return res.status(400).json({ message: "Land type is required" });
 
   try {
-    // Use a case-insensitive regex query to find lands by landtype
-    const lands = await Land.find({
-      landtype: { $regex: new RegExp(`^${landtype}$`, 'i') } // 'i' makes the regex case-insensitive, '^' and '$' to match the exact value
-    });
+    let lands;
+    if (req.user && req.user.role === "lawyer") {
+      lands = await Land.find({ landtype: { $regex: new RegExp(`^${landtype}$`, 'i') } });
+    } else {
+      lands = await Land.find({
+        landtype: { $regex: new RegExp(`^${landtype}$`, 'i') },
+        status: "approved"
+      });
+    }
 
-    if (lands.length === 0) {
+    if (!lands.length) {
       return res.status(404).json({ message: `No lands found for type: ${landtype}` });
     }
 
-    // Successfully found lands
-    res.status(200).json(lands);  
+    res.status(200).json(lands);
   } catch (error) {
-    console.error('Error fetching lands:', error);
-    res.status(500).json({ message: 'Failed to fetch lands due to a server error.' });
+    console.error('Error fetching lands by type:', error);
+    res.status(500).json({ message: 'Server error while fetching lands' });
   }
-};
+});
+const getLandByUserId = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ message: "Invalid User ID" });
+  }
+
+  const alllands = await Land.find({ owner: userId });
+
+  let lands;
+  if (req.user && req.user.role === "lawyer") {
+    lands = alllands; // Lawyer sees all lands
+  } else {
+    lands = alllands.filter((land) => land.status === "approved"); // Normal users only approved lands
+  }
+
+  if (!lands.length) {
+    return res.status(404).json({ message: "No lands found for this user" });
+  }
+
+  const landsWithRatings = lands.map((land) => ({
+    ...land.toObject(),
+    averageRating: calculateAverageRating(land.reviews)
+  }));
+
+  res.status(200).json({ data: landsWithRatings });
+});
 
 
-
-
-
-
+// ----------------------------------------------
 export {
   createLand,
   getAllLands,
@@ -321,5 +648,8 @@ export {
   getLandsByUser,
   getLandByType,
   deleteReview,
-  updateLandsBySameUser
+  updateLandsBySameUser,
+  uploadDocuments,
+  resubmitLand,
+  createReview,
 };

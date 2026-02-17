@@ -136,4 +136,4 @@ const FaceAuthentication = () => {
   );
 };
 
-export default FaceAuthentication;
+// export default FaceAuthentication;

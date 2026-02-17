@@ -115,4 +115,4 @@ const FaceSetup = () => {
   );
 };
 
-export default FaceSetup;
+// export default FaceSetup;

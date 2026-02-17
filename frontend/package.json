@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@paypal/react-paypal-js": "^8.6.0",
     "axios": "^1.7.7",
     "face-api.js": "^0.20.0",

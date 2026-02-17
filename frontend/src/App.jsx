@@ -8,7 +8,7 @@ import { useLocation } from "react-router-dom";
 import Footer from "./component/Footer.jsx";
 
 function App() {
-  const { getUser } = useContext(AuthContext);
+  const { getUser, user } = useContext(AuthContext);
   
   useEffect(() => {
     getUser();
@@ -24,8 +24,8 @@ function App() {
       <ToastContainer />
       <div className="flex flex-col min-h-screen">
         <Navigation />
-        <main className="flex-grow bg-mintGreen">
-          <Outlet />
+        <main className="flex-grow bg-[#atb69b]">
+         <Outlet context={{ user }} />
         </main>
         {!hideFooter && <Footer />}
       </div>

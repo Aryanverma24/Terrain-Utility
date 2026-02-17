@@ -8,7 +8,7 @@ import { IoStorefrontOutline } from "react-icons/io5";
 import { API } from "../../utils/API";
 import { AuthContext } from "../../contexts/AuthContext";
 import { toast } from "react-toastify";
-
+import NotificationPanel from "../component/NotificationPanel";
 const Navigation = () => {
   const [menubar,setMenubar] = useState(false);
   const [sidebar, setSidebar] = useState(false);
@@ -16,7 +16,7 @@ const Navigation = () => {
   const { isAuthenticated, getUser, logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation(); // Access the current location (route)
-
+  // user is null initially
   const toggleDropdown = () => {
     setDropdown(!dropdown);
   };
@@ -40,8 +40,10 @@ const Navigation = () => {
     }
   };
 
+
+
   const getIconColor = (path) => {
-    return location.pathname === path ? "text-gold" : "text-beige"; // Conditionally apply green or gray
+    return location.pathname === path ? "text-[#C4A1A1]" : "text-[#C4A1A1]"; // Conditionally apply green or gray
   };
 
   return (
@@ -133,7 +135,7 @@ const Navigation = () => {
         </>
       ) : (
       <>
-      <div className="nav-container fixed z-10 min-w-full flex bg-slate-800 justify-between">
+      <div className="nav-container fixed z-10 min-w-full flex bg-[#235347] justify-between">
         <ul className="flex py-3 px-4 gap-[40px]">
           <li className="flex mr-[2rem]">
           <img
@@ -141,7 +143,7 @@ const Navigation = () => {
                alt="logo"
                className="rounded-full h-[40px]"
             />
-          <h2 className="texts font-semibold ml-2 mt-1 text-2xl text-gold">LandStrider</h2>
+          <h2 className="texts font-semibold ml-2 mt-1 text-2xl text-[#C4A1A1]">LandStrider</h2>
           </li>
         </ul>
       </div>
@@ -169,8 +171,16 @@ const Navigation = () => {
               <Link to="/MyLands" className="flex items-center py-2">
               <PiIslandBold className={`mr-3 icons ${getIconColor("/MyLands")}`} />
               <span className={`texts ${getIconColor("/MyLands")}`}>My Lands</span>
-              </Link>
-          </li>
+              </Link></li>
+        <li className="flex items-center gap-4">
+  {user && (
+    <NotificationPanel
+      currentUserId={user._id}
+      role={user.role}
+    />
+  )}
+</li>
+
           </ul>
           
 
@@ -197,12 +207,12 @@ const Navigation = () => {
               ) : (
                   <>
                       <li>
-                      <Link to='/login' className="font-semibold text-gold">
+                      <Link to='/login' className="font-semibold text-[#C4A1A1]">
                       Login
                       </Link>
                       </li>
                       <li>
-                      <Link to='/register' className="font-semibold text-gold">
+                      <Link to='/register' className="font-semibold text-[#C4A1A1]">
                         Register
                       </Link>
                       </li>

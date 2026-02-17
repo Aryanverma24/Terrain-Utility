@@ -15,6 +15,10 @@ import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js"
 import chatRoutes from "./routes/ChatRoutes.js";  // Default import
+import lawyerRoutes from "./routes/LawyerRoutes.js";
+import documentRoutes from "./routes/documentRoutes.js";
+import upload from "./utils/multerConfig.js";
+import notificationRoutes from "./routes/NotificationRoutes.js";
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
@@ -57,77 +61,165 @@ app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
 
-let rooms = {}; // In-memory object to store messages for each room
-
-// Handling socket.io connections
+let rooms = {}; // In-memory store (optional)
 io.on("connection", (socket) => {
-  console.log("A user connected");
+  console.log("A user connected:", socket.id);
 
-  // Join a specific room for messaging
-  socket.on("joinRoom", ({ room, senderId, receiverId }) => {
-    socket.join(room);
-    console.log(`User ${senderId} joined room: ${room}`);
+  // -----------------------
+  // JOIN ROOM
+  // -----------------------
+  socket.on("joinRoom", async ({ room }) => {
+    try {
+      if (!room) return;
+      socket.join(room);
+      console.log(`Socket ${socket.id} joined room ${room}`);
 
-    // Send previous messages for the room if available
-    if (rooms[room]) {
-      socket.emit("message", rooms[room]);  // Send all previous messages
+      // Send last 100 messages
+      const history = await Message.find({ room })
+        .sort({ timestamp: 1 })
+        .limit(100)
+        .lean();
+
+      socket.emit("messageHistory", history);
+    } catch (err) {
+      console.error("joinRoom error:", err);
     }
   });
 
-  // Handle sending a new message
-  socket.on("sendMessage", async ({ room, senderId, receiverId, message }) => {
-    const msg = {
-      room,
-      senderId,
-      receiverId,
-      message,
-      timestamp: new Date(),
-    };
+  // -----------------------
+  // SEND MESSAGE
+  // -----------------------
+  socket.on("sendMessage", async (data) => {
+    try {
+      const {
+        room,
+        landId,
+        senderId,
+        senderName,
+        receiverId,
+        receiverName,
+        message: text
+      } = data;
+
+      if (!room || !senderId || !receiverId || !text) {
+        console.warn("sendMessage missing fields:", data);
+        return;
+      }
+
+      if (String(senderId) === String(receiverId)) {
+        console.warn("sendMessage blocked: sender === receiver");
+        return;
+      }
+
+      const msg = await Message.create({
+        room,
+        landId: landId ? new mongoose.Types.ObjectId(landId) : undefined,
+        senderId: new mongoose.Types.ObjectId(senderId),
+        senderName,
+        receiverId: new mongoose.Types.ObjectId(receiverId),
+        receiverName,
+        message: text,
+        timestamp: new Date(),
+      });
+
+      const converted = msg.toObject();
+
+      // Broadcast to users in room
+      io.to(room).emit("message", converted);
+
+    } catch (err) {
+      console.error("socket sendMessage error:", err);
+    }
+  });
+
+  // -----------------------
+  // TYPING INDICATOR
+  // -----------------------
+  socket.on("typing", ({ room, senderName }) => {
+    socket.to(room).emit("typing", { senderName });
+  });
+
+
+  // JOIN notification personal room
+  socket.on("join", (userId) => {
+    console.log(`📥 User joined NOTIFICATION room: ${userId}`);
+    socket.join(userId);
+  });
+// role rooms
+socket.on("join-role", (role) => {
+  socket.join(role);
+});
+  // SEND a notification to a specific user
+socket.on("send-notification", async (data) => {
+    const { receiverId, receiverRole, title, message, type = "system" } = data;
 
     try {
-      // Save the message to the database
-      const newMessage = await Message.create(msg);  // Save message to DB
-      console.log("Message saved to DB:", newMessage); // Log saved message
+      let notif = null;
 
-      // Store the message in memory for the room (optional)
-      if (!rooms[room]) {
-        rooms[room] = [];
+      // --- SEND TO SINGLE USER ---
+      if (receiverId) {
+        notif = await Notification.create({
+          userId: receiverId,
+          title,
+          message,
+          type,
+        });
+
+        io.to(receiverId).emit("receive-notification", notif);
+        console.log(`🔔 Sent notification to USER: ${receiverId}`);
       }
-      rooms[room].push(newMessage);  // Push new message to in-memory room
 
-      // Broadcast the new message to the room
-      io.to(room).emit("message", newMessage);  // Emit to all clients in the room
-    } catch (error) {
-      console.error("Error saving message to DB:", error);
+      // --- SEND TO ROLE (broadcast to all of them) ---
+      if (receiverRole) {
+        notif = await Notification.create({
+          targetRole: receiverRole,
+          title,
+          message,
+          type,
+        });
+
+        io.to(receiverRole).emit("receive-notification", notif);
+        console.log(`🔔 Sent notification to ROLE: ${receiverRole}`);
+      }
+    } catch (err) {
+      console.log("❌ Notification error:", err.message);
     }
   });
 
-  // Handle user disconnection
+  // 4️⃣ Disconnect log
   socket.on("disconnect", () => {
-    console.log("User disconnected");
+    console.log("❌ User disconnected:", socket.id);
   });
 });
-// Serve static files for uploaded images
-const uploadsPath = path.join(__dirname, '..', 'uploads');
-app.use('/uploads', express.static(uploadsPath));
+export { io }; 
 
-// Multer configuration for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + file.originalname;
-    cb(null, uniqueSuffix);
-  }
-});
-const upload = multer({ storage: storage });
+  
+
+// Serve static files for uploaded images
+// const uploadsPath = path.join(__dirname, '..', 'uploads');
+// app.use('/uploads', express.static(uploadsPath));
+
+// // Multer configuration for file uploads
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploads/');
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueSuffix = Date.now() + '-' + file.originalname;
+//     cb(null, uniqueSuffix);
+//   }
+// });
+// const upload = multer({ storage: storage });
+
 
 // Routes
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
 app.use("/api/wishlist",wishlistRoutes)
@@ -256,16 +348,19 @@ app.post(
   upload.single('image'),
   createLand
 );
-
 app.get("/get-land", async (req, res) => {
   try {
     const lands = await Land.find({});
-    const landsWithImageUrl = lands.map(land => {
-      const imageURL = `/uploads/${land.image}`;
-      return { ...land._doc, imageURL };
-    });
+
+   const landsWithImageUrl = lands.map(land => {
+  
+  const imageURL = `/uploads/${land.image}`;
+  return { ...land._doc, imageURL };
+});
+
     res.send({ status: "ok", data: landsWithImageUrl });
   } catch (error) {
+    console.error("Error fetching lands:", error);
     res.json({ status: "error", error: error.message });
   }
 });
