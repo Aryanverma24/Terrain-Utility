@@ -29,7 +29,6 @@ import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
 
-
 import chatAuthenticate from "./middlerwares/chatMiddleware.js";
 
 // Get __dirname for ES Module compatibility
@@ -43,7 +42,7 @@ const port = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",  // Update with your frontend URL
+    origin: process.env.FRONTEND_URL,  // Update with your frontend URL
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -224,108 +223,103 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
 app.use("/api/wishlist",wishlistRoutes)
-app.use('/api/chat', chatRoutes);  // Chat routes integration
-app.use("/api/lawyer", lawyerRoutes);
+app.use('/api/messages', chatRoutes);  // Chat routes integration
 
 //add user face data
+app.post('/api/add-face', async (req, res) => {
+  const { email, faceDescriptor } = req.body;
 
-app.post('/api/add-face',async(req,res)=>{
-  const {email , faceDescriptor}= req.body;
-
-  console.log(email)
-  console.log(faceDescriptor)
-
-if(!email || !faceDescriptor) return res.status(400).json({message : "all fields are required"})
-
-    try {
-      const user = await User.findOneAndUpdate(
-          { email: req.body.email },
-          { $set: { faceDescriptor : req.body.faceDescriptor } },
-          { new: true, upsert: true }
-      );
-
-      console.log("✅ Data Saved in DB:", user);
-      res.status(200).json({ success: true, message: "Face data stored successfully!" });
-
-  } catch (error) {
-      console.error("❌ Error Saving Face Data:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+  if (!email || !faceDescriptor) {
+    return res.status(400).json({ message: "All fields are required" });
   }
 
-})
+  try {
+    // MongoDB me save/update
+    const user = await User.findOneAndUpdate(
+      { email },
+      { $set: { faceDescriptor } },
+      { new: true }
+    );
+
+    console.log("✅ Data Saved in DB:", user);
+    res.status(200).json({ success: true, message: "Face data stored successfully!" });
+
+  } catch (error) {
+    console.error("❌ Error Saving Face Data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 
-// euclidean distance formula
-
+// Euclidean Distance function
 const euclideanDistance = (arr1, arr2) => {
   if (arr1.length !== arr2.length) return Infinity;
-  return Math.sqrt(arr1.reduce((sum, val, i) => sum + Math.pow(val - arr2[i], 2), 0));
+  return Math.sqrt(
+    arr1.reduce((sum, val, i) => sum + Math.pow(val - arr2[i], 2), 0)
+  );
 };
 
 app.post("/api/face-login", async (req, res) => {
   const { faceDescriptor } = req.body;
 
   if (!faceDescriptor) {
-      return res.status(400).json({ message: "Face Data is required!" });
+    return res.status(400).json({ message: "Face data is required!" });
   }
 
   try {
-      const users = await User.find();
-      let bestMatch = null;
-      let minDistance = Infinity;
+    const users = await User.find();
+    let bestMatch = null;
+    let minDistance = Infinity;
 
-      const inputDescriptor = new Float32Array(faceDescriptor); 
+    const inputDescriptor = new Float32Array(faceDescriptor);
 
-      users.forEach(user => {
-          if (user.faceDescriptor) {
-              const dbDescriptor = new Float32Array(user.faceDescriptor);
-              const distance = euclideanDistance(dbDescriptor, inputDescriptor);
+    users.forEach(user => {
+      if (user.faceDescriptor && user.faceDescriptor.length > 0) {
+        const dbDescriptor = new Float32Array(user.faceDescriptor);
+        const distance = euclideanDistance(dbDescriptor, inputDescriptor);
 
-              if (distance < minDistance) {
-                  minDistance = distance;
-                  bestMatch = user;
-              }
-          }
-      });
-
-      console.log("🔍 Best Match Distance:", minDistance);
-
-      const THRESHOLD = 0.5;
-      if (bestMatch && minDistance < THRESHOLD) {
-          // ✅ JWT Token Generate 
-          const token = jwt.sign(
-              { userId: bestMatch._id },
-              process.env.JWT_SECRET,
-              { expiresIn: "1h" }
-          );
-          req.body.email = bestMatch.email;
-          // return loginUser(req,res,true)
-
-          return res.status(200).json({ 
-              success: true, 
-              message: "Face Recognized!", 
-              token,
-              user: {
-                  _id: bestMatch._id,
-                  username: bestMatch.username,
-                  email: bestMatch.email,
-                  city: bestMatch.city,
-                  state: bestMatch.state,
-                  contactNumber: bestMatch.contactNumber,
-                  age: bestMatch.age,
-                  gender: bestMatch.gender,
-                  isAdmin: bestMatch.isAdmin,
-                  createdAt: bestMatch.createdAt,
-                  updatedAt: bestMatch.updatedAt
-              },
-      });
-
-      } else {
-          return res.status(401).json({ success: false, message: "Face Not Recognized!" });
+        if (distance < minDistance) {
+          minDistance = distance;
+          bestMatch = user;
+        }
       }
+    });
+
+    console.log("🔍 Best Match Distance:", minDistance);
+
+    const THRESHOLD = 0.5; // default ~0.4–0.6
+    if (bestMatch && minDistance < THRESHOLD) {
+      // ✅ JWT Generate
+      const token = jwt.sign(
+        { userId: bestMatch._id },
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Face recognized!",
+        token,
+        user: {
+          _id: bestMatch._id,
+          username: bestMatch.username,
+          email: bestMatch.email,
+          city: bestMatch.city,
+          state: bestMatch.state,
+          contactNumber: bestMatch.contactNumber,
+          age: bestMatch.age,
+          gender: bestMatch.gender,
+          isAdmin: bestMatch.isAdmin,
+          createdAt: bestMatch.createdAt,
+          updatedAt: bestMatch.updatedAt
+        },
+      });
+    } else {
+      return res.status(401).json({ success: false, message: "Face not recognized!" });
+    }
   } catch (error) {
-      console.error("❌ Face Login Error:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ Face Login Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

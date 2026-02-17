@@ -1,4 +1,4 @@
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../contexts/authContext";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -6,6 +6,7 @@ import { FaStar } from "react-icons/fa";
 import { API } from "../../utils/API";
 import BackToTop from "./BackToTop";
 import LandCardSlideshow from "./LandCardSlideShow";
+
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -16,6 +17,10 @@ const Home = () => {
   const [maxPrice, setMaxPrice] = useState("");
   const navigate = useNavigate();
 
+  
+
+
+  // Fetch land data from backend
   useEffect(() => {
     fetch("http://localhost:5000/get-land")
       .then((res) => res.json())
@@ -30,14 +35,21 @@ const Home = () => {
           setFilteredLands(approved);
         }
       })
-      .catch(console.error);
-  }, [user]);
+      .catch((error) => console.error("Error fetching data:", error));
+  }, []);
 
   useEffect(() => {
     if (user) {
       API.get(`/api/wishlist/${user._id}`)
-        .then((res) => setWishlist(res.data[0].lands))
-        .catch(() => toast.error("Something went wrong while fetching wishlist"));
+        .then((response) => {
+          setWishlist(response.data[0].lands);
+          console.log("fetching done");
+          console.log(response.data[0].lands);
+        })
+        .catch((error) => {
+          console.log("error while fetching wishlist", error);
+          toast.error("something went wrong while fetching wishlist");
+        });
     }
   }, [user]);
 
@@ -74,72 +86,191 @@ const Home = () => {
         setWishlist([...wishlist, land._id]);
         toast.success("Land added to wishlist!");
       }
-    } catch { toast.error("Something went wrong while updating the wishlist."); }
+      navigate("/");
+    } catch (error) {
+      console.log("Error while updating the wishlist:", error);
+      toast.error("Something went wrong while updating the wishlist.");
+    }
+  };
+
+  var settings = {
+    dots: true,
+    infinite: false,
+    speed: 500,
+    slidesToShow: 4,
+    slidesToScroll: 4,
+    initialSlide: 0,
+    responsive: [
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: 3,
+          slidesToScroll: 3,
+          infinite: true,
+          dots: true,
+        },
+      },
+      {
+        breakpoint: 600,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 2,
+          initialSlide: 2,
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+      },
+    ],
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-16 pb-10 bg-[#daf1de]">
+    <>
+      <div className="min-h-screen flex flex-col justify-start items-center pt-[3rem]  pb-5 relative">
+        <div className="bg-olive min-w-full p-4 mx-0">
+          <div className="flex justify-end mt-[1rem]">
+            <div className="bg-beige rounded-bl-3xl h-[27.5rem] rounded-tr-3xl px-5 py-5 mt-4 w-[60%]">
+              <img
+                src="https://www.cyberswift.com/blog/wp-content/uploads/2024/09/the-evolving-landscape-of-land-management-harnessing-technology-for-sustainable-growth.jpg"
+                alt="home image"
+                className="w-[65rem] rounded-xl"
+              />
+            </div>
+          </div>
 
-      {/* Top Section */}
-      <div className="w-full p-10 flex flex-col md:flex-row items-stretch justify-between gap-8">
-        <div className="w-full md:w-1/2 flex flex-col justify-center">
-          <h1 className="text-[#235347] text-7xl font-bold tracking-wide drop-shadow-sm" style={{ fontFamily: "'Dancing Script', cursive" }}>LAND STRIDER</h1>
-          <div className="text-lg mt-4 max-w-[34rem] border-t-2 border-black pt-4 leading-snug text-[#8E5E5E] space-y-3">
-            <p>A streamlined platform designed to simplify land discovery, verification and documentation with clarity and transparency.</p>
-            <p>Landowners, buyers and legal experts can securely view, review and assess every detail through a clean and organized digital experience.</p>
-            <p>With structured information and verified listings, Land Strider brings confidence and ease to the entire real-estate exploration process.</p>
+          <div className="mb-[1.5rem]">
+            <h1 className="text-gold text-8xl font-bold absolute top-[5rem] left-8">
+              LAND
+            </h1>
+            <h1 className="text-gold text-6xl font-semibold absolute top-[11rem] left-[11rem]">
+              STRIDER
+            </h1>
+            <div className="text-xl absolute top-[16rem] left-[2rem] max-w-[25rem] px-2 border-black border-t-2">
+              <h1 className="mt-2">
+                A digital platform connecting Landowners and renters for various
+                land uses - agriculture, commercial, recreation, urban.
+              </h1>
+              <br />
+              <h3>
+                Improving land utilzation through efficient and transparent
+                processes.
+              </h3>
+            </div>
           </div>
         </div>
-        <div className="w-full md:w-1/2 flex justify-center relative">
-          <img src="https://www.cyberswift.com/blog/wp-content/uploads/2024/09/the-evolving-landscape-of-land-management-harnessing-technology-for-sustainable-growth.jpg" alt="home" className="rounded-3xl w-full h-full object-cover shadow-xl" />
-        </div>
-      </div>
 
-      {/* Trend Lands */}
-      <h2 className="text-4xl md:text-5xl font-extrabold text-center text-[#235347] mb-6">Trend Lands</h2>
-
-      {/* Filters + Upload Button */}
-      <div className="w-full max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4 mb-8 px-4">
-        <div className="flex items-center gap-3 flex-1">
-          <input type="text" placeholder="Filter by city" value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} className="px-3 py-2 border rounded-lg focus:outline-none flex-1" />
-          <input type="number" placeholder="Max price" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="px-3 py-2 border rounded-lg focus:outline-none flex-1" />
-          <button onClick={() => { setCityFilter(""); setMaxPrice(""); setFilteredLands(lands); }} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Reset</button>
-          <button className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-green-600 text-white rounded-lg shadow-md hover:opacity-90">Apply Filters</button>
-        </div>
-        {user && (
-          <Link to="/uploads" className="py-2 px-6 rounded-lg text-lg bg-gradient-to-r from-yellow-500 to-green-600 text-white font-semibold shadow-md hover:scale-105 transition-all mt-3 md:mt-0">
-            Upload Lands
-          </Link>
-        )}
-      </div>
-
-      {/* Cards */}
-      <ul className="flex flex-wrap justify-center gap-8 px-4">
-        {filteredLands.length > 0 ? filteredLands.map((land) => {
-          const avgRating = calculateAverageRating(land.reviews);
-          const dims = land.dimensions ? `${land.dimensions.length} ft × ${land.dimensions.breadth} ft` : "N/A";
-
-          return (
-            <div key={land._id} className="w-[20rem] bg-[#f0d3d3] rounded-2xl shadow-lg hover:shadow-2xl transition transform hover:scale-105 border p-4 flex flex-col">
-              <div className="relative">
-                <FaStar onClick={() => handleWishlist(land)} className={`absolute right-3 top-3 w-7 h-7 cursor-pointer ${wishlist.includes(land._id) ? "text-yellow-500" : "text-gray-300"}`} />
-                <Link to={`/land/${land._id}`}>
-                 <LandCardSlideshow land={land} fullDocs={land.documents} />
-
-                  <h2 className="text-[#235347] font-extrabold text-lg mb-1">{land.landtype?.charAt(0).toUpperCase() + land.landtype?.slice(1)}</h2>
-                  <p className="text-[#235347] text-sm font-semibold mb-1">Owner: <span className="font-bold">{land.ownerName || "N/A"}</span></p>
-                  <p className="text-[#235347] text-sm font-semibold mb-1">City: <span className="font-bold">{land.city || "N/A"}</span></p>
-                  <div className="flex items-center mt-2">{avgRating > 0 ? renderStars(avgRating) : <span className="text-sm text-gray-500">No ratings yet</span>}</div>
-                  <p className="mt-2 text-sm text-[#235347] font-semibold">Reviews: {land.reviews?.length || 0}</p>
-                  <span className="inline-block bg-[#235347] text-[#f0d3d3] font-bold px-3 py-1 rounded-full mt-2">₹{land.price ?? "N/A"}</span>
-                  <p className="mt-2 text-sm text-[#235347] font-semibold">Dimensions: <span className="font-medium">{dims}</span></p>
+        <div className="bg-mintGreen pb-10">
+          <div className="relative">
+            {user?.isAdmin && (
+              <div className="absolute top-8 left-5 py-2 px-6 rounded-lg text-lg bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+                <Link to="/adminDashboard" className="font-semibold">
+                  Dashboard
                 </Link>
               </div>
+            )}
+          </div>
+          {!user ? (
+            <div className="absolute right-8 mt-[2rem] w-[7rem] py-2 px-6 rounded-lg text-xl bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md text-center">
+              <Link to="/login" className="font-semibold">
+                Login
+              </Link>
             </div>
-          );
-        }) : <p className="text-center text-[#235347] mt-10 font-semibold">No lands match the selected filters.</p>}
-      </ul>
-    </div>
+          ) : (
+            <div className="absolute mt-[1rem] right-5 py-2 px-6 rounded-lg text-lg bg-gold text-white hover:bg-gradient-to-r hover:from-yellow-500 hover:to-green-600 transition duration-300 shadow-md">
+              <Link to="/uploads" className="font-semibold">
+                Upload Lands
+              </Link>
+            </div>
+          )}
+
+          <div className="text-4xl text-center font-semibold pt-[2rem] text-darkGreen">
+            <h2>Trend Lands</h2>
+          </div>
+          <BackToTop />
+          {lands && (
+            <ul className="flex flex-wrap justify-center gap-8 mt-10 px-4 mb-0">
+              {lands.length > 0 ? (
+                lands.map((land) => {
+                  const averageRating = calculateAverageRating(land.reviews);
+                  return (
+                    <div
+                      key={land._id}
+                      className="w-[20rem] p-2 bg-cardGreen rounded-lg shadow-lg hover:shadow-xl transition duration-300 transform hover:scale-105"
+                    >
+                      <div className="relative">
+                        <FaStar
+                          onClick={() => handleWishlist(land)}
+                          className={`absolute right-2 w-8 h-8 cursor-pointer ${
+                            wishlist.includes(land._id)
+                              ? "text-yellow-500"
+                              : "text-gray-500"
+                          }`}
+                        />
+                        <Link to={`/land/${land._id}`}>
+                          <div className="p-4">
+                            {land.image && (
+                              <img
+                                src={`http://localhost:5000/uploads/${land.image}`}
+                                alt={land.landtype || "land"}
+                                className="rounded-lg h-48 w-full object-cover mb-4"
+                              />
+                            )}
+                            <div className="text-black text-md">
+                              <h2 className="font-semibold text-lg mb-2">
+                                LAND TYPE:{" "}
+                                <span className="font-normal">
+                                  {land.landtype[0].toUpperCase() +
+                                    land.landtype.substring(1)}
+                                </span>
+                              </h2>
+                              <p className="text-sm  mb-2">
+                                OWNER:{" "}
+                                <span className="font-bold">
+                                  {land.ownerName[0].toUpperCase() +
+                                    land.ownerName.substring(1)}
+                                </span>
+                              </p>
+                              <p className="text-sm mb-2">
+                                CITY:{" "}
+                                <span className="font-bold">
+                                  {land.city[0].toUpperCase() +
+                                    land.city.substring(1)}
+                                </span>
+                              </p>
+                              <div className="flex items-center mt-2">
+                                Rating:{" "}
+                                {averageRating > 0 ? (
+                                  renderStars(averageRating)
+                                ) : (
+                                  <span>No ratings yet</span>
+                                )}
+                              </div>
+                              <p className="mt-2 text-sm">
+                                Number of Reviews:{" "}
+                                {land.reviews ? land.reviews.length : 0}
+                              </p>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
+                
+              ) : (
+                <p>No lands available to display.</p>
+              )}
+            </ul>
+            
+          )}
+            
+        </div>
+      </div>
+    </>
   );
 };
 

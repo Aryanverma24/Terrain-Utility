@@ -1,15 +1,16 @@
 import { useContext, useEffect, useState } from "react";
 import "./Navigation.css";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHome, FaShopify } from "react-icons/fa";
+import { FaBars, FaHome, FaShopify, FaTimes } from "react-icons/fa";
 import { PiIslandBold } from "react-icons/pi";
 import { MdLandscape } from "react-icons/md";
 import { IoStorefrontOutline } from "react-icons/io5";
 import { API } from "../../utils/API";
-import { AuthContext } from "../../contexts/authContext";
+import { AuthContext } from "../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import NotificationPanel from "../component/NotificationPanel";
 const Navigation = () => {
+  const [menubar,setMenubar] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const [dropdown, setDropdown] = useState(false);
   const { isAuthenticated, getUser, logout, user } = useContext(AuthContext);
@@ -144,6 +145,10 @@ const Navigation = () => {
             />
           <h2 className="texts font-semibold ml-2 mt-1 text-2xl text-[#C4A1A1]">LandStrider</h2>
           </li>
+        </ul>
+      </div>
+        <div className="nav-container fixed z-10 min-w-full flex bg-slate-800 justify-between ">
+          <ul className="hidden md:flex py-3 px-4 gap-[40px]">
           <li className="text-xl">  
               <Link to="/" className="flex items-center py-2">
               <FaHome className={`mr-3 icons ${getIconColor("/")}`} />
@@ -178,7 +183,9 @@ const Navigation = () => {
 
           </ul>
           
-          <ul className="text-white flex gap-5 items-center justify-end mr-[2rem] text-xl">
+
+
+          <ul className="text-white hidden md:flex gap-5 items-center justify-end mr-[2rem] text-xl">
               {user?.username ? (
                   <>
                     <li>
@@ -212,6 +219,33 @@ const Navigation = () => {
                   </>
               )}
           </ul>
+          <div className="md:hidden text-white fixed top-5 right-5">
+            <button onClick={() => setMenubar(!menubar)}>
+              {menubar ? <FaTimes size={24} /> : <FaBars size={24} />}
+            </button>
+          </div>
+ 
+          {menubar && (
+            <div className="absolute top-[70px] right-4 text-white bg-slate-900 p-4 rounded-lg shadow-lg w-60 z-50 flex flex-col gap-4 text-base md:hidden">
+            <Link to="/" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Home</Link>
+            <Link to="/lands" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Lands</Link>
+            <Link to="/wishlist" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Wishlist</Link>
+            <Link to="/MyLands" className="hover:text-gold" onClick={() => setMenuOpen(false)}>My Lands</Link>
+            {user?.username ? (
+              <>
+                <Link to="/userProfile" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Profile</Link>
+                <button onClick={() => { logoutUser(); setMenuOpen(false); }} className="hover:text-gold">
+                  Logout {user?.username}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="text-gold hover:text-white" onClick={() => setMenuOpen(false)}>Login</Link>
+                <Link to="/register" className="text-gold hover:text-white" onClick={() => setMenuOpen(false)}>Register</Link>
+              </>
+            )}
+          </div>
+          )}
     </div>
       </>
     ) }  

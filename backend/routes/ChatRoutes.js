@@ -8,7 +8,9 @@ import {
   sendMessage,
 } from "../controllers/ChatController.js";
 
-const router = express.Router();
+import User from "../modals/UserModal.js";
+import getMessagesByLand  from '../controllers/ChatController.js'
+const router = express.Router();  // Initialize router
 
 // Create or get chat between buyer and owner
 router.post("/get-or-create", getOrCreateChat);

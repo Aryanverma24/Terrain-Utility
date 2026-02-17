@@ -100,14 +100,38 @@ const Login = () => {
               type="submit"
               className="w-full bg-gradient-to-r from-[#4caf50] to-[#2e7d32] py-3 rounded-xl text-[#fff5f5] font-bold text-lg transition-all shadow-lg hover:scale-105 hover:shadow-2xl"
             >
-              Sign In
-            </button>
+              Password:
+            </label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="w-full p-2 rounded-lg bg-gray-700 text-green-600 focus:outline-none focus:ring-2 focus:ring-green-600 shadow-md"
+            />
+          </div>
 
-            {/* Facial Login */}
-            <Link to="/facial-auth">
-              <button className="w-full mt-4 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] py-3 rounded-xl text-[#fff5f5] font-bold text-lg transition-all shadow-lg hover:scale-105 hover:shadow-2xl">
-                Facial Login
-              </button>
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-800 py-2 rounded-lg text-white font-semibold"
+          >
+            Sign In
+          </button>
+         {/* <Link to='/facial-auth'>
+         <button 
+            className="w-full mt-4 bg-green-600 hover:bg-green-800 py-2 rounded-lg text-white font-semibold">
+            Facial Login
+          </button>
+         </Link> */}
+        </form>
+
+        <div className="mt-4 text-center">
+          <p>
+            New User?{" "}
+            <Link to="/register" className="text-green-600 hover:underline">
+              Register
             </Link>
           </form>
 

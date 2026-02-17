@@ -1,5 +1,5 @@
 import { useEffect, useState,useContext } from 'react';
-import { AuthContext } from '../../contexts/AuthContext';
+import { AuthContext } from '../../contexts/authContext';
 import { API } from '../../utils/API';
 import { useNavigate } from 'react-router';
 import {toast} from 'react-toastify'
@@ -150,7 +150,7 @@ const Profile = () => {
                           className='rounded-full w-[11rem] h-[11rem]'/>
                         </div>
                           <button onClick={handleToggleEdit}>
-                        <CiEdit className='text-2xl mt-[4rem] ml-[7rem] absolute' />
+                        <CiEdit className='text-2xl mt-[1.8rem] ml-[7rem] absolute' />
                         </button> 
                         <div className='m-2 text-richBrown'>
                           <h2 className='text-3xl text-center py-2 font-bold'>{userdata.data.username}</h2>
@@ -161,13 +161,13 @@ const Profile = () => {
                        
 
                       </div>
-                        <div className="flex justify-center items-center">
+                        {/* <div className="flex justify-center items-center">
                           <Link to='/add-face'> 
                         <button className='px-2 py-1 rounded-2xl mt-[1rem] text-center bg-richBrown text-mintGreen font-semibold'>
                           Add Face
                         </button>
                           </Link>
-                          </div>
+                          </div> */}
                   </div>
 
         
@@ -240,7 +240,8 @@ const Profile = () => {
                           {lands && lands.map(
                             (land) => (
                               <>
-                             <Link to={`/land/${land._id}`}>
+                             <Link to={`/land/${land._id}`}
+                             className='min-h-[10rem]'>
                              <div className='bg-sand500 rounded-lg px-2 py-1'>
                                 {land.image && (
                                <div className=" flex items-center">
@@ -261,8 +262,13 @@ const Profile = () => {
                              </Link>
                               </>
                             )
-                          )}
+                          )
+                          }
                       </div>
+                      <Link to="/mylands"
+                      className='flex justify-center'>
+                      <button className='px-4 py-2 bg-sand500 rounded-xl text-white mb-5 hover:bg-richBrown'>
+                        My Lands</button></Link>
                   </div>
           </div>
        </div>

@@ -42,63 +42,34 @@ const createUser = asyncHandler(async (req, res) => {
 });
 
 
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-const loginUser = asyncHandler(async(req,res, skipPasswordCheck = false) =>{
+  const existUser = await User.findOne({ email });
 
-    const {email , password } = req.body;
+  if (!existUser) {
+    return res.status(400).json({ error: "User not found" });
+  }
 
-    const existUser = await User.findOne({email})
+  // Check password
+  const isMatch = await bcrypt.compare(password, existUser.password);
 
-    // if(!existUser){
-    //     const checkPassword = await bcrypt.compare(password,existUser.password)
+  if (!isMatch) {
+    return res.status(400).json({ error: "Invalid Credentials" });
+  }
 
-    //     if(checkPassword){
-    //         const token = createToken(res,existUser._id)
+  // Generate JWT
+  const token = createToken(res, existUser._id);
 
-    //         return res.status(200).json({
-    //             _id : existUser._id,
-    //             username : existUser.username,
-    //             email : existUser.email,
-    //             isAdmin : existUser.isAdmin,
-    //             contactNumber : existUser.contactNumber,
-    //             token
-    //         })
-    //     }
-    //     return  res.status(400).json({
-    //         error:"Invalid Credentials"
-    //     })
-    // }
-    // return  res.status(400).json({
-    //     error:"Invalid Credentials"
-    // })
-
-    
-    if (!existUser) {
-        return res.status(400).json({ error: "User not found" });
-    }
-
-    //  Agar face auth se login ho raha hai to password check skip kare
-    if (!skipPasswordCheck) {
-        const checkPassword = await bcrypt.compare(password, existUser.password);
-        if (!checkPassword) {
-            return res.status(400).json({ error: "Invalid Credentials" });
-        }
-    }
-
-    const token = createToken(res, existUser);
-
-return res.status(200).json({
+  return res.status(200).json({
     _id: existUser._id,
     username: existUser.username,
     email: existUser.email,
-    role: existUser.role,   // ⭐ Send role
     isAdmin: existUser.isAdmin,
     contactNumber: existUser.contactNumber,
     token
+  });
 });
-
-
-})
 
 const logout = asyncHandler(async(req,res)=>{
     res.cookie("jwt","",{
