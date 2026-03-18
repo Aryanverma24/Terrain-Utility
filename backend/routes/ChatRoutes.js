@@ -1,11 +1,16 @@
 // routes/chatRoutes.js
+import mongoose from "mongoose";
 import express from "express";
+import Chat from "../modals/chatmodel.js";
 import {
   getOrCreateChat,
   getOwnerChats,
   getBuyerChats,
   getMessages,
   sendMessage,
+  getUnreadCount,
+  getUserChats,
+  markChatAsRead,
 } from "../controllers/ChatController.js";
 
 import User from "../modals/UserModal.js";
@@ -16,13 +21,16 @@ const router = express.Router();  // Initialize router
 router.post("/get-or-create", getOrCreateChat);
 
 // Get all chats for owner or buyer
-router.get("/owner/:ownerId", getOwnerChats);
 router.get("/buyer/:buyerId", getBuyerChats);
-
+router.get("/owner/:ownerId", getOwnerChats);
 // Get messages for a chat
 router.get("/:chatId/messages", getMessages);
 
 // Send a message
 router.post("/send", sendMessage);
 
+// routes/chatRoutes.js
+router.put("/read/:chatId/:userId", markChatAsRead);
+router.get("/user/:userId", getUserChats);
+router.get("/unread/:userId", getUnreadCount);
 export default router;

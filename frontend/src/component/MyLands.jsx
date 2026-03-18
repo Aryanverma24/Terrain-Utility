@@ -113,34 +113,9 @@ const MyLand = () => {
     }
   };
 
-  // const handleCheckMessagesAndNavigate = async (landId) => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     const response = await axios.get(
-  //       `http://localhost:5000/api/messages/land/${landId}`,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
 
-  //     setMessages(response.data);
-  //     navigate(`/messages/land/${landId}`);
-  //   } catch (error) {
-  //     if (error.response && error.response.status === 404) {
-  //       setMessages([]);
-  //       toast.info("No messages found for this land yet.");
-  //       navigate(`/messages/land/${landId}`);
-  //     } else {
-  //       toast.error("Failed to fetch messages. Try again.");
-  //     }
-  //   }
-  // };
-const handleCheckMessagesAndNavigate = (land) => {
-  navigate(`/chat/owner/list`, {
-    state: {
-      receiverId: land.buyerId,
-      receiverName: land.buyerName,
-      landDetails: land
-    },
-  });
+const handleCheckMessagesAndNavigate = () => {
+  navigate("/owner-inbox"); // 🔥 updated route
 };
   if (loading)
     return (

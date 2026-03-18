@@ -228,22 +228,35 @@ const fetchLand = useCallback(async () => {
 
 
   // Chat navigation
-  const handleRedirectToChat = () => {
+const handleRedirectToChat = async () => {
   if (role === "lawyer") return toast.error("Lawyer cannot chat.");
   if (!land) return toast.error("No land selected.");
+  if (!currentUserId) return toast.error("Login required.");
 
-navigate(`/chat/buyer/${land._id}/${land.owner}`, {
-  state: {
-    room: land._id,
-    senderId: currentUserId,
-    receiverId: land.owner,
-    landDetails: land,
-    ownerId: land.owner,       // must be user _id of owner
-  ownerName: land.ownerName, // must be username of owner
-    
-  },
-});
-  };
+  try {
+    // 🔥 STEP 1: Create or get chat
+    const res = await axios.post(
+      "http://localhost:5000/api/chat/get-or-create",
+      {
+        landId: land._id,
+        buyerId: currentUserId,
+        ownerId: land.owner,
+        buyerName: currentUsername,
+      }
+    );
+
+    const chat = res.data;
+
+    // 🔥 STEP 2: Navigate using chatId ONLY
+    navigate(`/chat/${chat._id}`, {
+      state: { chat },
+    });
+
+  } catch (err) {
+    console.error("Chat creation error:", err);
+    toast.error("Failed to start chat");
+  }
+};
 
 
   // Approve handler
