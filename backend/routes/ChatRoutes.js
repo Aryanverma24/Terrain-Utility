@@ -13,8 +13,8 @@ import {
   markChatAsRead,
 } from "../controllers/ChatController.js";
 
-import User from "../modals/UserModal.js";
-import getMessagesByLand  from '../controllers/ChatController.js'
+// import User from "../modals/UserModal.js";
+// import getMessagesByLand  from '../controllers/ChatController.js'
 const router = express.Router();  // Initialize router
 
 // Create or get chat between buyer and owner

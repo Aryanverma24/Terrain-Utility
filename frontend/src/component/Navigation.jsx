@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHome, FaShopify,FaEnvelope } from "react-icons/fa";
+import { FaHome, FaShopify, FaEnvelope, FaBars, FaTimes } from "react-icons/fa";
 import { PiIslandBold } from "react-icons/pi";
 import { MdLandscape } from "react-icons/md";
 import { IoStorefrontOutline } from "react-icons/io5";
@@ -190,26 +190,29 @@ useEffect(() => {
           </div>
  
           {menubar && (
-            <div className="absolute top-[70px] right-4 text-white bg-slate-900 p-4 rounded-lg shadow-lg w-60 z-50 flex flex-col gap-4 text-base md:hidden">
-            <Link to="/" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Home</Link>
-            <Link to="/lands" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Lands</Link>
-            <Link to="/wishlist" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Wishlist</Link>
-            <Link to="/MyLands" className="hover:text-gold" onClick={() => setMenuOpen(false)}>My Lands</Link>
-            {user?.username ? (
-              <>
-                <Link to="/userProfile" className="hover:text-gold" onClick={() => setMenuOpen(false)}>Profile</Link>
-                <button onClick={() => { logoutUser(); setMenuOpen(false); }} className="hover:text-gold">
-                  Logout {user?.username}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="text-gold hover:text-white" onClick={() => setMenuOpen(false)}>Login</Link>
-                <Link to="/register" className="text-gold hover:text-white" onClick={() => setMenuOpen(false)}>Register</Link>
-              </>
-            )}
-          </div>
-          )}
+  <div className="absolute top-[70px] right-4 text-white bg-slate-900 p-4 rounded-lg shadow-lg w-60 z-50 flex flex-col gap-4 text-base md:hidden">
+    
+    <Link to="/" onClick={() => setMenubar(false)}>Home</Link>
+    <Link to="/lands" onClick={() => setMenubar(false)}>Lands</Link>
+    <Link to="/wishlist" onClick={() => setMenubar(false)}>Wishlist</Link>
+    <Link to="/MyLands" onClick={() => setMenubar(false)}>My Lands</Link>
+
+    {user?.username ? (
+      <>
+        <Link to="/userProfile" onClick={() => setMenubar(false)}>Profile</Link>
+        <button onClick={() => { logoutUser(); setMenubar(false); }}>
+          Logout {user?.username}
+        </button>
+      </>
+    ) : (
+      <>
+        <Link to="/login" onClick={() => setMenubar(false)}>Login</Link>
+        <Link to="/register" onClick={() => setMenubar(false)}>Register</Link>
+      </>
+    )}
+    
+  </div>
+)}
     </div>
       </>
     ) }  

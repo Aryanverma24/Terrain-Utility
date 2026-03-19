@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { AuthContext } from "../../contexts/authContext";
+import { AuthContext } from "../../contexts/AuthContext";
 import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 

@@ -223,7 +223,8 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
 app.use("/api/wishlist",wishlistRoutes)
-app.use('/api/messages', chatRoutes);  // Chat routes integration
+app.use('/api/messages', chatRoutes); 
+app.use("/api/chat", chatRoutes); // Chat routes integration
 
 //add user face data
 app.post('/api/add-face', async (req, res) => {
