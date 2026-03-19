@@ -439,7 +439,30 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
     toast.error(err?.response?.data?.message || "Failed to reupload document");
   }
 };
+const handleAssignLawyer = async () => {
+  if (!token) return toast.error("Login required.");
+  if (!land) return;
 
+  try {
+    const res = await API.put(
+      `/api/lawyer/${land._id}/assign`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast.success("You are now assigned to this land");
+
+    // update local state
+    setLand((prev) => ({
+      ...prev,
+      assignedLawyer: currentUserId,
+    }));
+
+  } catch (err) {
+    console.error("Assign error:", err?.response?.data || err.message);
+    toast.error(err?.response?.data?.message || "Failed to assign");
+  }
+};
 
 
 
@@ -469,7 +492,14 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
   if (loading) return <div className="flex justify-center items-center min-h-screen">Loading land details...</div>;
   if (error) return <div className="flex justify-center pt-[7rem] text-red-400">{error}</div>;
   if (!land) return <div className="flex justify-center pt-[7rem]">No data found.</div>;
+console.log( land?.owner?._id || land?.owner);
+const hasRejectedDocs = Array.isArray(fullDocs) &&
+  fullDocs.some(doc => doc.status === "rejected");
 
+const allDocsApproved =
+  Array.isArray(fullDocs) &&
+  fullDocs.length > 0 &&
+  fullDocs.every(doc => doc.status === "approved");
   return (
 <div className="min-h-screen bg-gradient-to-b from-green-100 via-green-50 to-green-100 text-green-900 py-14 px-6">
 
@@ -521,7 +551,7 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
     </div>
 
   {/* Chat button below slideshow */}
-{role !== "owner" && (
+{(String(currentUserId) !== String(land.owner)) && (
   <button
     onClick={handleRedirectToChat}
     className="mt-4 px-4 py-3 bg-pink-400 hover:bg-pink-500 text-gray-100 rounded-lg shadow-md w-full text-center font-semibold transition-transform duration-300 hover:scale-105"
@@ -536,7 +566,35 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
 
 {/* RIGHT: Land Details */}
 <div className="bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-teal-700 relative overflow-hidden hover:shadow-3xl transition-shadow duration-500 h-full flex flex-col justify-between">
-  
+  {/* 🔥 Start Reviewing Button (Top Right) */}
+{role === "lawyer" && land.status === "pending" &&   (
+  <div className="absolute top-4 right-4 z-20">
+
+    {!land.assignedLawyer && (
+      <button
+        onClick={handleAssignLawyer}
+        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+      >
+        ▶ Start Reviewing
+      </button>
+    )}
+
+    {land.assignedLawyer &&
+      String(land.assignedLawyer) === String(currentUserId) && (
+        <span className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg shadow">
+          ✔ You are reviewing
+        </span>
+      )}
+
+    {land.assignedLawyer &&
+      String(land.assignedLawyer) !== String(currentUserId) && (
+        <span className="px-3 py-1 bg-red-600 text-white text-xs rounded-lg shadow">
+          🔒 Locked by another lawyer
+        </span>
+      )}
+
+  </div>
+)}
   {/* subtle animated overlay */}
   <div className="absolute inset-0 bg-teal-200/10 pointer-events-none animate-pulse-slow rounded-3xl"></div>
 
@@ -619,25 +677,55 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
       )}
 
     {/* Lawyer controls */}
-    {role === "lawyer" && (
-      <div className="mt-3 flex gap-3">
-        <button
-          disabled={processingAction || land.status === "approved" || land.status === "rejected"}
-          onClick={handleApprove}
-          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-xl font-semibold disabled:opacity-60 transition-transform duration-300 hover:scale-105 shadow-md hover:shadow-xl text-emerald-50"
-        >
-          ✅ Approve
-        </button>
+ {role === "lawyer" &&
+String(land.assignedLawyer) === String(currentUserId) && (
+  <div className="mt-3 flex flex-col gap-3">
 
-        <button
-          disabled={processingAction || land.status === "approved" || land.status === "rejected"}
-          onClick={() => setShowRejectModal(true)}
-          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-xl font-semibold disabled:opacity-60 transition-transform duration-300 hover:scale-105 shadow-md hover:shadow-xl text-emerald-50"
-        >
-          ❌ Reject
-        </button>
-      </div>
+    <div className="flex gap-3">
+      {/* ✅ APPROVE BUTTON */}
+      <button
+        disabled={
+          processingAction ||
+          land.status === "approved" ||
+          land.status === "rejected" ||
+          hasRejectedDocs ||     // ❌ block if any rejected
+          !allDocsApproved       // ❌ block until all approved
+        }
+        onClick={handleApprove}
+        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-xl font-semibold disabled:opacity-60 transition-transform duration-300 hover:scale-105 shadow-md hover:shadow-xl text-emerald-50"
+      >
+        ✅ Approve
+      </button>
+
+      {/* ❌ REJECT BUTTON (always allowed unless final state) */}
+      <button
+        disabled={
+          processingAction ||
+          land.status === "approved" ||
+          land.status === "rejected"
+        }
+        onClick={() => setShowRejectModal(true)}
+        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-xl font-semibold disabled:opacity-60 transition-transform duration-300 hover:scale-105 shadow-md hover:shadow-xl text-emerald-50"
+      >
+        ❌ Reject
+      </button>
+    </div>
+
+    {/* 🔥 STATUS MESSAGE */}
+    {hasRejectedDocs && (
+      <p className="text-red-300 text-sm">
+        ❌ Cannot approve: Some documents are rejected.
+      </p>
     )}
+
+    {!allDocsApproved && !hasRejectedDocs && (
+      <p className="text-yellow-300 text-sm">
+        ⏳ Waiting for all documents to be approved.
+      </p>
+    )}
+
+  </div>
+)}
 
   </div>
 </div>
@@ -663,7 +751,7 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
 </div>
 
       {/* documents for lawyer and owner */}
-{Array.isArray(fullDocs) && fullDocs.length > 0 && (String(currentUserId) === String(land.owner) || role === "lawyer") && (
+{Array.isArray(fullDocs) && fullDocs.length > 0 && (String(currentUserId) === String(land.owner) || role === "lawyer" ) && (
   <div className="max-w-6xl mx-auto mt-12 p-6 bg-gradient-to-b from-teal-600 via-teal-700 to-teal-800 text-emerald-50 backdrop-blur-xl rounded-3xl border border-teal-700 shadow-lg">
     <h2 className="text-3xl font-extrabold text-rose-300 mb-6 text-center">
       📄 Uploaded Documents & Photos
@@ -701,7 +789,8 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
           </div>
           
     {/* Lawyer action buttons */}
-{role === "lawyer" && (
+{role === "lawyer" &&
+String(land.assignedLawyer) === String(currentUserId) && (
   <div className="mt-3 flex gap-2">
     <button
       onClick={() => updateDocStatus(doc._id, "approved")}
@@ -722,7 +811,8 @@ const handleReuploadDocument = async (parentDocumentId,docId, file) => {
 
 
           {/* Owner re-upload */}
-{String(currentUserId) === String(land.owner) && doc.status === "rejected" && (
+{doc.status === "rejected" &&
+ String(currentUserId) === String(land.owner) && (
   <div className="mt-3 text-center">
     <label className="group cursor-pointer inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300">
       🔄 Re-upload

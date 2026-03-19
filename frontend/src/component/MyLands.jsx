@@ -25,7 +25,30 @@ const MyLand = () => {
   });
 
   const { user } = useContext(AuthContext);
+const token = localStorage.getItem("token");
 
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
+const decoded = token ? decodeJWT(token) : null;
+
+const currentUserId =
+  decoded?.userId || decoded?._id || decoded?.id;
+
+const role = decoded?.role;
   const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
 
@@ -37,25 +60,38 @@ const MyLand = () => {
       setError("User not logged in.");
     }
   }, []);
+const fetchUserLands = async (identifier) => {
+  try {
+    setLoading(true);
 
-  const fetchUserLands = async (username) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/lands/user/${username}`
+
+    let response;
+
+    if (role === "lawyer") {
+      // ✅ Use lawyer-specific route (uses userId)
+      response = await axios.get(
+        `http://localhost:5000/api/lands/lawyer/${currentUserId}`
       );
-
-      if (Array.isArray(response.data) && response.data.length > 0) {
-        setLands(response.data);
-      } else {
-        setLands([]);
-      }
-    } catch (error) {
-      console.error("Error fetching lands:", error);
-      setError("Failed to fetch lands.");
-    } finally {
-      setLoading(false);
+    } else {
+      // ✅ Keep existing behavior (uses username)
+      response = await axios.get(
+        `http://localhost:5000/api/lands/user/${identifier}`
+      );
     }
-  };
+
+    if (Array.isArray(response.data) && response.data.length > 0) {
+      setLands(response.data);
+    } else {
+      setLands([]);
+    }
+
+  } catch (error) {
+    console.error("Error fetching lands:", error);
+    setError("Failed to fetch lands.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEditClick = (land) => {
     setEditingLand(land);
@@ -141,7 +177,11 @@ const handleCheckMessagesAndNavigate = () => {
     );
 
   if (error) return <p>{error}</p>;
+// const isAssignedToMe =
+//   String(land.assignedLawyer) === String(currentUserId);
 
+// const isApprovedByMe =
+//   String(land.approvedBy) === String(currentUserId);
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 bg-mintGreen text-black h-screen pt-[5rem]">
       <h1 className="text-5xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500 animate-pulse mb-8">
@@ -190,20 +230,42 @@ const handleCheckMessagesAndNavigate = () => {
         
 
 
-                <div className="flex gap-8 mt-3">
-                  <button
-                    className="w-full bg-blue-500 text-white py-2 rounded-md"
-                    onClick={() => handleCheckMessagesAndNavigate(land)}
-                  >
-                    Check Messages
-                  </button>
-                  <button
-                    className="w-full bg-green-500 text-white py-2 rounded-md"
-                    onClick={() => handleEditClick(land)}
-                  >
-                    Edit Land
-                  </button>
-                </div>
+             {role !== "lawyer" && (
+  <div className="flex gap-8 mt-3">
+    <button
+      className="w-full bg-blue-500 text-white py-2 rounded-md"
+      onClick={() => handleCheckMessagesAndNavigate(land)}
+    >
+      Check Messages
+    </button>
+
+    <button
+      className="w-full bg-green-500 text-white py-2 rounded-md"
+      onClick={() => handleEditClick(land)}
+    >
+      Edit Land
+    </button>
+  </div>
+)}
+{role === "lawyer" && (
+  <>
+    {/* Approved by YOU */}
+    {land.status === "approved" &&
+     String(land.approvedBy?._id || land.approvedBy) === String(currentUserId) && (
+      <div className="mt-3 bg-green-600 text-white py-2 rounded-md text-center font-semibold">
+        ✅ Approved by You
+      </div>
+    )}
+
+    {/* Reviewing */}
+    {land.status !== "approved" &&
+     String(land.assignedLawyer?._id || land.assignedLawyer) === String(currentUserId) && (
+      <div className="mt-3 bg-yellow-500 text-white py-2 rounded-md text-center font-semibold">
+        🔍 You are Reviewing this Land
+      </div>
+    )}
+  </>
+)}
               </div>
             </div>
           ))}

@@ -11,7 +11,8 @@ import {
   deleteReview,
   getLandByType,
   createReview,
-  updateLandsBySameUser
+  updateLandsBySameUser,
+  getLawyerLands,
 } from "../controllers/LandController.js";
 import { authenticate } from "../middlerwares/landauthenticate.js";
 import { uploadAny} from "../middlerwares/multer.js";
@@ -22,7 +23,7 @@ import { uploadDocuments, resubmitLand } from "../controllers/LandController.js"
 const router = express.Router();
 
 // Route for getting all lands
-router.route("/").get(getAllLands);
+router.route("/get-land").get(getAllLands);
 
 // Route for getting, updating, and deleting land by ID
 router.route("/:id")
@@ -46,7 +47,7 @@ router.post("/create-land", authenticate, uploadAny, createLand);
 // Upload documents for a land
 router.post("/documents/upload/:landId", authenticate, uploadAny, uploadDocuments);
 router.put("/:id/resubmit", authenticate, resubmitLand);
-
+router.get("/lawyer/:lawyerId", getLawyerLands);
 
 
 
