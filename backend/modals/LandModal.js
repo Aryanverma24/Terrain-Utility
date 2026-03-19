@@ -5,7 +5,7 @@ const ReviewSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: User,
+      ref: "User",
       required: true,
     },
     username: {
@@ -37,9 +37,14 @@ const LandSchema = new mongoose.Schema({
     city: { type: String, required: true },
     state: { type: String, required: true },
     pincode: { type: Number, required: true },
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: User },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ownerName: { type: String, required: true },
     price: { type: Number, required: true },
+    assignedLawyer: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
      approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User", // <-- this is important

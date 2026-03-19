@@ -29,6 +29,35 @@ const getPendingLands = asyncHandler(async (req, res) => {
     res.status(500).json({ message: "Server error while fetching pending lands" });
   }
 });
+const assignLawyer = async (req, res) => {
+  try {
+    const { landId } = req.params;
+    const lawyerId = req.user.id; // from JWT middleware
+
+    const land = await Land.findById(landId);
+
+    if (!land) {
+      return res.status(404).json({ message: "Land not found" });
+    }
+
+    // 🚫 If already assigned
+    if (land.assignedLawyer && land.assignedLawyer.toString() !== lawyerId) {
+      return res.status(403).json({
+        message: "This land is already being handled by another lawyer",
+      });
+    }
+
+    // ✅ Assign if not assigned
+    land.assignedLawyer = lawyerId;
+    await land.save();
+
+    res.status(200).json({ message: "Land assigned successfully", land });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // ⭐ Approve or reject land WITH NOTIFICATION
 const approveOrRejectLand = asyncHandler(async (req, res) => {
@@ -93,9 +122,11 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
   });
 });
 
+
 // EXPORTS
 export {
   getPendingLands,
   approveOrRejectLand,
   approveLand,
+assignLawyer,
 };

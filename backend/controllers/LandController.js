@@ -131,34 +131,62 @@ const uploadDocuments = async (req, res) => {
 // ----------------------------------------------
 // GET ALL LANDS (Updated with calculateAverageRating)
 // ----------------------------------------------
-// REPLACEMENT: GET ALL LANDS
 const getAllLands = asyncHandler(async (req, res) => {
   try {
-    // Fetch all approved lands for normal users, all lands for lawyers
+    console.log("🔥 CONTROLLER HIT");
     const requester = getRequesterFromHeader(req);
+      console.log("🔥 REQUESTER:", requester);
     let lands;
+
     if (requester?.role === "lawyer") {
+      // ✅ Lawyer sees ALL lands
       lands = await Land.find({})
         .populate({
-          path: "documents",
-          populate: { path: "documents" }
+          path: "approvedBy",
+          model: "User",
+          select: "username"
         })
-        .lean();
-    } else {
-      // Everyone else sees only approved lands
-      lands = await Land.find({ status: "approved" })
+         .populate({
+    path: "assignedLawyer",
+    model: "User",
+    select: "username",
+  })
+        .populate({
+          path: "owner",
+          model: "User",
+          select: "username"
+        })
         .populate({
           path: "documents",
           populate: { path: "documents" }
+        });
+    } else {
+      // ✅ Normal users see ONLY approved lands
+      lands = await Land.find({ status: "approved" })
+        .populate({
+          path: "approvedBy",
+          model: "User",
+          select: "username"
         })
-        .lean();
+        .populate({
+          path: "owner",
+          model: "User",
+          select: "username"
+        })
+        .populate({
+          path: "documents",
+          populate: { path: "documents" }
+        });
     }
 
-    // Add average rating
+    // ✅ Convert + add rating
     const landsWithAverageRating = lands.map((land) => ({
-      ...land,
+      ...land.toObject(),
       averageRating: calculateAverageRating(land.reviews)
     }));
+
+    // 🔥 DEBUG
+    console.log("🔥 POPULATED LANDS:", landsWithAverageRating);
 
     return res.status(200).json({ data: landsWithAverageRating });
   } catch (error) {
@@ -166,7 +194,6 @@ const getAllLands = asyncHandler(async (req, res) => {
     return res.status(500).send("Error fetching land data");
   }
 });
-
 
 
 
@@ -341,8 +368,26 @@ assignedLawyers.forEach(async (lawyer) => {
   });
 });
 
+//showcasing lands for lawywer in myland 
+ const getLawyerLands = async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
 
+    const lands = await Land.find({
+      $or: [
+        { assignedLawyer: lawyerId },
+        { approvedBy: lawyerId }
+      ]
+    })
+      .populate("owner", "username")
+      .sort({ updatedAt: -1 });
 
+    res.status(200).json(lands);
+  } catch (err) {
+    console.error("Error fetching lawyer lands:", err);
+    res.status(500).json({ message: "Failed to fetch lawyer lands" });
+  }
+};
 
 // ----------------------------------------------
 // GET LAND BY USER ID (Updated with averageRating)
@@ -652,4 +697,5 @@ export {
   uploadDocuments,
   resubmitLand,
   createReview,
+  getLawyerLands,
 };

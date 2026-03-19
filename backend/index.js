@@ -24,12 +24,10 @@ import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
-import { loginUser } from "./controllers/UserController.js";
+
 import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
-
-import chatAuthenticate from "./middlerwares/chatMiddleware.js";
 
 // Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -223,8 +221,9 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/lands", landRoutes);
 app.use("/api/wishlist",wishlistRoutes)
-app.use('/api/messages', chatRoutes);  // Chat routes integration
-
+app.use('/api/messages', chatRoutes); 
+app.use("/api/chat", chatRoutes); // Chat routes integration
+app.use("/api/lawyer",lawyerRoutes);
 //add user face data
 app.post('/api/add-face', async (req, res) => {
   const { email, faceDescriptor } = req.body;

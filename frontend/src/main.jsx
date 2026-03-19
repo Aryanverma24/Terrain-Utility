@@ -3,10 +3,7 @@ import App from './App.jsx';
 import './index.css';
 import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
 import { createBrowserRouter } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../contexts/AuthContext.jsx"; // adjust path
-import OwnerChat from './component/OwnerChat.jsx';
-import BuyerChat from './component/BuyerChat.jsx';
+import ChatWindow from './component/ChatWindow.jsx';
 import Login from './component/Login.jsx';
 import Register from './component/Register.jsx';
 import AuthState from '../contexts/AuthContext.jsx';
@@ -20,9 +17,9 @@ import Profile from './component/Profile.jsx';
 import Wishlist from './component/Wishlist.jsx';
 import LawyerDashboard from './component/lawyerDashboard.jsx';
 import NotificationPanelPage from "./component/NotificationPanelPage";
-import OwnerChatList from './component/OwnerChatList.jsx';
-
-
+import ChatList from './component/ChatList.jsx';
+import Inbox from './component/BuyerInbox.jsx';
+import OwnerInbox from './component/OwnerInbox.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
@@ -51,14 +48,21 @@ const router = createBrowserRouter(
       <Route path="/land/:id" element={<SingleLand />} />
 
        {/* Chat Routes */}
-        <Route path="/chat/buyer/:landId/:ownerId" element={<BuyerChat />} />
-         <Route path="/chat/owner/list" element={<OwnerChatList />} />
- <Route path="/chat/owner/:landId/:buyerId" element={<OwnerChat />} />
-  
+      <Route path="/chat" element={<ChatList />} />
+<Route path="/chat/:chatId" element={<ChatWindow />} />
 
       {/* Face Authentication Routes */}
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}
       {/* <Route path='/add-face' element={<FaceSetup />} /> */}
+   
+
+ {/* buyer inbox Route */}
+<Route path="/inbox" element={<Inbox />} />
+
+ {/* owner inbox Route */}
+<Route path="/owner-inbox" element={<OwnerInbox />} />
+    
+    
     </Route>
     
   )

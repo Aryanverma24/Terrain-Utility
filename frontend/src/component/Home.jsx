@@ -22,20 +22,33 @@ const Home = () => {
 
   // Fetch land data from backend
   useEffect(() => {
-    fetch("http://localhost:5000/get-land")
+     const token = localStorage.getItem("token"); // ✅ read token from localStorage
+  if (!token) return;
+   fetch("http://localhost:5000/api/lands/get-land", {
+  headers: {
+    Authorization: `Bearer ${token}` // ✅ Use token, not user object
+  }
+})
       .then((res) => res.json())
+      
       .then((data) => {
-        let allLands = Array.isArray(data.data) ? data.data : [];
-        if (user && user.role === "lawyer") {
-          setLands(allLands);
-          setFilteredLands(allLands);
-        } else {
-          const approved = allLands.filter((land) => land.status === "approved");
-          setLands(approved);
-          setFilteredLands(approved);
-        }
-      })
+  let allLands = Array.isArray(data.data) ? data.data : [];
+
+  console.log("🔥 FULL API RESPONSE:", data);
+  console.log("🔥 FIRST LAND OBJECT:", allLands[0]);
+  console.log("🔥 APPROVED BY FIELD:", allLands[0]?.approvedBy);
+
+  if (user && user.role === "lawyer") {
+    setLands(allLands);
+    setFilteredLands(allLands);
+  } else {
+    const approved = allLands.filter((land) => land.status === "approved");
+    setLands(approved);
+    setFilteredLands(approved);
+  }
+})
       .catch((error) => console.error("Error fetching data:", error));
+      
   }, []);
 
   useEffect(() => {
@@ -219,6 +232,41 @@ const Home = () => {
                                 className="rounded-lg h-48 w-full object-cover mb-4"
                               />
                             )}
+                         {land.status === "approved" && land.approvedBy && (
+  <div className="mt-2">
+    <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+      ✅ Verified by Lawyer
+    </span>
+
+    <div className="mt-2 flex items-center justify-between bg-emerald-700/40 border border-emerald-500/30 rounded-lg px-3 py-2 shadow-sm">
+  <span className="text-xs text-emerald-200 font-semibold tracking-wide">
+    👨‍⚖️ Approved by
+  </span>
+
+  <span className="text-sm text-white font-bold bg-emerald-600 px-2 py-1 rounded-md shadow">
+    {land.approvedBy?.username || "Unknown"}
+  </span>
+</div>
+  </div>
+)}
+{/* Under Review Badge - Only for Lawyers */}
+{user?.role === "lawyer" && land.status !== "approved" && (
+  <div className="mt-2">
+    <span className="bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+      ⚠️ Under Review
+    </span>
+
+    <div className="mt-2 flex items-center justify-between bg-orange-700/40 border border-orange-500/30 rounded-lg px-3 py-2 shadow-sm">
+      <span className="text-xs text-orange-200 font-semibold tracking-wide">
+        👨‍⚖️ Reviewing by
+      </span>
+
+      <span className="text-sm text-white font-bold bg-orange-600 px-2 py-1 rounded-md shadow">
+        {land.assignedLawyer?.username || "Not Assigned"}
+      </span>
+    </div>
+  </div>
+)}
                             <div className="text-black text-md">
                               <h2 className="font-semibold text-lg mb-2">
                                 LAND TYPE:{" "}

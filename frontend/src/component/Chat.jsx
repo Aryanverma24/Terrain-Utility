@@ -1,19 +1,14 @@
-// components/Chat/ChatRoom.jsx
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const socketUrl = "http://localhost:5000"; // adjust if needed
+const socketUrl = "http://localhost:5000";
 let socket;
 
 export default function ChatRoom({
-  roomId,         // string room id (use same convention on buyer & owner: `${landId}-${buyerId}`)
-  landId,         // optional
+  chat,                 // ✅ FULL CHAT OBJECT
   currentUserId,
-  currentUserName,
-  otherUserId,
-  otherUserName,
 }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
@@ -21,28 +16,50 @@ export default function ChatRoom({
   const [loading, setLoading] = useState(true);
   const listRef = useRef(null);
 
+  const chatId = chat?._id;
+
+  // ✅ GET OTHER USER NAME CORRECTLY
+  const otherUserName =
+    String(chat?.buyerId) === String(currentUserId)
+      ? chat?.ownerName
+      : chat?.buyerName;
+
+  const otherUserId =
+    String(chat?.buyerId) === String(currentUserId)
+      ? chat?.ownerId
+      : chat?.buyerId;
+
   useEffect(() => {
-    if (!roomId || !currentUserId) return;
+    if (!chatId || !currentUserId) return;
 
-    socket = io(socketUrl, { autoConnect: true });
-    socket.emit("joinRoom", { room: roomId });
+    socket = io(socketUrl);
 
-    socket.on("message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
+    // ✅ JOIN USING chatId
+    socket.emit("joinRoom", { room: chatId });
 
+   socket.on("message", (msg) => {
+  setMessages((prev) => {
+    const exists = prev.some(
+      (m) => String(m._id) === String(msg._id)
+    );
+
+    if (exists) return prev; // ✅ prevent duplicate
+
+    return [...prev, msg];
+  });
+});
     socket.on("typing", ({ senderName }) => {
       setTypingFrom(senderName);
       setTimeout(() => setTypingFrom(null), 1500);
     });
 
-    // fetch history
+    // ✅ FETCH FROM CORRECT API
     (async () => {
       try {
-        const res = await axios.get(`/api/messages/land/${roomId}`);
-        // res may be array or { messages: [] } depending on backend — we return array
-        const data = res.data || [];
-        setMessages(Array.isArray(data) ? data : data.messages || []);
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/${chatId}/messages`
+        );
+        setMessages(res.data || []);
       } catch (err) {
         console.error("fetch messages:", err);
       } finally {
@@ -55,10 +72,9 @@ export default function ChatRoom({
       socket.off("typing");
       socket.disconnect();
     };
-  }, [roomId, currentUserId]);
+  }, [chatId, currentUserId]);
 
   useEffect(() => {
-    // scroll to bottom on new message
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
@@ -68,25 +84,28 @@ export default function ChatRoom({
     if (!trimmed) return;
 
     const messageData = {
-      room: roomId,
-      landId,
+      chatId,
       senderId: currentUserId,
-      senderName: currentUserName,
+      senderName: otherUserName === chat.ownerName ? chat.buyerName : chat.ownerName,
       receiverId: otherUserId,
       receiverName: otherUserName,
       message: trimmed,
     };
 
     try {
-      // Optimistic UI
-      setMessages((prev) => [...prev, { ...messageData, timestamp: new Date() }]);
+      // ✅ Optimistic UI
+      setMessages((prev) => [
+        ...prev,
+        { ...messageData, timestamp: new Date() },
+      ]);
+
       setText("");
 
-      // Emit socket (server will also persist and re-emit)
+      // ✅ SOCKET EMIT
       socket.emit("sendMessage", messageData);
 
-      // Save via REST as fallback / authoritative
-      await axios.post("/api/messages", messageData);
+      // ✅ SAVE TO DB
+      await axios.post("http://localhost:5000/api/chat/send", messageData);
     } catch (err) {
       console.error("sendMessage error", err);
       toast.error("Failed to send message.");
@@ -95,8 +114,13 @@ export default function ChatRoom({
 
   const handleTyping = (val) => {
     setText(val);
-    if (!socket) return;
-    socket.emit("typing", { room: roomId, senderName: currentUserName });
+    socket.emit("typing", {
+      room: chatId,
+      senderName:
+        String(chat?.buyerId) === String(currentUserId)
+          ? chat?.buyerName
+          : chat?.ownerName,
+    });
   };
 
   return (
@@ -105,27 +129,55 @@ export default function ChatRoom({
         <div className="bg-white rounded-xl shadow-md p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-semibold">Chat with {otherUserName}</h2>
-              {typingFrom && <p className="text-sm text-gray-500">{typingFrom} is typing...</p>}
+              <h2 className="text-lg font-semibold">
+                Chat with {otherUserName || "User"}
+              </h2>
+              {typingFrom && (
+                <p className="text-sm text-gray-500">
+                  {typingFrom} is typing...
+                </p>
+              )}
             </div>
-            <div className="text-sm text-gray-500">Room: {roomId}</div>
+            <div className="text-sm text-gray-500">
+              Chat ID: {chatId}
+            </div>
           </div>
 
-          <div ref={listRef} className="space-y-3 overflow-y-auto max-h-[60vh] p-2 mb-4">
+          <div
+            ref={listRef}
+            className="space-y-3 overflow-y-auto max-h-[60vh] p-2 mb-4"
+          >
             {loading ? (
-              <p className="text-center text-gray-500">Loading messages...</p>
+              <p className="text-center text-gray-500">
+                Loading messages...
+              </p>
             ) : messages.length === 0 ? (
-              <p className="text-center text-gray-500">No messages yet</p>
+              <p className="text-center text-gray-500">
+                No messages yet
+              </p>
             ) : (
               messages.map((m, i) => {
-                const mine = String(m.senderId) === String(currentUserId);
+                const mine =
+                  String(m.senderId) === String(currentUserId);
+
                 return (
-                  <div key={m._id || i} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                  <div
+                    key={m._id || i}
+                    className={`flex ${
+                      mine ? "justify-end" : "justify-start"
+                    }`}
+                  >
                     <div
                       className={`rounded-xl px-4 py-2 max-w-[75%] break-words shadow-sm
-                        ${mine ? "bg-rose-100 text-rose-900" : "bg-gray-100 text-gray-900"}`}
+                      ${
+                        mine
+                          ? "bg-rose-100 text-rose-900"
+                          : "bg-gray-100 text-gray-900"
+                      }`}
                     >
-                      <div className="text-sm font-medium mb-1">{mine ? "You" : m.senderName}</div>
+                      <div className="text-sm font-medium mb-1">
+                        {mine ? "You" : m.senderName}
+                      </div>
                       <div className="text-base">{m.message}</div>
                       <div className="text-xs text-gray-500 mt-1 text-right">
                         {new Date(m.timestamp).toLocaleString()}
