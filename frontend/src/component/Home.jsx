@@ -6,7 +6,7 @@ import { FaStar } from "react-icons/fa";
 import { API } from "../../utils/API";
 import BackToTop from "./BackToTop";
 import LandCardSlideshow from "./LandCardSlideShow";
-
+import { getFileUrl } from "../../../backend/utils/getFileUrl";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -34,9 +34,6 @@ const Home = () => {
       .then((data) => {
   let allLands = Array.isArray(data.data) ? data.data : [];
 
-  console.log("🔥 FULL API RESPONSE:", data);
-  console.log("🔥 FIRST LAND OBJECT:", allLands[0]);
-  console.log("🔥 APPROVED BY FIELD:", allLands[0]?.approvedBy);
 
   if (user && user.role === "lawyer") {
     setLands(allLands);
@@ -227,7 +224,7 @@ const Home = () => {
                           <div className="p-4">
                             {land.image && (
                               <img
-                                src={`http://localhost:5000/uploads/${land.image}`}
+                                src={getFileUrl(land.image)}
                                 alt={land.landtype || "land"}
                                 className="rounded-lg h-48 w-full object-cover mb-4"
                               />

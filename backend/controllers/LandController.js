@@ -5,12 +5,14 @@ import asyncHandler from "../middlerwares/asyncHandler.js";
 import { mongo, Types } from 'mongoose'; 
 import calculateAverageRating from "../utils/calculateAverageRating.js";
 import mongoose from "mongoose";
-import { approveOrRejectLand,getPendingLands } from "./LawyerController.js";
+
 import { getRequesterFromHeader } from "../utils/getRequesterheader.js";
 import Document  from "../modals/DocumentModal.js";
 import Notification from "../modals/NotificationModal.js";
 import { io } from "../index.js";
-import { notifyLawyers } from "../utils/notifylawyers.js";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
+import { compressImage } from "../utils/compressImage.js";
+import fs from "fs";
 // ----------------------------------------------
 
 
@@ -20,33 +22,35 @@ import { notifyLawyers } from "../utils/notifylawyers.js";
 // ----------------------------------------------
 // CREATE LAND (Pending lawyer approval)
 // ----------------------------------------------
- const createLand = asyncHandler(async (req, res) => {
-  console.log("Body data received:", req.body);
-  console.log("File data received:", req.file);
-  console.log("Authenticated user:", req.user);
+const createLand = asyncHandler(async (req, res) => {
+ 
 
   const { landtype, city, state, pincode, price, length, breadth, description } = req.body;
   const { id, username } = req.user;
 
-  // Validate required fields
   if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
-    return res.status(400).send("All fields are required, including price, length, breadth, and image!");
+    return res.status(400).send("All fields are required, including image!");
   }
 
-  // Build dimensionsString correctly
   const dimensionsString = `${length}*${breadth}`;
 
   try {
+    const localPath = req.file.path;
+
+    // ✅ CREATE LAND FIRST
     const land = new Land({
       landtype,
       city,
       state,
       pincode,
       price,
-      dimensions: { length, breadth },     // ⬅️ Correct nested object
-      dimensionsString,                    // ⬅️ Correct string form
+      dimensions: { length, breadth },
+      dimensionsString,
       description,
-      image: req.file.filename,
+      image: {
+        cloudinary: null,
+        local: localPath
+      },
       owner: id,
       ownerName: username,
       status: "pending",
@@ -54,8 +58,39 @@ import { notifyLawyers } from "../utils/notifylawyers.js";
     });
 
     await land.save();
-    // Notify lawyers
-const assignedLawyers = await User.find({ role: "lawyer" }); // or your logic to get assigned lawyers
+
+    const landId = land._id; // 🔥 NOW USED
+
+    let cloudUrl = null;
+
+    try {
+      const compressedPath = await compressImage(localPath);
+
+      // 🔥 ONLY CHANGE HERE
+      const uploadedUrl = await uploadToCloudinary(
+        compressedPath,
+        `lands/${id}/${landId}`
+      );
+
+      if (uploadedUrl) {
+        cloudUrl = uploadedUrl.replace("/upload/", "/upload/f_auto,q_auto/");
+      }
+
+      if (compressedPath && fs.existsSync(compressedPath)) {
+        fs.unlinkSync(compressedPath);
+      }
+
+      // ✅ UPDATE LAND (no logic removed)
+      land.image.cloudinary = cloudUrl;
+      await land.save();
+
+    } catch (cloudErr) {
+      console.log("Cloudinary process failed, using local image:", cloudErr.message);
+    }
+
+    // ✅ NOTIFICATIONS (UNCHANGED)
+    const assignedLawyers = await User.find({ role: "lawyer" });
+
     assignedLawyers.forEach(async (lawyer) => {
       const notif = new Notification({
         userId: lawyer._id,
@@ -67,10 +102,10 @@ const assignedLawyers = await User.find({ role: "lawyer" }); // or your logic to
       io.to(lawyer._id.toString()).emit("receive-notification", notif);
     });
 
-
     return res.status(201).json({
       message: "Land submitted successfully! Waiting for lawyer approval.",
-      land
+      land,
+      uploadSource: cloudUrl ? "cloudinary" : "local"
     });
 
   } catch (error) {
@@ -80,19 +115,62 @@ const assignedLawyers = await User.find({ role: "lawyer" }); // or your logic to
 });
 
 // Upload documents
+
+
 const uploadDocuments = async (req, res) => {
   try {
     const { landId } = req.params;
 
     const land = await Land.findById(landId);
     if (!land) return res.status(404).json({ message: "Land not found" });
-    if (!req.files || req.files.length === 0)
-      return res.status(400).json({ message: "No files uploaded." });
 
-    const documentsArray = req.files.map((file) => ({
-      type: file.fieldname,
-      file: file.filename,
-    }));
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded." });
+    }
+
+    const documentsArray = [];
+
+   for (let file of req.files) {
+  let cloudUrl = null;
+
+  try {
+    let uploadPath = file.path;
+
+    // 🔥 ONLY COMPRESS LAND PHOTOS
+    if (file.fieldname === "LandPhotos") {
+      const compressedPath = await compressImage(file.path);
+      uploadPath = compressedPath;
+    }
+
+    // 🔥 Upload (same logic)
+    if (file.size < 5 * 1024 * 1024) { // you can increase limit
+      const uploaded = await uploadToCloudinary(
+        uploadPath,
+        `lands/${req.user.id}/${landId}/documents`
+      );
+
+      if (uploaded) {
+        cloudUrl = uploaded.replace("/upload/", "/upload/f_auto,q_auto/");
+      }
+    }
+
+    // 🔥 DELETE COMPRESSED FILE (important)
+    if (uploadPath !== file.path && fs.existsSync(uploadPath)) {
+      fs.unlinkSync(uploadPath);
+    }
+
+  } catch (err) {
+    console.log("Cloudinary doc upload failed:", err.message);
+  }
+
+  documentsArray.push({
+    type: file.fieldname,
+    file: {
+      local: file.path,
+      cloudinary: cloudUrl,
+    },
+  });
+}
 
     const newDocument = new Document({
       land: land._id,
@@ -101,11 +179,14 @@ const uploadDocuments = async (req, res) => {
     });
 
     await newDocument.save();
+
+    // 🔗 Link to land (unchanged)
     land.documents.push(newDocument._id);
     await land.save();
 
-    // Notify all lawyers
+    // 🔔 Notify lawyers (unchanged)
     const lawyers = await User.find({ role: "lawyer" });
+
     for (const lawyer of lawyers) {
       const notif = new Notification({
         userId: lawyer._id,
@@ -113,6 +194,7 @@ const uploadDocuments = async (req, res) => {
         message: `${req.user.username} uploaded documents for land in ${land.city}.`,
         targetRole: "lawyer",
       });
+
       await notif.save();
       io.to(lawyer._id.toString()).emit("receive-notification", notif);
     }
@@ -121,7 +203,9 @@ const uploadDocuments = async (req, res) => {
       message: "Documents uploaded successfully!",
       documentId: newDocument._id,
       landDocuments: land.documents,
+      uploadMode: "hybrid",
     });
+
   } catch (error) {
     console.error("Error uploading documents:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -133,9 +217,9 @@ const uploadDocuments = async (req, res) => {
 // ----------------------------------------------
 const getAllLands = asyncHandler(async (req, res) => {
   try {
-    console.log("🔥 CONTROLLER HIT");
+
     const requester = getRequesterFromHeader(req);
-      console.log("🔥 REQUESTER:", requester);
+
     let lands;
 
     if (requester?.role === "lawyer") {
@@ -186,7 +270,7 @@ const getAllLands = asyncHandler(async (req, res) => {
     }));
 
     // 🔥 DEBUG
-    console.log("🔥 POPULATED LANDS:", landsWithAverageRating);
+ 
 
     return res.status(200).json({ data: landsWithAverageRating });
   } catch (error) {

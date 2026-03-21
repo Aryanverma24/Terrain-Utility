@@ -5,7 +5,7 @@ import { API } from "../../utils/API";
 import StarIcon from "@heroicons/react/24/solid/StarIcon";
 import StarIconOutline from "@heroicons/react/24/outline/StarIcon";
 import axios from "axios";
-
+import { getFileUrl } from "../../../backend/utils/getFileUrl";
 /**
  * Decode JWT (very small utility) - returns parsed payload or null
  */
@@ -515,7 +515,7 @@ const allDocsApproved =
     {/* Slideshow container */}
     <div className="relative w-full h-72 sm:h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-shadow duration-500">
       <img
-        src={`http://localhost:5000/uploads/${landPhotos[currentSlide]}`}
+        src={getFileUrl(landPhotos[currentSlide])}
         alt={`Land Photo ${currentSlide + 1}`}
         className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
       />
@@ -764,7 +764,7 @@ String(land.assignedLawyer) === String(currentUserId) && (
           className="bg-rose-200/80 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col items-center p-3"
         >
           <img
-            src={doc.file ? `http://localhost:5000/uploads/${doc.file}` : "/default-image.jpg"}
+            src= {getFileUrl(doc.file)} 
             alt={doc.type || "Document"}
             className="w-full h-40 object-cover rounded-lg border border-rose-300 mb-3"
           />
@@ -773,14 +773,7 @@ String(land.assignedLawyer) === String(currentUserId) && (
             {doc.type || "Document"}
           </p>
 
-          <a
-            href={doc.file ? `http://localhost:5000/uploads/${doc.file}` : "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors"
-          >
-            View / Download
-          </a>
+         <a href={getFileUrl(doc.file)} target="_blank" rel="noopener noreferrer" className="mt-2 text-sm font-medium text-rose-700 hover:text-rose-800 transition-colors" > View / Download </a>
 
           <div className="mt-2">
             {doc.status === "approved" && <span className="text-green-400 font-bold text-xl">✔️ Approved</span>}
@@ -857,7 +850,7 @@ String(land.assignedLawyer) === String(currentUserId) && (
             className="bg-rose-200/80 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden flex flex-col items-center p-3 w-60 border border-rose-300"
           >
             <img
-              src={doc.file ? `http://localhost:5000/uploads/${doc.file}` : "/default-image.jpg"}
+              src={getFileUrl(doc.file)}
               alt={doc.type || "Land Photo"}
               className="w-full h-40 object-cover rounded-lg border border-rose-400 mb-3"
             />
@@ -866,14 +859,7 @@ String(land.assignedLawyer) === String(currentUserId) && (
               {doc.type || "Land Photo"}
             </p>
 
-            <a
-              href={doc.file ? `http://localhost:5000/uploads/${doc.file}` : "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 text-sm font-medium text-rose-700 hover:text-rose-800 transition-colors"
-            >
-              View / Download
-            </a>
+  <a href={getFileUrl(doc.file)} target="_blank" rel="noopener noreferrer" className="mt-2 text-sm font-medium text-rose-700 hover:text-rose-800 transition-colors" > View / Download </a>
           </div>
         ))}
     </div>

@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import multer from "multer";
@@ -10,7 +11,9 @@ import bodyParser from "body-parser";
 
 import jwt from "jsonwebtoken";
 // Import utilities and routes
-import dbConnect from "./config/db.js";  // Custom DB connection
+import dbConnect from "./config/db.js"; 
+import { configureCloudinary } from "./config/cloudinary.js";
+
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js"
@@ -34,7 +37,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize app
-dotenv.config();
+
 const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
@@ -45,7 +48,7 @@ const io = new Server(server, {
     credentials: true
   }
 });
-
+app.set("io", io);
 // CORS options
 const corsOption = {
   origin: "http://localhost:5173",
@@ -63,7 +66,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
-
+configureCloudinary(); // ✅ now safe // Custom DB connection
 let rooms = {}; // In-memory store (optional)
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);

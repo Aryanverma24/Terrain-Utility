@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-
+import socket from "../../utils/socket";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaHome, FaShopify, FaEnvelope, FaBars, FaTimes } from "react-icons/fa";
 import { PiIslandBold } from "react-icons/pi";
@@ -20,38 +20,31 @@ const Navigation = () => {
 useEffect(() => {
   if (!user?._id) return;
 
-  const fetchUnread = async () => {
+  // 🔥 Listen for unread updates
+  socket.on("unread-update", (count) => {
+    console.log("Unread from socket:", count);
+    setUnreadCount(count);
+  });
+
+  // 🔥 OPTIONAL: fetch once initially
+  const fetchInitialUnread = async () => {
     try {
       const { data } = await API.get(`/api/chat/unread/${user._id}`);
-
-      // 🔥 SUM ALL CHAT COUNTS
-      const total = Object.values(data).reduce(
-        (acc, val) => acc + val,
-        0
-      );
-
+      const total = Object.values(data).reduce((acc, val) => acc + val, 0);
       setUnreadCount(total);
-
     } catch (err) {
-      console.error("Unread fetch error", err);
+      console.error(err);
     }
   };
 
-  fetchUnread();
+  fetchInitialUnread();
 
-  const interval = setInterval(fetchUnread, 3000); // optional realtime feel
-  return () => clearInterval(interval);
+  return () => {
+    socket.off("unread-update"); // cleanup
+  };
 
 }, [user]);
- 
   // user is null initially
-  const toggleDropdown = () => {
-    setDropdown(!dropdown);
-  };
-
-  const toggleSidebar = () => {
-    setSidebar(!sidebar);
-  };
 
   const logoutUser = async (e) => {
     try {
