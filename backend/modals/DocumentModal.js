@@ -42,9 +42,15 @@ const DocumentSchema = new mongoose.Schema({
         required: true,
       },
       file: {
-        type: String, // filename or path
-        required: true,
-      },
+  local: {
+    type: String, //filename or path
+    required: true,
+  },
+  cloudinary: {
+    type: String,
+    default: null,
+  }
+},
       status: {  // Individual document approval status
         type: String,
         enum: ["pending", "approved", "rejected"],

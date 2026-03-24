@@ -33,7 +33,10 @@ const ReviewSchema = new mongoose.Schema(
 const LandSchema = new mongoose.Schema({
     landtype: { type: String, required: true },
     description: { type: String, default: "" },
-    image: { type: String, required: true },
+    image: {
+  cloudinary: { type: String, default: null },
+  local: { type: String, required: true }
+},
     city: { type: String, required: true },
     state: { type: String, required: true },
     pincode: { type: Number, required: true },

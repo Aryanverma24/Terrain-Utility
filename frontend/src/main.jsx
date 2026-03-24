@@ -3,7 +3,7 @@ import App from './App.jsx';
 import './index.css';
 import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
 import { createBrowserRouter } from "react-router-dom";
-import ChatWindow from './component/ChatWindow.jsx';
+
 import Login from './component/Auth/Login.jsx';
 import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
@@ -29,6 +29,7 @@ import ChatList from './component/ChatList.jsx';
 import Inbox from './component/BuyerInbox.jsx';
 import OwnerInbox from './component/OwnerInbox.jsx';
 import About from './component/AboutUs/About.jsx';
+import ChatWindow from './component/ChatWindow.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 

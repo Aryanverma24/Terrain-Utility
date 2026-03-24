@@ -7,7 +7,7 @@ import { MdLandscape } from "react-icons/md";
 import { IoStorefrontOutline } from "react-icons/io5";
 import { HiMenuAlt3, HiX } from "react-icons/hi";
 import { API } from "../../utils/API";
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../contexts/authContext";
 import { toast } from "react-toastify";
 import NotificationPanel from "../component/NotificationPanel";
 const Navigation = () => {
@@ -82,6 +82,7 @@ useEffect(() => {
   };
 
   return (
+
 
 
     <>

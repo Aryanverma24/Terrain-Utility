@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import "./fallBounce.css";
+import { getFileUrl } from "../../../backend/utils/getFileUrl";
 
 const MyLand = () => {
   const [lands, setLands] = useState([]);
@@ -198,7 +199,7 @@ const handleCheckMessagesAndNavigate = () => {
               {/* IMAGE */}
               <Link to={`/land/${land._id}`}>
                 <img
-                  src={`http://localhost:5000/uploads/${land.image}`}
+                  src={getFileUrl(land.image)}
                   alt={land.city}
                   className="w-full h-44 object-cover rounded-xl"
                 />
