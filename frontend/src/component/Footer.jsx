@@ -15,7 +15,7 @@ const Footer = () => {
         
         {/* Left Section: Brand & About */}
         <div className="mb-6 md:mb-0">
-          <h2 className="text-3xl font-extrabold text-green-400">Land Strider</h2>
+          <h2 className="text-3xl font-extrabold text-green-400">Bhu-Parichiye</h2>
           <p className="text-gray-300 mt-2 max-w-sm">
             Your trusted platform for renting, buying, and leasing lands. Explore the best options today!
           </p>
@@ -62,7 +62,7 @@ const Footer = () => {
 
       {/* Bottom Section: Copyright */}
       <div className="text-center text-gray-400 mt-6 border-t border-gray-700 pt-4">
-        © {new Date().getFullYear()} <span className="text-green-400 font-semibold">Land Strider</span>. All rights reserved.
+        © {new Date().getFullYear()} <span className="text-green-400 font-semibold">Bhu-Parichiye</span>. All rights reserved.
       </div>
     </footer>
   );

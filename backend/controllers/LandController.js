@@ -131,34 +131,62 @@ const uploadDocuments = async (req, res) => {
 // ----------------------------------------------
 // GET ALL LANDS (Updated with calculateAverageRating)
 // ----------------------------------------------
-// REPLACEMENT: GET ALL LANDS
 const getAllLands = asyncHandler(async (req, res) => {
   try {
-    // Fetch all approved lands for normal users, all lands for lawyers
+    console.log("🔥 CONTROLLER HIT");
     const requester = getRequesterFromHeader(req);
+      console.log("🔥 REQUESTER:", requester);
     let lands;
+
     if (requester?.role === "lawyer") {
+      // ✅ Lawyer sees ALL lands
       lands = await Land.find({})
         .populate({
-          path: "documents",
-          populate: { path: "documents" }
+          path: "approvedBy",
+          model: "User",
+          select: "username"
         })
-        .lean();
-    } else {
-      // Everyone else sees only approved lands
-      lands = await Land.find({ status: "approved" })
+         .populate({
+    path: "assignedLawyer",
+    model: "User",
+    select: "username",
+  })
+        .populate({
+          path: "owner",
+          model: "User",
+          select: "username"
+        })
         .populate({
           path: "documents",
           populate: { path: "documents" }
+        });
+    } else {
+      // ✅ Normal users see ONLY approved lands
+      lands = await Land.find({ status: "approved" })
+        .populate({
+          path: "approvedBy",
+          model: "User",
+          select: "username"
         })
-        .lean();
+        .populate({
+          path: "owner",
+          model: "User",
+          select: "username"
+        })
+        .populate({
+          path: "documents",
+          populate: { path: "documents" }
+        });
     }
 
-    // Add average rating
+    // ✅ Convert + add rating
     const landsWithAverageRating = lands.map((land) => ({
-      ...land,
+      ...land.toObject(),
       averageRating: calculateAverageRating(land.reviews)
     }));
+
+    // 🔥 DEBUG
+    console.log("🔥 POPULATED LANDS:", landsWithAverageRating);
 
     return res.status(200).json({ data: landsWithAverageRating });
   } catch (error) {
@@ -166,7 +194,6 @@ const getAllLands = asyncHandler(async (req, res) => {
     return res.status(500).send("Error fetching land data");
   }
 });
-
 
 
 
@@ -341,8 +368,26 @@ assignedLawyers.forEach(async (lawyer) => {
   });
 });
 
+//showcasing lands for lawywer in myland 
+ const getLawyerLands = async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
 
+    const lands = await Land.find({
+      $or: [
+        { assignedLawyer: lawyerId },
+        { approvedBy: lawyerId }
+      ]
+    })
+      .populate("owner", "username")
+      .sort({ updatedAt: -1 });
 
+    res.status(200).json(lands);
+  } catch (err) {
+    console.error("Error fetching lawyer lands:", err);
+    res.status(500).json({ message: "Failed to fetch lawyer lands" });
+  }
+};
 
 // ----------------------------------------------
 // GET LAND BY USER ID (Updated with averageRating)
@@ -369,8 +414,6 @@ const getLandsByUser = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching lands." });
   }
 };
-
-
 
 
 // ----------------------------------------------
@@ -541,6 +584,7 @@ const createReview = asyncHandler(async (req, res) => {
   res.status(201).json({ createdReview: newReview });
 });
 
+
 // ----------------------------------------------
 const deleteReview = async (req, res) => {
   try {
@@ -607,6 +651,7 @@ const getLandByType = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching lands' });
   }
 });
+
 const getLandByUserId = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
@@ -636,6 +681,222 @@ const getLandByUserId = asyncHandler(async (req, res) => {
 });
 
 
+
+// GET ALL CITIES WITH VERIFIED LANDS
+// ----------------------------------------------
+const getCitiesWithVerifiedLands = asyncHandler(async (req, res) => {
+  try {
+    console.log("Fetching cities with verified lands...");
+    
+    // Find all approved (lawyer verified) lands and extract unique cities
+    const verifiedLands = await Land.find({ 
+      status: "approved" 
+    }).select('city state').lean();
+    
+    if (!verifiedLands.length) {
+      return res.status(404).json({ 
+        message: 'No verified lands found',
+        cities: [] 
+      });
+    }
+    
+    // Extract unique cities with their states
+    const cityStateMap = new Map();
+    
+    verifiedLands.forEach(land => {
+      if (land.city && land.state) {
+        const cityKey = land.city.toLowerCase().trim();
+        const stateKey = land.state.toLowerCase().trim();
+        
+        if (!cityStateMap.has(cityKey)) {
+          cityStateMap.set(cityKey, {
+            city: land.city,
+            state: land.state,
+            landCount: 0
+          });
+        }
+        cityStateMap.get(cityKey).landCount++;
+      }
+    });
+    
+    // Convert to array and sort by city name
+    const citiesWithStates = Array.from(cityStateMap.values())
+      .sort((a, b) => a.city.localeCompare(b.city));
+    
+    console.log(`Found ${citiesWithStates.length} cities with verified lands`);
+    
+    res.status(200).json({ 
+      message: 'Cities fetched successfully',
+      cities: citiesWithStates,
+      totalCities: citiesWithStates.length
+    });
+    
+  } catch (error) {
+    console.error('Error fetching cities with verified lands:', error);
+    res.status(500).json({ 
+      message: 'Server error while fetching cities',
+      error: error.message 
+    });
+  }
+});
+
+
+
+//mark land as interested
+
+const markInterested = asyncHandler(async(req,res) => {
+  try {
+    
+    const userId = req.user.id || req.user._id; // Handle both id and _id
+    const landId = req.params.landId;
+
+    if(!userId || !landId) {
+      return res.status(400).json({ 
+        message: 'User ID and Land ID are required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if(!user){
+      return res.status(404).json({ 
+        message: 'User not found'
+      });
+    }
+
+    const land = await Land.findById(landId);
+    if(!land){
+      return res.status(404).json({ 
+        message: 'Land not found'
+      });
+    }
+
+    const interested = land.interestedUsers.includes(userId);
+
+    if(interested){
+      return res.status(400).json({ 
+        message: 'User already interested in this land'
+      });
+    }
+
+    land.interestedUsers.push(userId);
+    await land.save();
+
+    res.status(200).json({ 
+      message: 'Land marked as interested successfully',
+      land
+    });
+
+  } catch (error) {
+    console.error('Error marking land as interested:', error);
+    res.status(500).json({ 
+      message: 'Server error while marking land as interested',
+      error: error.message 
+    });
+  }
+})
+
+const unmarkInterested = asyncHandler(async(req,res) => {
+  try {
+    
+    const userId = req.user.id || req.user._id; // Handle both id and _id
+    const landId = req.params.landId;
+
+    if(!userId || !landId) {
+      return res.status(400).json({ 
+        message: 'User ID and Land ID are required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if(!user){
+      return res.status(404).json({ 
+        message: 'User not found'
+      });
+    }
+
+    const land = await Land.findById(landId);
+    if(!land){
+      return res.status(404).json({ 
+        message: 'Land not found'
+      });
+    }
+
+    const interested = land.interestedUsers.includes(userId);
+
+    if(!interested){
+      return res.status(400).json({ 
+        message: 'User not interested in this land'
+      });
+    }
+
+    land.interestedUsers.pull(userId);
+    await land.save();
+
+    res.status(200).json({ 
+      message: 'Land unmarked as interested successfully',
+      land
+    });
+
+  } catch (error) {
+    console.error('Error unmarking land as interested:', error);
+    res.status(500).json({ 
+      message: 'Server error while unmarking land as interested',
+      error: error.message 
+    });
+  }
+})
+
+const getInterestedUsers = asyncHandler(async(req,res) => {
+  try {
+    
+    const landId = req.params.landId;
+
+    if(!landId) {
+      return res.status(400).json({ 
+        message: 'Land ID is required'
+      });
+    }
+
+    const land = await Land.findById(landId);
+    if(!land){
+      return res.status(404).json({ 
+        message: 'Land not found'
+      });
+    }
+
+    // Fetch detailed user information for each interested user
+    const interestedUsersDetails = [];
+    
+    for (const userId of land.interestedUsers) {
+      try {
+        const user = await User.findById(userId).select('-password');
+        if (user) {
+          interestedUsersDetails.push(user);
+        }
+      } catch (userError) {
+        console.error('Error fetching user details:', userError);
+        // Continue with other users even if one fails
+      }
+    }
+
+    res.status(200).json({ 
+      message: 'Interested users fetched successfully',
+      interestedUsers: interestedUsersDetails,
+      count: interestedUsersDetails.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching interested users:', error);
+    res.status(500).json({ 
+      message: 'Server error while fetching interested users',
+      error: error.message 
+    });
+  }
+})
+
+
+
+
 // ----------------------------------------------
 export {
   createLand,
@@ -652,4 +913,9 @@ export {
   uploadDocuments,
   resubmitLand,
   createReview,
+  getLawyerLands,
+  getCitiesWithVerifiedLands,
+  markInterested,
+  unmarkInterested,
+  getInterestedUsers
 };
