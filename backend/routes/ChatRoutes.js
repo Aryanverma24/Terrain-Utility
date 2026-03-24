@@ -33,8 +33,4 @@ router.post("/send", sendMessage);
 router.put("/read/:chatId/:userId", markChatAsRead);
 router.get("/user/:userId", getUserChats);
 router.get("/unread/:userId", getUnreadCount);
-<<<<<<< HEAD
 export default router;
-=======
-export default router;
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5

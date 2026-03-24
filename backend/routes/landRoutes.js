@@ -13,13 +13,10 @@ import {
   createReview,
   updateLandsBySameUser,
   getLawyerLands,
-<<<<<<< HEAD
   getCitiesWithVerifiedLands,
   markInterested,
   unmarkInterested,
   getInterestedUsers
-=======
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5
 } from "../controllers/LandController.js";
 
 import { authenticate } from "../middlerwares/landauthenticate.js";
@@ -57,11 +54,7 @@ router.post("/documents/upload/:landId", authenticate, uploadAny, uploadDocument
 router.put("/:id/resubmit", authenticate, resubmitLand);
 router.get("/lawyer/:lawyerId", getLawyerLands);
 
-<<<<<<< HEAD
 router.get("/cities/verified", getCitiesWithVerifiedLands);
-=======
-
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5
 
 
 router.route("/:id/reviews").get(getLandReviews).post(authenticate, createReview).delete(

@@ -217,15 +217,8 @@ const uploadDocuments = async (req, res) => {
 // ----------------------------------------------
 const getAllLands = asyncHandler(async (req, res) => {
   try {
-<<<<<<< HEAD
-    console.log("🔥 CONTROLLER HIT");
+    
     const requester = getRequesterFromHeader(req);
-      console.log("🔥 REQUESTER:", requester);
-=======
-
-    const requester = getRequesterFromHeader(req);
-
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5
     let lands;
 
     if (requester?.role === "lawyer") {
@@ -273,14 +266,7 @@ const getAllLands = asyncHandler(async (req, res) => {
     const landsWithAverageRating = lands.map((land) => ({
       ...land.toObject(),
       averageRating: calculateAverageRating(land.reviews)
-    }));
-
-    // 🔥 DEBUG
-<<<<<<< HEAD
-    console.log("🔥 POPULATED LANDS:", landsWithAverageRating);
-=======
- 
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5
+    })); 
 
     return res.status(200).json({ data: landsWithAverageRating });
   } catch (error) {
@@ -1008,11 +994,8 @@ export {
   resubmitLand,
   createReview,
   getLawyerLands,
-<<<<<<< HEAD
   getCitiesWithVerifiedLands,
   markInterested,
   unmarkInterested,
   getInterestedUsers
-=======
->>>>>>> a1564f3440c9dbaf7e44fe1de0295cff4e5508b5
 };
