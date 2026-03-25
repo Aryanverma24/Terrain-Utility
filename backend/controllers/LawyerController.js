@@ -59,7 +59,6 @@ const assignLawyer = async (req, res) => {
   }
 };
 
-// ⭐ Approve or reject land WITH NOTIFICATION
 const approveOrRejectLand = asyncHandler(async (req, res) => {
   const { landId } = req.params;
   const { action, rejectionReason } = req.body;
@@ -73,22 +72,37 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
   }
 
   const land = await Land.findById(landId);
-  if (!land) return res.status(404).json({ message: "Land not found" });
+  if (!land) {
+    return res.status(404).json({ message: "Land not found" });
+  }
 
-  // Update land based on action
+  // ✅ Prepare update object (NO overwrite)
+  let updateFields = {};
+
   if (action === "approve") {
-    land.status = "approved";
-    land.approvedBy = lawyerId;
-    land.rejectionReason = "";
+    updateFields = {
+      status: "approved",
+      approvedBy: lawyerId,
+      rejectionReason: "",
+    };
   } else if (action === "reject") {
-    land.status = "rejected";
-    land.approvedBy = lawyerId;
-    land.rejectionReason = rejectionReasonValue;
+    updateFields = {
+      status: "rejected",
+      approvedBy: lawyerId,
+      rejectionReason: rejectionReasonValue,
+    };
   } else {
     return res.status(400).json({ message: "Invalid action" });
   }
 
-  await land.save();
+  // 🔥 SAFE UPDATE (no validation crash)
+  await Land.updateOne(
+    { _id: landId },
+    { $set: updateFields }
+  );
+
+  // ✅ Fetch updated land (for response + notification)
+  const updatedLand = await Land.findById(landId);
 
   // Create notification
   const title =
@@ -98,18 +112,18 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
 
   const message =
     action === "approve"
-      ? `Your land "${land.landtype}" has been successfully approved by a lawyer.`
-      : `Your land "${land.landtype}" was rejected. Reason: ${rejectionReasonValue}`;
+      ? `Your land "${updatedLand.landtype}" has been successfully approved by a lawyer.`
+      : `Your land "${updatedLand.landtype}" was rejected. Reason: ${rejectionReasonValue}`;
 
   const notification = await NotificationModal.create({
-    userId: land.owner,
+    userId: updatedLand.owner,
     title,
     message,
     time: new Date(),
   });
 
   // Send realtime push
-  io.to(land.owner.toString()).emit("receive-notification", {
+  io.to(updatedLand.owner.toString()).emit("receive-notification", {
     title,
     message,
     time: notification.time,
@@ -118,10 +132,9 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
   // Final Response
   res.status(200).json({
     message: `Land ${action}d successfully`,
-    land,
+    land: updatedLand,
   });
 });
-
 
 // EXPORTS
 export {

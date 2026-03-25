@@ -9,10 +9,10 @@ import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
 import AuthState from '../contexts/authContext.jsx';
 import Home from './component/LandingPage/Home.jsx';
-import CreateLand from './component/CreateLand.jsx';
+import CreateLand from './component/Lands/CreateLand.jsx';
 import Lands from './component/Lands/Lands.jsx';
 import AdminDashboard from './component/AdminDashboard/AdminDashboard.jsx';
-import MyLands from './component/MyLands.jsx';
+import MyLand from './component/Lands/MyLands.jsx';
 import SingleLand from './component/Lands/SingleLand.jsx';
 import Profile from './component/Profile.jsx';
 // Admin Components
@@ -30,6 +30,7 @@ import Inbox from './component/BuyerInbox.jsx';
 import OwnerInbox from './component/OwnerInbox.jsx';
 import About from './component/AboutUs/About.jsx';
 import ChatWindow from './component/ChatWindow.jsx';
+import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
@@ -49,7 +50,7 @@ const router = createBrowserRouter(
       <Route index element={<Home />} />
       <Route path="/about" element={<About />} />
       <Route path="/uploads" element={<CreateLand />} />
-      <Route path="/mylands" element={<MyLands />} />
+      <Route path="/mylands" element={<MyLand />} />
       <Route path='/wishlist' element={<Wishlist  />} />
       <Route path="/lands" element={<Lands />} />
 
@@ -82,8 +83,8 @@ const router = createBrowserRouter(
 
  {/* owner inbox Route */}
 <Route path="/owner-inbox" element={<OwnerInbox />} />
-    
-    
+     {/* interset dadshboard Route */}
+ <Route path="/interest-dashboard/:landId" element={<InterestDashboard />} />   
     </Route>
     
   )

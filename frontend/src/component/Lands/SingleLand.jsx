@@ -5,7 +5,8 @@ import { API } from "../../../utils/API";
 import StarIcon from "@heroicons/react/24/solid/StarIcon";
 import StarIconOutline from "@heroicons/react/24/outline/StarIcon";
 import axios from "axios";
-import { FaMapMarkerAlt, FaRulerCombined, FaTag, FaUser, FaPhone, FaStar, FaShieldAlt, FaHome, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaFileAlt, FaComments, FaArrowLeft, FaArrowRight, FaRegStar, FaStar as FaStarSolid, FaHeart, FaHistory, FaTimes } from "react-icons/fa";
+import { FaMapMarkerAlt,FaRegHeart, FaCompass,FaRulerCombined, FaTag, FaUser, FaPhone, FaStar, FaShieldAlt, FaHome, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaFileAlt, FaComments, FaArrowLeft, FaArrowRight, FaRegStar, FaStar as FaStarSolid, FaHeart, FaHistory, FaTimes } from "react-icons/fa";
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 
 /**
  * Decode JWT (very small utility) - returns parsed payload or null
@@ -162,7 +163,7 @@ const SingleLand = () => {
   const [isInterested, setIsInterested] = useState(false);
   const [interestedCount, setInterestedCount] = useState(0);
   const [loadingInterest, setLoadingInterest] = useState(false);
-  
+  const [highlightInterest, setHighlightInterest] = useState(false);
   // Modal state for interested users
   const [showInterestedUsersModal, setShowInterestedUsersModal] = useState(false);
   const [interestedUsersData, setInterestedUsersData] = useState([]);
@@ -182,8 +183,25 @@ const nextSlide = () => {
   setCurrentSlide((prev) => (prev === landPhotos.length - 1 ? 0 : prev + 1));
 };
 
+useEffect(() => {
+  const checkInterest = async () => {
+    try {
+      const res = await axios.get(
+        `/api/lands/${land._id}/is-interested`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
+      setIsInterested(res.data.isInterested);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
+  if (land?._id && token) checkInterest();
+
+}, [land?._id]); // ✅ ONLY run when ID changes
 
   useEffect(() => {
   const interval = setInterval(() => {
@@ -253,7 +271,23 @@ const fetchLand = useCallback(async () => {
 
 
 
+const handleExploreMore = () => {
+  const actuallyInterested = land?.interestedUsers?.some(
+    (id) => String(id) === String(currentUserId)
+  );
 
+  if (!actuallyInterested) {
+    toast.warning(
+      "You have to show interest first to explore more about this land"
+    );
+
+    setHighlightInterest(true);
+    setTimeout(() => setHighlightInterest(false), 2000);
+    return;
+  }
+
+  navigate(`/interest-dashboard/${land._id}`);
+};
 
 
   // Chat navigation
@@ -288,39 +322,99 @@ const handleRedirectToChat = async () => {
 };
 
   // Handle interest toggle
-  const handleInterestToggle = async () => {
-    if (!token) return toast.error("Login required.");
-    if (!land) return toast.error("No land selected.");
-    if (String(currentUserId) === String(land.owner)) return toast.error("Cannot mark own property as interested.");
-    
-    setLoadingInterest(true);
-    
-    try {
-      const endpoint = isInterested ? `/api/lands/${land._id}/uninterested` : `/api/lands/${land._id}/interested`;
-      const response = await API.post(endpoint, {});
-      
-      // Update local state
-      setIsInterested(!isInterested);
-      setInterestedCount(prev => isInterested ? prev - 1 : prev + 1);
-      
-      // Update land data
-      setLand(prev => ({
-        ...prev,
-        interestedUsers: isInterested 
-          ? prev.interestedUsers.filter(id => id !== currentUserId)
-          : [...prev.interestedUsers, currentUserId]
-      }));
-      
-      toast.success(response.data.message);
-      
-    } catch (err) {
-      console.error("Interest toggle error:", err);
-      toast.error(err?.response?.data?.message || "Failed to update interest status");
-    } finally {
-      setLoadingInterest(false);
-    }
-  };
+const handleInterestToggle = async () => {
+  if (!token) return toast.error("Login required.");
+  if (!land) return toast.error("No land selected.");
+  if (String(currentUserId) === String(land.owner)) 
+    return toast.error("Cannot mark own property as interested.");
+  
+  const prevInterested = isInterested;
+  const newInterested = !prevInterested;
 
+  // 🔥 IMPORTANT: instant UI update (like before)
+  setIsInterested(newInterested);
+
+  setInterestedCount(prev =>
+    newInterested ? prev + 1 : prev - 1
+  );
+
+  // 🔥 FIXED PART (MAIN ISSUE SOLVED HERE)
+  setLand(prev => {
+    const alreadyExists = prev.interestedUsers.some(
+      id => String(id) === String(currentUserId)
+    );
+
+    let updatedUsers;
+
+    if (newInterested) {
+      // ✅ prevent duplicate (CRITICAL FIX)
+      updatedUsers = alreadyExists
+        ? prev.interestedUsers
+        : [...prev.interestedUsers, currentUserId];
+    } else {
+      // ✅ safe removal
+      updatedUsers = prev.interestedUsers.filter(
+        id => String(id) !== String(currentUserId)
+      );
+    }
+
+    return {
+      ...prev,
+      interestedUsers: updatedUsers
+    };
+  });
+
+  setLoadingInterest(true);
+
+  try {
+    const endpoint = prevInterested
+      ? `/api/lands/${land._id}/uninterested`
+      : `/api/lands/${land._id}/interested`;
+
+    const response = await API.post(endpoint, {});
+    toast.success(response.data.message);
+
+  } catch (err) {
+    console.error("Interest toggle error:", err);
+
+    // 🔴 rollback if API fails
+    setIsInterested(prevInterested);
+
+    setInterestedCount(prev =>
+      prevInterested ? prev + 1 : prev - 1
+    );
+
+    setLand(prev => {
+      const alreadyExists = prev.interestedUsers.some(
+        id => String(id) === String(currentUserId)
+      );
+
+      let updatedUsers;
+
+      if (prevInterested) {
+        updatedUsers = alreadyExists
+          ? prev.interestedUsers
+          : [...prev.interestedUsers, currentUserId];
+      } else {
+        updatedUsers = prev.interestedUsers.filter(
+          id => String(id) !== String(currentUserId)
+        );
+      }
+
+      return {
+        ...prev,
+        interestedUsers: updatedUsers
+      };
+    });
+
+    toast.error(
+      err?.response?.data?.message || "Failed to update interest status"
+    );
+
+  } finally {
+    setLoadingInterest(false);
+  }
+};
   // Handle ownership history
   const handleOwnershipHistory = () => {
     if (!token) return toast.error("Login required.");
@@ -627,7 +721,7 @@ const allDocsApproved =
     {/* Image Slideshow */}
     <div className="relative w-full h-72 sm:h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl bg-gray-100 group">
       <img
-        src={`http://localhost:5000/uploads/${landPhotos[currentSlide]}`}
+        src={getFileUrl(landPhotos[currentSlide])}
         alt={`Land Photo ${currentSlide + 1}`}
         className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
       />
@@ -694,7 +788,7 @@ const allDocsApproved =
             }`}
           >
             <img
-              src={`http://localhost:5000/uploads/${photo}`}
+              src={getFileUrl(land.photo)}
               alt={`Thumbnail ${idx + 1}`}
               className="w-full h-full object-cover"
             />
@@ -827,34 +921,38 @@ const allDocsApproved =
     {String(currentUserId) !== String(land.owner) && (
       <div className="space-y-3">
         {/* Interested Button */}
-        <button
-          onClick={handleInterestToggle}
-          disabled={loadingInterest}
-          className={`group relative w-full font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg transform hover:scale-[1.02] flex items-center justify-between overflow-hidden ${
-            isInterested 
-              ? 'bg-gradient-to-r from-pink-600 to-red-600 hover:from-pink-700 hover:to-red-700 text-white shadow-pink-500/30' 
-              : 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-gray-500/30'
-          } ${loadingInterest ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <div className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${
-            isInterested 
-              ? 'bg-gradient-to-r from-pink-400 to-red-400' 
-              : 'bg-gradient-to-r from-gray-400 to-gray-500'
-          }`} />
-          
-          <div className="flex items-center gap-3 relative z-10">
-            <FaHeart className={`w-5 h-5 ${isInterested ? 'fill-current' : ''}`} />
-            <span>
-              {loadingInterest ? 'Processing...' : (isInterested ? 'Remove Interest' : 'Mark as Interested')}
-            </span>
-          </div>
-          
-          <div className="relative z-10">
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-              {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
-            </span>
-          </div>
-        </button>
+       <button
+  id="interest-btn"
+  onClick={handleInterestToggle}
+  disabled={loadingInterest}
+  className={`group relative w-full font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg transform hover:scale-[1.02] flex items-center justify-between overflow-hidden ${
+    isInterested 
+      ? 'bg-gradient-to-r from-pink-600 to-red-600 hover:from-pink-700 hover:to-red-700 text-white shadow-pink-500/30' 
+      : 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-gray-500/30'
+  } ${loadingInterest ? 'opacity-50 cursor-not-allowed' : ''} 
+  ${highlightInterest ? 'ring-4 ring-orange-400 animate-pulse' : ''}`}
+>
+  <div className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${
+    isInterested 
+      ? 'bg-gradient-to-r from-pink-400 to-red-400' 
+      : 'bg-gradient-to-r from-gray-400 to-gray-500'
+  }`} />
+  
+  <div className="flex items-center gap-3 relative z-10">
+    <FaHeart className={`w-5 h-5 ${isInterested ? 'fill-current' : ''}`} />
+    <span>
+      {loadingInterest 
+        ? 'Processing...' 
+        : (isInterested ? 'Remove Interest' : 'Mark as Interested')}
+    </span>
+  </div>
+  
+  <div className="relative z-10">
+    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+      {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
+    </span>
+  </div>
+</button>
 
         {/* Ownership History Button */}
         <button
@@ -872,7 +970,22 @@ const allDocsApproved =
             <FaArrowRight className="w-4 h-4" />
           </div>
         </button>
-
+      {/* explore more Button */}   
+<button
+  onClick={handleExploreMore}
+  className="group relative w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-orange-500/30 transform hover:scale-[1.02] flex items-center justify-between overflow-hidden"
+>
+  <div className="absolute inset-0 bg-gradient-to-r from-orange-300 to-orange-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+  
+  <div className="flex items-center gap-3 relative z-10">
+    <FaCompass className="w-5 h-5" />
+    <span>Explore More About This Land</span>
+  </div>
+  
+  <div className="relative z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <FaArrowRight className="w-4 h-4" />
+  </div>
+</button>
         {/* Chat Button */}
         <button
           onClick={handleRedirectToChat}
@@ -1210,7 +1323,7 @@ const allDocsApproved =
                   <div className="aspect-video bg-gray-100">
                     {doc.file ? (
                       <img
-                        src={`http://localhost:5000/uploads/${doc.file}`}
+                        src={getFileUrl(doc.file)}
                         alt={doc.type || "Document"}
                         className="w-full h-full object-cover"
                       />

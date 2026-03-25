@@ -13,6 +13,8 @@ import { io } from "../index.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 import { compressImage } from "../utils/compressImage.js";
 import fs from "fs";
+import { generateHash } from "../utils/Hash.js";
+import OwnershipHistory from "../modals/ownershipHistroyModal.js";
 // ----------------------------------------------
 
 
@@ -58,7 +60,43 @@ const createLand = asyncHandler(async (req, res) => {
     });
 
     await land.save();
+// ==============================
+// 🔐 CREATE GENESIS OWNERSHIP BLOCK
+// ==============================
 
+const genesisData = {
+  landId: land._id.toString(),
+  owner: id.toString(),
+  time: Date.now(),
+};
+
+const currentHash = generateHash(genesisData);
+
+const ownershipRecord = await OwnershipHistory.create({
+  landId: land._id,
+
+  fromOwner: id,
+  fromOwnerName: username,
+
+  toOwner: id,
+  toOwnerName: username,
+
+  transferType: "sale",
+  price: price,
+
+  previousHash: "0", // genesis
+  currentHash,
+  blockNumber: 0,
+
+  verified: true,
+});
+
+// 🔗 LINK TO LAND
+land.ownershipHistory.push(ownershipRecord._id);
+land.ownershipCount = 1;
+land.lastTransferDate = ownershipRecord.dateOfTransfer;
+
+await land.save();
     const landId = land._id; // 🔥 NOW USED
 
     let cloudUrl = null;
@@ -823,157 +861,183 @@ const getCitiesWithVerifiedLands = asyncHandler(async (req, res) => {
 
 
 //mark land as interested
-
-const markInterested = asyncHandler(async(req,res) => {
+const markInterested = asyncHandler(async (req, res) => {
   try {
-    
-    const userId = req.user.id || req.user._id; // Handle both id and _id
+    const userId = req.user.id || req.user._id;
     const landId = req.params.landId;
 
-    if(!userId || !landId) {
-      return res.status(400).json({ 
-        message: 'User ID and Land ID are required'
-      });
-    }
-
-    const user = await User.findById(userId);
-    if(!user){
-      return res.status(404).json({ 
-        message: 'User not found'
+    if (!userId || !landId) {
+      return res.status(400).json({
+        message: "User ID and Land ID are required",
       });
     }
 
     const land = await Land.findById(landId);
-    if(!land){
-      return res.status(404).json({ 
-        message: 'Land not found'
+    if (!land) {
+      return res.status(404).json({
+        message: "Land not found",
       });
     }
 
-    const interested = land.interestedUsers.includes(userId);
+    // ✅ FIX: check inside object
+    const alreadyInterested = land.interestedUsers.some(
+      (item) => item.user.toString() === userId.toString()
+    );
 
-    if(interested){
-      return res.status(400).json({ 
-        message: 'User already interested in this land'
+    if (alreadyInterested) {
+      return res.status(400).json({
+        message: "User already interested in this land",
       });
     }
 
-    land.interestedUsers.push(userId);
+    // ✅ FIX: push OBJECT (not userId)
+    land.interestedUsers.push({
+      user: userId,
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    // ✅ update count
+    land.interestedUsersCount = land.interestedUsers.length;
+
     await land.save();
 
-    res.status(200).json({ 
-      message: 'Land marked as interested successfully',
-      land
+    res.status(200).json({
+      message: "Land marked as interested successfully",
     });
 
   } catch (error) {
-    console.error('Error marking land as interested:', error);
-    res.status(500).json({ 
-      message: 'Server error while marking land as interested',
-      error: error.message 
+    console.error("Error marking land as interested:", error);
+    res.status(500).json({
+      message: "Server error while marking land as interested",
+      error: error.message,
     });
   }
-})
+});
 
-const unmarkInterested = asyncHandler(async(req,res) => {
+
+const unmarkInterested = asyncHandler(async (req, res) => {
   try {
-    
-    const userId = req.user.id || req.user._id; // Handle both id and _id
+    const userId = req.user.id || req.user._id;
     const landId = req.params.landId;
 
-    if(!userId || !landId) {
-      return res.status(400).json({ 
-        message: 'User ID and Land ID are required'
-      });
-    }
-
-    const user = await User.findById(userId);
-    if(!user){
-      return res.status(404).json({ 
-        message: 'User not found'
+    if (!userId || !landId) {
+      return res.status(400).json({
+        message: "User ID and Land ID are required",
       });
     }
 
     const land = await Land.findById(landId);
-    if(!land){
-      return res.status(404).json({ 
-        message: 'Land not found'
+    if (!land) {
+      return res.status(404).json({
+        message: "Land not found",
       });
     }
 
-    const interested = land.interestedUsers.includes(userId);
+    // ✅ FIX: check inside object
+    const interested = land.interestedUsers.some(
+      (item) => item.user.toString() === userId.toString()
+    );
 
-    if(!interested){
-      return res.status(400).json({ 
-        message: 'User not interested in this land'
+    if (!interested) {
+      return res.status(400).json({
+        message: "User not interested in this land",
       });
     }
 
-    land.interestedUsers.pull(userId);
+    // ✅ FIX: filter objects
+    land.interestedUsers = land.interestedUsers.filter(
+      (item) => item.user.toString() !== userId.toString()
+    );
+
+    land.interestedUsersCount = land.interestedUsers.length;
+
     await land.save();
 
-    res.status(200).json({ 
-      message: 'Land unmarked as interested successfully',
-      land
+    res.status(200).json({
+      message: "Land unmarked as interested successfully",
     });
 
   } catch (error) {
-    console.error('Error unmarking land as interested:', error);
-    res.status(500).json({ 
-      message: 'Server error while unmarking land as interested',
-      error: error.message 
+    console.error("Error unmarking land as interested:", error);
+    res.status(500).json({
+      message: "Server error while unmarking land as interested",
+      error: error.message,
     });
   }
-})
+});
 
-const getInterestedUsers = asyncHandler(async(req,res) => {
+
+const getInterestedUsers = asyncHandler(async (req, res) => {
   try {
-    
     const landId = req.params.landId;
 
-    if(!landId) {
-      return res.status(400).json({ 
-        message: 'Land ID is required'
+    if (!landId) {
+      return res.status(400).json({
+        message: "Land ID is required",
       });
     }
 
-    const land = await Land.findById(landId);
-    if(!land){
-      return res.status(404).json({ 
-        message: 'Land not found'
+    const land = await Land.findById(landId).populate(
+      "interestedUsers.user",
+      "-password"
+    );
+
+    if (!land) {
+      return res.status(404).json({
+        message: "Land not found",
       });
     }
 
-    // Fetch detailed user information for each interested user
-    const interestedUsersDetails = [];
-    
-    for (const userId of land.interestedUsers) {
-      try {
-        const user = await User.findById(userId).select('-password');
-        if (user) {
-          interestedUsersDetails.push(user);
-        }
-      } catch (userError) {
-        console.error('Error fetching user details:', userError);
-        // Continue with other users even if one fails
-      }
-    }
+    // ✅ FIX: map properly
+    const interestedUsersDetails = land.interestedUsers.map((item) => ({
+      user: item.user,
+      status: item.status,
+      createdAt: item.createdAt,
+    }));
 
-    res.status(200).json({ 
-      message: 'Interested users fetched successfully',
+    res.status(200).json({
+      message: "Interested users fetched successfully",
       interestedUsers: interestedUsersDetails,
-      count: interestedUsersDetails.length
+      count: interestedUsersDetails.length,
     });
 
   } catch (error) {
-    console.error('Error fetching interested users:', error);
-    res.status(500).json({ 
-      message: 'Server error while fetching interested users',
-      error: error.message 
+    console.error("Error fetching interested users:", error);
+    res.status(500).json({
+      message: "Server error while fetching interested users",
+      error: error.message,
     });
   }
-})
+});
+//to get the ownership table 
+const getLandDashboard = async (req, res) => {
+  const { id } = req.params;
 
+  const land = await Land.findById(id)
+    .populate("owner", "name")
+    .populate("ownershipHistory")
+    .populate("interestedUsers.user", "name");
+
+  if (!land) {
+    return res.status(404).json({ msg: "Land not found" });
+  }
+
+  // 🔥 Current Owner
+  const currentOwner = land.owner;
+
+  // 🔥 Last Transfer
+  const lastTransfer =
+    land.ownershipHistory[land.ownershipHistory.length - 1];
+
+  res.json({
+    land,
+    currentOwner,
+    lastTransferDate: land.lastTransferDate,
+    ownershipHistory: land.ownershipHistory,
+    interests: land.interestedUsers,
+  });
+};
 
 
 
@@ -997,5 +1061,6 @@ export {
   getCitiesWithVerifiedLands,
   markInterested,
   unmarkInterested,
-  getInterestedUsers
+  getInterestedUsers,
+  getLandDashboard
 };

@@ -42,32 +42,45 @@ router.put("/file/:subDocId/:status", asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid status" });
   }
 
-  // Find the parent document containing this subDoc
   const parentDoc = await Document.findOne({ "documents._id": subDocId });
-  if (!parentDoc) return res.status(404).json({ message: "Document not found" });
 
-  // Update the sub-document status
-  const subDoc = parentDoc.documents.id(subDocId);
-  subDoc.status = status;
-  await parentDoc.save();
+  if (!parentDoc) {
+    return res.status(404).json({ message: "Document not found" });
+  }
 
-  // Create notification for owner
+  // ✅ SAFE UPDATE (NO VALIDATION BREAK)
+  await Document.updateOne(
+    { "documents._id": subDocId },
+    {
+      $set: {
+        "documents.$.status": status,
+      },
+    }
+  );
+
+  // Get updated subdoc (optional)
+  const updatedDoc = await Document.findOne(
+    { "documents._id": subDocId },
+    { "documents.$": 1 }
+  );
+
+  const subDoc = updatedDoc.documents[0];
+
+  // 🔔 Notification
   const notification = await Notification.create({
-    userId: parentDoc.owner, // assuming owner field exists on parent document
+    userId: parentDoc.owner,
     title: `Document ${status}`,
     message: `Your document "${subDoc.type}" was ${status} by the lawyer.`,
   });
 
-  // Optional: emit via socket.io if you have io
-  if (req.app.get("io")) {
-    const io = req.app.get("io");
+  const io = req.app.get("io");
+  if (io) {
     io.to(parentDoc.owner.toString()).emit("new-notification", notification);
   }
 
   res.status(200).json({
     message: "Document status updated",
     document: subDoc,
-    notification,
   });
 }));
 

@@ -49,6 +49,7 @@ const io = new Server(server, {
   }
 });
 app.set("io", io);
+
 // CORS options
 const corsOption = {
   origin: "http://localhost:5173",

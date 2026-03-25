@@ -1,18 +1,16 @@
 import { useEffect, useState, useContext } from "react";
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../../contexts/authContext";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router";
 import axios from "axios";
-import "./fallBounce.css";
-import { getFileUrl } from "../../../backend/utils/getFileUrl";
-
+import "../fallBounce.css";
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 const MyLand = () => {
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingLand, setEditingLand] = useState(null);
-
   // Added new fields here
   const [formData, setFormData] = useState({
     landtype: "",

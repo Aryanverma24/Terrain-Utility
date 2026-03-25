@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { FaStar, FaMapMarkerAlt } from "react-icons/fa";
 import { API } from "../../../utils/API";
 import BackToTop from "../BackToTop";
-import LandCardSlideshow from "../LandCardSlideShow";
+
 import Hero from "./Hero";
 import Features from "./Features";
 import HowItWorks from "./HowItWorks";
