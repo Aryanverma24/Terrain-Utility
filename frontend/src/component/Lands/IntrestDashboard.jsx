@@ -82,7 +82,7 @@ const [showHistoryModal, setShowHistoryModal] = useState(false);
       : "Viewing as guest";
 
   const interestMessage =
-    totalInterested === 0
+    totalInterested === 1
       ? "You are the first person interested!"
       : currentUserId !== null
       ? totalInterested === 1 && otherUsers === 0
@@ -104,257 +104,219 @@ const [showHistoryModal, setShowHistoryModal] = useState(false);
   // =========================
   const lastHash =
     ownershipHistory[ownershipHistory.length - 1]?.currentHash;
+return (
+  <div className="min-h-screen pt-24 pb-10 px-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7]">
 
-  return (
-   <div className="min-h-screen pt-24 bg-gray-50 px-6">
+    <div className="max-w-5xl mx-auto space-y-6">
 
-  {/* 🔹 HEADER */}
-  <div className="max-w-5xl mx-auto">
-
-    {/* INFO CARD */}
-    <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">
-        {welcomeMessage}
-      </h2>
-      <p className="text-gray-600">{interestMessage}</p>
-    </div>
-
-    {/* COUNT */}
-    {totalInterested > 0 && (
-      <div className="bg-white rounded-xl shadow p-4 mb-6 text-center">
-        <p className="text-gray-700 font-medium">
-          {totalInterested} Users Interested
-        </p>
-      </div>
-    )}
-
-    {/* =========================
-        📊 INTEREST TABLE
-    ========================= */}
-    {sortedInterests.length > 0 && (
-     <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
-  <h3 className="text-lg font-semibold text-gray-800 mb-5">
-    Interested Users
-  </h3>
-
-  <div className="overflow-x-auto">
-    <table className="w-full border-separate border-spacing-y-2 text-sm">
-
-      {/* HEADER */}
-      <thead>
-        <tr className="text-gray-500 text-xs uppercase tracking-wide">
-          <th className="text-left px-4">#</th>
-          <th className="text-left px-4">User</th>
-          <th className="text-left px-4">Date</th>
-          <th className="text-right px-4">Status</th>
-        </tr>
-      </thead>
-
-      {/* BODY */}
-      <tbody>
-        {sortedInterests.map((i, index) => (
-          <tr
-            key={i._id}
-            className="bg-gray-50 hover:bg-gray-100 transition rounded-xl"
-          >
-
-            {/* NUMBER */}
-            <td className="px-4 py-3 font-medium text-gray-700">
-              {index + 1}
-            </td>
-
-            {/* USER */}
-            <td className="px-4 py-3 font-semibold text-gray-800">
-              {i.user?.username || "Anonymous"}
-            </td>
-
-            {/* DATE */}
-            <td className="px-4 py-3 text-gray-600">
-              {new Date(i.createdAt).toLocaleDateString()}
-            </td>
-
-            {/* STATUS */}
-            <td className="px-4 py-3 text-right">
-              <span
-                className={`px-3 py-1 text-xs rounded-full font-medium ${
-                  i.status === "accepted"
-                    ? "bg-green-100 text-green-700"
-                    : i.status === "withdrawn"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {i.status || "pending"}
-              </span>
-            </td>
-
-          </tr>
-        ))}
-      </tbody>
-
-    </table>
-  </div>
-</div>
-    )}
-
-{/* =========================
-    🧾 OWNERSHIP PREVIEW CARD
-========================= */}
-<div className="bg-white rounded-2xl shadow-md p-6">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4">
-    Ownership History
-  </h3>
-
-  <div className="flex items-center justify-between">
-
-    <div className="text-sm text-gray-600 space-y-1">
-      <p>
-        Current Owner:{" "}
-        <span className="font-semibold text-gray-800">
-          {ownershipHistory?.[ownershipHistory.length - 1]?.toOwnerName || "N/A"}
-        </span>
-      </p>
-
-      <p className="text-xs text-gray-400">
-        Total Records: {ownershipHistory.length}
-      </p>
-    </div>
-
-    <button
-      onClick={() => setShowHistoryModal(true)}
-      className="px-4 py-2 text-sm bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition"
-    >
-      View Full History
-    </button>
-  </div>
-</div>
-
-{/* =========================
-    📊 MODAL FLOWCHART
-========================= */}
-{showHistoryModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-
-    <div className="bg-white w-[90%] max-w-3xl max-h-[80vh] rounded-2xl shadow-xl p-6 overflow-y-auto">
-
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-semibold text-gray-800">
-          Ownership Flow
+      {/* 🔥 HERO INFO */}
+      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-6">
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+          {welcomeMessage}
         </h2>
+        <p className="text-gray-600 text-sm">{interestMessage}</p>
+      </div>
+
+      {/* 🔥 COUNT */}
+      {totalInterested > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 text-center shadow-sm">
+          <p className="text-emerald-700 font-semibold">
+            {totalInterested} Users Interested
+          </p>
+        </div>
+      )}
+
+      {/* =========================
+          📊 INTEREST LIST (UPGRADED)
+      ========================= */}
+      {sortedInterests.length > 0 && (
+        <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-6">
+
+          <h3 className="text-lg font-semibold text-gray-800 mb-5">
+            Interested Users
+          </h3>
+
+          <div className="space-y-3">
+            {sortedInterests.map((i, index) => (
+              <div
+                key={i._id}
+                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-white transition shadow-sm hover:shadow-md border border-transparent hover:border-gray-200"
+              >
+
+                {/* LEFT */}
+                <div className="flex items-center gap-4">
+
+                  {/* INDEX */}
+                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700 text-sm font-semibold">
+                    {index + 1}
+                  </div>
+
+                  {/* USER */}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {i.user?.username || "Anonymous"}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(i.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* STATUS */}
+                <span
+                  className={`px-3 py-1 text-xs rounded-full font-medium
+                    ${i.status === "accepted"
+                      ? "bg-green-100 text-green-700"
+                      : i.status === "withdrawn"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                    }`}
+                >
+                  {i.status || "pending"}
+                </span>
+
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =========================
+          🧾 OWNERSHIP CARD
+      ========================= */}
+      <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-6 flex items-center justify-between">
+
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Ownership History
+          </h3>
+
+          <p className="text-sm text-gray-600">
+            Current Owner:{" "}
+            <span className="font-semibold text-gray-800">
+              {ownershipHistory?.[ownershipHistory.length - 1]?.toOwnerName || "N/A"}
+            </span>
+          </p>
+
+          <p className="text-xs text-gray-400">
+            Total Records: {ownershipHistory.length}
+          </p>
+        </div>
 
         <button
-          onClick={() => setShowHistoryModal(false)}
-          className="text-gray-500 hover:text-gray-800 text-xl"
+          onClick={() => setShowHistoryModal(true)}
+          className="px-5 py-2.5 text-sm font-medium text-white 
+          bg-gradient-to-r from-indigo-500 to-blue-500 
+          rounded-lg shadow-sm hover:shadow-md hover:scale-[1.02] transition"
         >
-          ✕
+          View Full History
         </button>
       </div>
 
-      {/* FLOW */}
-      <div className="relative">
-
-        {/* LINE */}
-        <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-gray-200"></div>
-
-        <div className="space-y-8">
-          {ownershipHistory.map((h, index) => {
-            const isGenesis = h.fromOwnerName === h.toOwnerName;
-            const isCurrent = index === ownershipHistory.length - 1;
-
-            return (
-              <div key={h._id} className="flex items-start gap-4">
-
-                {/* STEP */}
-                <div className="z-10">
-                  <div
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-white text-xs font-bold shadow
-                      ${isGenesis ? "bg-green-500" : "bg-blue-500"}
-                    `}
-                  >
-                    {index + 1}
-                  </div>
-                </div>
-
-                {/* CARD */}
-                <div
-                  className={`flex-1 rounded-xl p-4 transition duration-200
-                    ${
-                      isGenesis
-                        ? "bg-green-50 border border-green-200"
-                        : "bg-gray-50 hover:shadow-md"
-                    }
-                  `}
-                >
-
-                  {/* TITLE */}
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-gray-800">
-                      {isGenesis
-                        ? "Original Ownership"
-                        : "Ownership Transferred"}
-                    </p>
-
-                    {isGenesis && (
-                      <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                        GENESIS
-                      </span>
-                    )}
-                  </div>
-
-                  {/* CONTENT */}
-                  {isGenesis ? (
-                    <div className="text-sm text-gray-700">
-                      🏁 Land originally owned by{" "}
-                      <span className="font-semibold text-green-600">
-                        {h.toOwnerName}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm flex-wrap">
-
-                      <span className="text-gray-600">
-                        {h.fromOwnerName}
-                      </span>
-
-                      <span className="text-gray-400 text-lg">→</span>
-
-                      <span className="font-semibold text-indigo-600">
-                        {h.toOwnerName}
-                      </span>
-
-                      {isCurrent && (
-                        <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full ml-2">
-                          CURRENT OWNER
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* DATE */}
-                  <p className="text-xs text-gray-400 mt-3">
-                    {new Date(h.dateOfTransfer).toLocaleDateString()}
-                  </p>
-
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* EMPTY STATE */}
-        {ownershipHistory.length === 1 && (
-          <p className="text-sm text-gray-500 mt-4 ml-10">
-            No transfers yet
-          </p>
-        )}
-      </div>
     </div>
+
+    {/* =========================
+        📊 MODAL
+    ========================= */}
+    {showHistoryModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+
+        <div className="bg-white w-[90%] max-w-3xl max-h-[80vh] rounded-3xl shadow-2xl p-6 overflow-y-auto">
+
+          {/* HEADER */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Ownership Flow
+            </h2>
+
+            <button
+              onClick={() => setShowHistoryModal(false)}
+              className="text-gray-400 hover:text-gray-700 text-xl"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* FLOW */}
+          <div className="relative">
+
+            <div className="absolute left-4 top-0 bottom-0 w-[2px] bg-gray-200"></div>
+
+            <div className="space-y-8">
+              {ownershipHistory.map((h, index) => {
+                const isGenesis = h.fromOwnerName === h.toOwnerName;
+                const isCurrent = index === ownershipHistory.length - 1;
+
+                return (
+                  <div key={h._id} className="flex items-start gap-4">
+
+                    {/* STEP */}
+                    <div className="z-10">
+                      <div
+                        className={`w-9 h-9 flex items-center justify-center rounded-full text-white text-xs font-bold shadow
+                          ${isGenesis ? "bg-emerald-500" : "bg-indigo-500"}
+                        `}
+                      >
+                        {index + 1}
+                      </div>
+                    </div>
+
+                    {/* CARD */}
+                    <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm font-semibold text-gray-800">
+                          {isGenesis ? "Original Ownership" : "Transfer"}
+                        </p>
+
+                        {isCurrent && (
+                          <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                            CURRENT
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-sm text-gray-700 flex flex-wrap items-center gap-2">
+                        {isGenesis ? (
+                          <>
+                            🏁 Owned by{" "}
+                            <span className="font-semibold text-emerald-600">
+                              {h.toOwnerName}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{h.fromOwnerName}</span>
+                            <span className="text-gray-400">→</span>
+                            <span className="font-semibold text-indigo-600">
+                              {h.toOwnerName}
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-400 mt-2">
+                        {new Date(h.dateOfTransfer).toLocaleDateString()}
+                      </p>
+
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {ownershipHistory.length === 1 && (
+              <p className="text-sm text-gray-400 mt-4 ml-10">
+                No transfers yet
+              </p>
+            )}
+
+          </div>
+        </div>
+      </div>
+    )}
   </div>
-)}
-  </div>
-</div>
-  );
+);
 };
 
 export default InterestDashboard;

@@ -395,6 +395,7 @@ const handleInterestToggle = async () => {
       const response = await API.get(`/api/lands/${land._id}/interested-users`);
       setInterestedUsersData(response.data.interestedUsers || []);
       setShowInterestedUsersModal(true);
+      console.log('Interested Users:', response.data.interestedUsers);
     } catch (err) {
       console.error("Error fetching interested users:", err);
       toast.error(err?.response?.data?.message || "Failed to fetch interested users");
@@ -783,67 +784,56 @@ const allDocsApproved =
                         </tr>
                       </thead>
                       <tbody>
-                        {interestedUsersData.map((user, index) => (
-                          <tr key={user._id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                            <td className="py-4 px-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                  {user.username?.charAt(0)?.toUpperCase() || 'U'}
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">
-                                    {user.username || 'Unknown User'}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    ID: {user._id?.slice(-8) || 'N/A'}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-4">
-                              <p className="text-gray-700">{user.email || 'N/A'}</p>
-                            </td>
-                            <td className="py-4 px-4">
-                              <p className="text-gray-700">{user.contactNumber || 'N/A'}</p>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                user.role === 'admin' || user.isAdmin
-                                  ? 'bg-red-100 text-red-800'
-                                  : user.role === 'lawyer'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {user.role || 'user'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4">
-                              <div className="flex justify-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    // Navigate to user profile or start chat
-                                    toast.info(`Chat with ${user.username} feature coming soon!`);
-                                  }}
-                                  className="p-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-600 rounded-lg transition-colors"
-                                  title="Start Chat"
-                                >
-                                  <FaComments className="text-sm" />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    // View user details
-                                    toast.info(`View ${user.username} profile feature coming soon!`);
-                                  }}
-                                  className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors"
-                                  title="View Profile"
-                                >
-                                  <FaUser className="text-sm" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
+  {interestedUsersData.map((entry, index) => {
+    const u = entry.user; // nested user object
+    return (
+      <tr key={u._id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+        <td className="py-4 px-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
+              {u.username?.charAt(0)?.toUpperCase() || 'U'}
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">{u.username || 'Unknown User'}</p>
+              <p className="text-sm text-gray-500">ID: {u._id?.slice(-8) || 'N/A'}</p>
+            </div>
+          </div>
+        </td>
+        <td className="py-4 px-4"><p className="text-gray-700">{u.email || 'N/A'}</p></td>
+        <td className="py-4 px-4"><p className="text-gray-700">{u.contactNumber || 'N/A'}</p></td>
+        <td className="py-4 px-4">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+            u.role === 'admin' || u.isAdmin
+              ? 'bg-red-100 text-red-800'
+              : u.role === 'lawyer'
+              ? 'bg-blue-100 text-blue-800'
+              : 'bg-green-100 text-green-800'
+          }`}>
+            {u.role || 'user'}
+          </span>
+        </td>
+        <td className="py-4 px-4">
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => toast.info(`Chat with ${u.username} feature coming soon!`)}
+              className="p-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-600 rounded-lg transition-colors"
+              title="Start Chat"
+            >
+              <FaComments className="text-sm" />
+            </button>
+            <button
+              onClick={() => toast.info(`View ${u.username} profile feature coming soon!`)}
+              className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors"
+              title="View Profile"
+            >
+              <FaUser className="text-sm" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
                     </table>
                   </div>
                 ) : (
