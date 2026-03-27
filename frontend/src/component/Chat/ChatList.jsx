@@ -76,58 +76,84 @@ export default function ChatList({ type, onSelectChat }) { // ✅ added type
     return true;
   });
 
-  return (
-    <div className="min-h-screen pt-24 px-6 bg-gradient-to-br from-indigo-50 to-pink-50">
-      <h1 className="text-3xl font-bold text-center mb-8 text-indigo-700">
-        Your Conversations
-      </h1>
+ return (
+  <div className="flex flex-col">
 
-      <div className="grid gap-6">
-        {filteredChats.map((c) => {  // ✅ changed here
-          const unread = unreadCounts[c._id] || 0;
+    {filteredChats.length === 0 && (
+      <div className="text-center text-gray-400 text-sm py-10">
+        No conversations yet
+      </div>
+    )}
 
-          const otherUser = c.participants.find(
-            (p) => getId(p._id || p) !== userId
-          );
+    {filteredChats.map((c) => {
+      const unread = unreadCounts[c._id] || 0;
 
-          const otherUserName = otherUser?.username || "User";
-          const land = c.land;
+      const otherUser = c.participants.find(
+        (p) => getId(p._id || p) !== userId
+      );
 
-          return (
-            <div
-              key={c._id}
-              onClick={() => openChat(c)}
-              className="cursor-pointer p-5 bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 relative border border-gray-100"
-            >
-              <h2 className="font-semibold text-lg text-indigo-700">
+      const otherUserName = otherUser?.username || "User";
+      const land = c.land;
+
+      return (
+        <div
+          key={c._id}
+          onClick={() => openChat(c)}
+          className="group flex items-center gap-4 px-5 py-4 cursor-pointer transition-all duration-300 hover:bg-gray-50 relative"
+        >
+
+          {/* 🔥 AVATAR */}
+          <div className="relative">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold shadow-md">
+              {otherUserName.charAt(0).toUpperCase()}
+            </div>
+
+            {/* ONLINE DOT */}
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+          </div>
+
+          {/* 🔥 CONTENT */}
+          <div className="flex-1 min-w-0">
+
+            {/* NAME + TIME */}
+            <div className="flex items-center justify-between">
+              <h2 className="font-medium text-gray-800 truncate group-hover:text-emerald-600 transition">
                 {otherUserName}
               </h2>
 
-              {land && (
-                <div className="text-sm text-gray-600 mt-2 space-y-1">
-                  <p>📍 {land.title || "Land listing"}</p>
-                </div>
-              )}
-
-              <p className="text-sm text-gray-500 mt-2 truncate">
-                💬 {c.lastMessage || "No messages yet"}
-              </p>
-
-              <p className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 whitespace-nowrap">
                 {c.lastMessageAt
-                  ? new Date(c.lastMessageAt).toLocaleString()
+                  ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                   : ""}
-              </p>
-
-              {unread > 0 && (
-                <span className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 text-xs rounded-full">
-                  {unread}
-                </span>
-              )}
+              </span>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+
+            {/* LAND INFO */}
+            {land && (
+              <p className="text-xs text-gray-500 truncate mt-1">
+                📍 {land.title || "Land listing"}
+              </p>
+            )}
+
+            {/* LAST MESSAGE */}
+            <p className="text-sm text-gray-600 truncate mt-1">
+              {c.lastMessage || "No messages yet"}
+            </p>
+          </div>
+
+          {/* 🔥 UNREAD BADGE */}
+          {unread > 0 && (
+            <div className="flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full bg-emerald-500 text-white text-xs font-semibold shadow">
+              {unread}
+            </div>
+          )}
+
+          {/* 🔥 HOVER INDICATOR */}
+          <div className="absolute left-0 top-0 h-full w-[3px] bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+
+        </div>
+      );
+    })}
+  </div>
+);
 }
