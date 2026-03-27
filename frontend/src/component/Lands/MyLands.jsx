@@ -4,14 +4,13 @@ import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router";
 import axios from "axios";
-import "../fallBounce.css";
 import { getFileUrl } from "../../../../backend/utils/getFileUrl";
+
 const MyLand = () => {
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [editingLand, setEditingLand] = useState(null);
-  // Added new fields here
+
   const [formData, setFormData] = useState({
     landtype: "",
     city: "",
@@ -19,357 +18,275 @@ const MyLand = () => {
     pincode: "",
     price: "",
     dimensions: "",
-    ratings: "",
-    description:"",
+    description: "",
   });
 
   const { user } = useContext(AuthContext);
-const token = localStorage.getItem("token");
-
-const decodeJWT = (token) => {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-};
-
-const decoded = token ? decodeJWT(token) : null;
-
-const currentUserId =
-  decoded?.userId || decoded?._id || decoded?.id;
-
-const role = decoded?.role;
-  const [messages, setMessages] = useState([]);
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
+  // ✅ Format Dimensions Safely
+  const formatDimensions = (dim) => {
+    if (!dim) return "N/A";
+    if (typeof dim === "object") {
+      return `${dim.length} × ${dim.breadth} ft`;
+    }
+    return dim;
+  };
+
+  // 🔐 Decode JWT
+  const decodeJWT = (token) => {
+    try {
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload);
+    } catch {
+      return null;
+    }
+  };
+
+  const decoded = token ? decodeJWT(token) : null;
+  const currentUserId = decoded?.userId || decoded?._id || decoded?.id;
+  const role = decoded?.role;
+
+  // 🔄 Fetch Lands
   useEffect(() => {
     if (user?.username) {
-      fetchUserLands(user?.username);
-    } else {
-      toast.error("User not logged in.");
-      setError("User not logged in.");
+      fetchUserLands(user.username);
     }
   }, []);
-const fetchUserLands = async (identifier) => {
-  try {
-    setLoading(true);
 
+  const fetchUserLands = async (identifier) => {
+    try {
+      setLoading(true);
 
-    let response;
+      let response;
 
-    if (role === "lawyer") {
-      // ✅ Use lawyer-specific route (uses userId)
-      response = await axios.get(
-        `http://localhost:5000/api/lands/lawyer/${currentUserId}`
-      );
-    } else {
-      // ✅ Keep existing behavior (uses username)
-      response = await axios.get(
-        `http://localhost:5000/api/lands/user/${identifier}`
-      );
+      if (role === "lawyer") {
+        response = await axios.get(
+          `http://localhost:5000/api/lands/lawyer/${currentUserId}`
+        );
+      } else {
+        response = await axios.get(
+          `http://localhost:5000/api/lands/user/${identifier}`
+        );
+      }
+
+      setLands(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      toast.error("Failed to fetch lands");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (Array.isArray(response.data) && response.data.length > 0) {
-      setLands(response.data);
-    } else {
-      setLands([]);
-    }
-
-  } catch (error) {
-    console.error("Error fetching lands:", error);
-    setError("Failed to fetch lands.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  // ✏️ Edit
   const handleEditClick = (land) => {
     setEditingLand(land);
-
-    // PRE-FILL WITH NEW FIELDS
     setFormData({
-      landtype: land.landtype,
-      city: land.city,
-      state: land.state,
-      pincode: land.pincode,
+      landtype: land.landtype || "",
+      city: land.city || "",
+      state: land.state || "",
+      pincode: land.pincode || "",
       price: land.price || "",
       dimensions: land.dimensions || "",
-      ratings: land.ratings || "",
       description: land.description || "",
     });
   };
 
   const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      toast.error("Authorization token is missing.");
-      return;
-    }
 
     try {
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:5000/api/lands/${editingLand._id}`,
         formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.status === 200) {
-        setLands((prevLands) =>
-          prevLands.map((land) =>
-            land._id === editingLand._id ? { ...land, ...formData } : land
-          )
-        );
-        setEditingLand(null);
-        toast.success("Land details updated successfully!");
-      } else {
-        toast.error("Failed to update land details.");
-      }
-    } catch (error) {
-      console.error("Error updating land:", error);
-      toast.error("Failed to update land details.");
+      setLands((prev) =>
+        prev.map((l) =>
+          l._id === editingLand._id ? { ...l, ...formData } : l
+        )
+      );
+
+      setEditingLand(null);
+      toast.success("Updated successfully");
+    } catch {
+      toast.error("Update failed");
     }
   };
 
+  const handleCheckMessagesAndNavigate = () => {
+    navigate("/owner-inbox");
+  };
 
-const handleCheckMessagesAndNavigate = () => {
-  navigate("/owner-inbox"); // 🔥 updated route
-};
-  if (loading)
+  // 🔥 LOADING SKELETON
+  if (loading) {
     return (
-      <>
-        <div className="text-green-700 bg-gray-800 flex flex-col pt-3 pl-[15%] h-screen">
-          <h1 className="text-3xl font-semi-bold mt-[1rem] mb-[1rem] pl-[15%]">
-            User not logged in{" "}
-            <Link
-              to="/login"
-              className="text-yellow-600 underline underline-offset-4 hover:text-orange-400"
-            >
-              Login
-            </Link>{" "}
-            please...
-          </h1>
-          <img
-            className="w-[600px] h-[350px] rounded-2xl shadow-sm"
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRf6ElDgp_-OzsHJ19TPFgYnLrzUJXVj7qOdA&s"
-            alt="sad kitten"
-          />
-        </div>
-      </>
+      <div className="min-h-screen bg-slate-900 p-10 grid md:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="animate-pulse bg-white/10 rounded-xl p-5"
+          >
+            <div className="h-40 bg-gray-600 rounded mb-4"></div>
+            <div className="h-5 bg-gray-600 rounded mb-2"></div>
+            <div className="h-4 bg-gray-600 rounded mb-2"></div>
+            <div className="h-4 bg-gray-600 rounded mb-4"></div>
+            <div className="flex gap-2">
+              <div className="h-10 bg-gray-600 rounded w-1/2"></div>
+              <div className="h-10 bg-gray-600 rounded w-1/2"></div>
+            </div>
+          </div>
+        ))}
+      </div>
     );
+  }
 
-  if (error) return <p>{error}</p>;
-// const isAssignedToMe =
-//   String(land.assignedLawyer) === String(currentUserId);
-
-// const isApprovedByMe =
-//   String(land.approvedBy) === String(currentUserId);
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 bg-mintGreen text-black h-screen pt-[5rem]">
-      <h1 className="text-5xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-500 animate-pulse mb-8">
-        My Lands
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-emerald-50  pt-16">
+      <h1 className="text-3xl text-black text-center mb-10">
+        My Land
       </h1>
 
       {lands.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lands.map((land) => (
-            <div
-              key={land._id}
-              className="bg-cardGreen p-4 rounded-lg shadow-lg overflow-hidden"
-            >
-              {/* IMAGE */}
-              <Link to={`/land/${land._id}`}>
-                <img
-                  src={getFileUrl(land.image)}
-                  alt={land.city}
-                  className="w-full h-44 object-cover rounded-xl"
-                />
-              </Link>
+        <div className="grid md:grid-cols-3 gap-6 px-6">
+          {lands.map((land) => {
+            const isApprovedByMe =
+              String(land.approvedBy?._id || land.approvedBy) ===
+              String(currentUserId);
 
-              <div className="p-4">
-                <h3 className="text-2xl font-semibold">
-                  {land.landtype[0].toUpperCase() + land.landtype.substring(1)}
-                </h3>
+            const isAssignedToMe =
+              String(land.assignedLawyer?._id || land.assignedLawyer) ===
+              String(currentUserId);
 
-                <p>
+            return (
+              <div
+                key={land._id}
+                className="bg-[#ACE1AF] backdrop-blur-lg p-5 rounded-xl text-white"
+              >
+                {/* Image */}
+                {land.image && (
+                  <img
+                    src={getFileUrl(land.image)}
+                    alt="land"
+                    className="h-40 w-full object-cover rounded-lg mb-3"
+                  />
+                )}
+
+                {/* Details */}
+                <h2 className="text-xl text-gray-900 font-bold">
                   {land.city}, {land.state}
+                </h2>
+
+                <p className="text-gray-900 font-bold italic">₹ {land.price || "N/A"}</p>
+
+                <p className="text-gray-800 text-sm">
+                  {formatDimensions(land.dimensions)}
                 </p>
-                <p>Owner: {land.ownerName}</p>
 
-                {/* NEW FIELDS */}
-                <p className="mt-2 font-medium">💰 Price: ₹{land.price || "N/A"}</p>
-               <p className="font-medium">
-  📏 Dimensions:{" "}
-  {land.dimensions && typeof land.dimensions === "object"
-    ? `${land.dimensions.length} × ${land.dimensions.breadth} ft`
-    : typeof land.dimensions === "string"
-    ? land.dimensions.replace("*", " × ") + " ft"
-    : "N/A"}
-</p>
+                {/* Buttons */}
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => handleEditClick(land)}
+                    className="bg-green-500 px-3 py-2 rounded-md"
+                  >
+                    Edit
+                  </button>
 
+                  <button
+                    onClick={handleCheckMessagesAndNavigate}
+                    className="bg-blue-500 px-3 py-2 rounded-md"
+                  >
+                    Messages
+                  </button>
+                </div>
 
+                {/* Lawyer UI */}
+                {role === "lawyer" && (
+                  <>
+                    {land.status === "approved" && isApprovedByMe && (
+                      <div className="mt-3 bg-green-600 py-2 rounded text-center">
+                        ✅ Approved by You
+                      </div>
+                    )}
 
-        
-
-
-             {role !== "lawyer" && (
-  <div className="flex gap-8 mt-3">
-    <button
-      className="w-full bg-blue-500 text-white py-2 rounded-md"
-      onClick={() => handleCheckMessagesAndNavigate(land)}
-    >
-      Check Messages
-    </button>
-
-    <button
-      className="w-full bg-green-500 text-white py-2 rounded-md"
-      onClick={() => handleEditClick(land)}
-    >
-      Edit Land
-    </button>
-  </div>
-)}
-{role === "lawyer" && (
-  <>
-    {/* Approved by YOU */}
-    {land.status === "approved" &&
-     String(land.approvedBy?._id || land.approvedBy) === String(currentUserId) && (
-      <div className="mt-3 bg-green-600 text-white py-2 rounded-md text-center font-semibold">
-        ✅ Approved by You
-      </div>
-    )}
-
-    {/* Reviewing */}
-    {land.status !== "approved" &&
-     String(land.assignedLawyer?._id || land.assignedLawyer) === String(currentUserId) && (
-      <div className="mt-3 bg-yellow-500 text-white py-2 rounded-md text-center font-semibold">
-        🔍 You are Reviewing this Land
-      </div>
-    )}
-  </>
-)}
+                    {land.status !== "approved" && isAssignedToMe && (
+                      <div className="mt-3 bg-yellow-500 py-2 rounded text-center">
+                        🔍 Reviewing
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <>
-          <div className="flex justify-center">
-            <img
-              className="w-[520px] absolute z-10 h-[365px] rounded-2xl shadow-sm"
-              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRf6ElDgp_-OzsHJ19TPFgYnLrzUJXVj7qOdA&s"
-              alt="sad kitten"
-            />
-          </div>
-          <p className="text-3xl left-[46%] absolute bottom-8 mt-3 fall-bounce">
-            No lands found.
-          </p>
-        </>
+        <div className="text-center text-white">
+          <p className="mb-4">No lands found</p>
+          <Link to="/add-land" className="text-green-400 underline">
+            Add Land
+          </Link>
+        </div>
       )}
 
-      {/* EDIT FORM */}
+      {/* EDIT MODAL */}
       {editingLand && (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center">
-          <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Land Details</h2>
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
+          <form
+            onSubmit={handleFormSubmit}
+            className="bg-white p-6 rounded w-[400px]"
+          >
+            <input
+              name="city"
+              value={formData.city}
+              onChange={handleFormChange}
+              placeholder="City"
+              className="w-full mb-3 p-2 border"
+            />
 
-            {/* Old Fields */}
-            <div>
-              <label className="block font-semibold">Land Type</label>
-              <input
-                type="text"
-                name="landtype"
-                value={formData.landtype}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
+            <input
+              name="state"
+              value={formData.state}
+              onChange={handleFormChange}
+              placeholder="State"
+              className="w-full mb-3 p-2 border"
+            />
 
-            <div>
-              <label className="block font-semibold">City</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
+            <input
+              name="price"
+              value={formData.price}
+              onChange={handleFormChange}
+              placeholder="Price"
+              className="w-full mb-3 p-2 border"
+            />
 
-            <div>
-              <label className="block font-semibold">State</label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
+            <div className="flex justify-between">
+              <button className="bg-green-500 px-4 py-2 text-white">
+                Save
+              </button>
 
-            <div>
-              <label className="block font-semibold">Pincode</label>
-              <input
-                type="text"
-                name="pincode"
-                value={formData.pincode}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
-
-            {/* NEW EDITABLE FIELDS */}
-            <div>
-              <label className="block font-semibold">Price</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold">Dimensions</label>
-              <input
-                type="text"
-                name="dimensions"
-                value={formData.dimensions}
-                onChange={handleFormChange}
-                className="w-full border rounded p-2"
-              />
-            </div>
-
-            
-
-            <div className="flex justify-end mt-4">
               <button
                 type="button"
                 onClick={() => setEditingLand(null)}
-                className="mr-2 bg-gray-500 text-white py-2 px-4 rounded"
+                className="bg-gray-500 px-4 py-2 text-white"
               >
                 Cancel
-              </button>
-              <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded">
-                Save
               </button>
             </div>
           </form>

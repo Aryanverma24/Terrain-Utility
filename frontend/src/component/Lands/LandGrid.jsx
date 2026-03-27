@@ -78,11 +78,11 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
             onMouseEnter={() => setHoveredCard(land._id)}
             onMouseLeave={() => setHoveredCard(null)}
           >
-            {/* Premium Card */}
-            <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-700 overflow-hidden border border-white/20 hover:border-emerald-200/50">
+            {/* Premium Card - Matching Landing Page Style */}
+            <div className="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-2xl hover:border-emerald-400/30 transition-all duration-500 overflow-hidden hover:-translate-y-2">
               
               {/* Gradient Overlay on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 transition-opacity duration-700 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
 
               {/* Property Image */}
               <div className="relative h-48 overflow-hidden">
@@ -91,8 +91,7 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                     <img
                       src={`http://localhost:5000/uploads/${land.image}`}
                       alt={land.landtype || "land"}
-                      className="w-full h-full object-cover transition-transform duration-700"
-                      style={{ transform: isHovered ? 'scale(1.1)' : 'scale(1)' }}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {/* Dark Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
