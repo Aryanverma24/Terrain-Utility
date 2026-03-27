@@ -1,10 +1,8 @@
-import React, { useContext, useState } from "react";
-import { AuthContext } from "../../contexts/AuthContext";
+import React, { useState } from "react";
 import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 
-const Inbox = () => {
-  const { user } = useContext(AuthContext);
+const OwnerInbox = () => {
   const [selectedChat, setSelectedChat] = useState(null);
 
   return (
@@ -12,10 +10,9 @@ const Inbox = () => {
 
       {/* 🔹 LEFT: CHAT LIST */}
       <div className="w-1/3 border-r bg-white overflow-y-auto">
-        {/* ✅ ONLY CHANGE HERE */}
         <ChatList 
-          apiEndpoint="buyer" 
-          onSelectChat={setSelectedChat} 
+          type="owner"   // ✅ FIXED
+          onSelectChat={setSelectedChat}
         />
       </div>
 
@@ -25,7 +22,7 @@ const Inbox = () => {
           <ChatWindow chat={selectedChat} />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-500">
-            Select a chat to start messaging
+            Select a chat to view messages
           </div>
         )}
       </div>
@@ -34,4 +31,4 @@ const Inbox = () => {
   );
 };
 
-export default Inbox;
+export default OwnerInbox;

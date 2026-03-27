@@ -194,18 +194,23 @@ const deleteUser = asyncHandler ( async (req,res)=>{
     }
 })
 
-const getUserById = asyncHandler (async (req,res)=>{
-    const user = await User.findById(req.params.id).select("-password");
+const getUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-    if(user){
-        res.status(201)
-        .json(user)
-    }
-    else{
-        res.status(404)
-        throw new Error("User not find")
-    }
-})
+  // ✅ PREVENT CRASH
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
+  const user = await User.findById(id).select("-password");
+
+  if (user) {
+    res.status(200).json(user); // ✅ fixed
+  } else {
+    res.status(404);
+    throw new Error("User not found");
+  }
+});
 
 const updateUserById = asyncHandler (async(req,res)=>{
 

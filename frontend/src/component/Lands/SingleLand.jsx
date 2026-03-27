@@ -182,26 +182,20 @@ const prevSlide = () => {
 const nextSlide = () => {
   setCurrentSlide((prev) => (prev === landPhotos.length - 1 ? 0 : prev + 1));
 };
-
 useEffect(() => {
-  const checkInterest = async () => {
-    try {
-      const res = await axios.get(
-        `/api/lands/${land._id}/is-interested`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  if (!land || !currentUserId) return;
 
-      setIsInterested(res.data.isInterested);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const isUserInterested = land.interestedUsers?.some((item) => {
+    const userId =
+      typeof item.user === "object"
+        ? item.user._id
+        : item.user;
 
-  if (land?._id && token) checkInterest();
+    return String(userId) === String(currentUserId);
+  });
 
-}, [land?._id]); // ✅ ONLY run when ID changes
+  setIsInterested(isUserInterested);
+}, [land, currentUserId]); // ✅ ONLY run when ID changes
 
   useEffect(() => {
   const interval = setInterval(() => {
@@ -270,11 +264,15 @@ const fetchLand = useCallback(async () => {
   }, [fetchLand]);
 
 
-
+// explore more fucntion for the explore more land button
 const handleExploreMore = () => {
-  const actuallyInterested = land?.interestedUsers?.some(
-    (id) => String(id) === String(currentUserId)
-  );
+  if (!land || !currentUserId) return toast.error("No land selected.");
+
+  // Check correctly if user is in interestedUsers array
+ const actuallyInterested = land.interestedUsers?.some((item) => {
+  const userId = typeof item.user === "object" ? item.user._id : item.user;
+  return String(userId) === String(currentUserId);
+});
 
   if (!actuallyInterested) {
     toast.warning(
@@ -297,120 +295,77 @@ const handleRedirectToChat = async () => {
   if (!currentUserId) return toast.error("Login required.");
 
   try {
-    // 🔥 STEP 1: Create or get chat
+    console.log("Sending:", {
+      landId: land._id,
+      participants: [currentUserId, land.owner],
+    });
+
     const res = await axios.post(
       "http://localhost:5000/api/chat/get-or-create",
       {
         landId: land._id,
-        buyerId: currentUserId,
-        ownerId: land.owner,
-        buyerName: currentUsername,
+        participants: [currentUserId, land.owner], // ✅ FIXED
+        chatType: "normal", // ✅ ADD THIS
       }
     );
 
     const chat = res.data;
 
-    // 🔥 STEP 2: Navigate using chatId ONLY
     navigate(`/chat/${chat._id}`, {
       state: { chat },
     });
 
   } catch (err) {
-    console.error("Chat creation error:", err);
-    toast.error("Failed to start chat");
+    console.error("Chat creation error:", err.response?.data || err);
+    toast.error(err.response?.data?.error || "Failed to start chat");
   }
 };
-
-  // Handle interest toggle
+ 
+// Handle toggling interest
 const handleInterestToggle = async () => {
   if (!token) return toast.error("Login required.");
   if (!land) return toast.error("No land selected.");
-  if (String(currentUserId) === String(land.owner)) 
+  if (String(currentUserId) === String(land.owner))
     return toast.error("Cannot mark own property as interested.");
-  
-  const prevInterested = isInterested;
-  const newInterested = !prevInterested;
-
-  // 🔥 IMPORTANT: instant UI update (like before)
-  setIsInterested(newInterested);
-
-  setInterestedCount(prev =>
-    newInterested ? prev + 1 : prev - 1
-  );
-
-  // 🔥 FIXED PART (MAIN ISSUE SOLVED HERE)
-  setLand(prev => {
-    const alreadyExists = prev.interestedUsers.some(
-      id => String(id) === String(currentUserId)
-    );
-
-    let updatedUsers;
-
-    if (newInterested) {
-      // ✅ prevent duplicate (CRITICAL FIX)
-      updatedUsers = alreadyExists
-        ? prev.interestedUsers
-        : [...prev.interestedUsers, currentUserId];
-    } else {
-      // ✅ safe removal
-      updatedUsers = prev.interestedUsers.filter(
-        id => String(id) !== String(currentUserId)
-      );
-    }
-
-    return {
-      ...prev,
-      interestedUsers: updatedUsers
-    };
-  });
 
   setLoadingInterest(true);
 
   try {
-    const endpoint = prevInterested
+    // Determine if user is currently interested
+    const actuallyInterested = land.interestedUsers?.some(item => {
+      const userId = typeof item.user === "object" ? item.user._id : item.user;
+      return String(userId) === String(currentUserId);
+    });
+
+    const endpoint = actuallyInterested
       ? `/api/lands/${land._id}/uninterested`
       : `/api/lands/${land._id}/interested`;
 
-    const response = await API.post(endpoint, {});
-    toast.success(response.data.message);
-
-  } catch (err) {
-    console.error("Interest toggle error:", err);
-
-    // 🔴 rollback if API fails
-    setIsInterested(prevInterested);
-
-    setInterestedCount(prev =>
-      prevInterested ? prev + 1 : prev - 1
-    );
-
-    setLand(prev => {
-      const alreadyExists = prev.interestedUsers.some(
-        id => String(id) === String(currentUserId)
-      );
-
-      let updatedUsers;
-
-      if (prevInterested) {
-        updatedUsers = alreadyExists
-          ? prev.interestedUsers
-          : [...prev.interestedUsers, currentUserId];
-      } else {
-        updatedUsers = prev.interestedUsers.filter(
-          id => String(id) !== String(currentUserId)
-        );
-      }
-
-      return {
-        ...prev,
-        interestedUsers: updatedUsers
-      };
+    await API.post(endpoint, {}, {
+      headers: { Authorization: `Bearer ${token}` }
     });
 
-    toast.error(
-      err?.response?.data?.message || "Failed to update interest status"
-    );
+    // 🔑 Fetch updated land to keep state authoritative
+    const updatedLandRes = await API.get(`/api/lands/dashboard/${land._id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const updatedLand = updatedLandRes.data.land;
 
+    setLand(updatedLand);
+
+    // ✅ derive isInterested and count from updated data
+    const isUserInterested = updatedLand.interestedUsers?.some(item => {
+      const userId = typeof item.user === "object" ? item.user._id : item.user;
+      return String(userId) === String(currentUserId);
+    });
+    setIsInterested(isUserInterested);
+    setInterestedCount(updatedLand.interestedUsers.length);
+
+    toast.success(actuallyInterested ? "Interest removed" : "Interest added");
+
+  } catch (err) {
+    console.error("Interest toggle error:", err.response?.data || err);
+    toast.error(err?.response?.data?.message || "Failed to update interest status");
   } finally {
     setLoadingInterest(false);
   }
@@ -775,27 +730,27 @@ const allDocsApproved =
     </div>
 
     {/* Thumbnail Strip */}
-    {landPhotos.length > 1 && (
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {landPhotos.map((photo, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrentSlide(idx)}
-            className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 ${
-              currentSlide === idx 
-                ? "ring-3 ring-emerald-500 ring-offset-2 scale-110" 
-                : "opacity-70 hover:opacity-100 hover:scale-105"
-            }`}
-          >
-            <img
-              src={getFileUrl(land.photo)}
-              alt={`Thumbnail ${idx + 1}`}
-              className="w-full h-full object-cover"
-            />
-          </button>
-        ))}
-      </div>
-    )}
+{landPhotos.length > 1 && (
+  <div className="flex gap-2 overflow-x-auto pb-2">
+    {landPhotos.map((photo, idx) => (
+      <button
+        key={idx}
+        onClick={() => setCurrentSlide(idx)}
+        className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden transition-all duration-300 ${
+          currentSlide === idx 
+            ? "ring-3 ring-emerald-500 ring-offset-2 scale-110" 
+            : "opacity-70 hover:opacity-100 hover:scale-105"
+        }`}
+      >
+        <img
+          src={getFileUrl(photo)} // ✅ use the photo from the array
+          alt={`Thumbnail ${idx + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </button>
+    ))}
+  </div>
+)}
 
       {/* Interested Users Modal */}
         {showInterestedUsersModal && (
@@ -1005,32 +960,40 @@ const allDocsApproved =
       </div>
     )}
 
-    {/* Owner Action Buttons */}
-    {String(currentUserId) === String(land.owner) && (
-      <div className="space-y-3">
-        {/* Check Interested Users Button */}
-        <button
-          onClick={handleFetchInterestedUsers}
-          disabled={loadingInterestedUsers}
-          className={`group relative w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/30 transform hover:scale-[1.02] flex items-center justify-between overflow-hidden ${
-            loadingInterestedUsers ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-          
-          <div className="flex items-center gap-3 relative z-10">
-            <FaHeart className="w-5 h-5" />
-            <span>
-              {loadingInterestedUsers ? 'Loading...' : 'Check Interested Users'}
-            </span>
-          </div>
-          
-          <div className="relative z-10">
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-              {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
-            </span>
-          </div>
-        </button>
+   {/* Owner Action Buttons */}
+{String(currentUserId) === String(land.owner) && (
+  <div className="space-y-3">
+    {/* Check Interested Users Button */}
+    <button
+      onClick={handleFetchInterestedUsers}
+      disabled={loadingInterestedUsers}
+      className={`group relative w-full ${
+        isInterested
+          ? "bg-green-500 hover:bg-green-600 text-white"
+          : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+      } font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-purple-500/30 transform hover:scale-[1.02] flex items-center justify-between overflow-hidden ${
+        loadingInterestedUsers ? 'opacity-50 cursor-not-allowed' : ''
+      }`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+      
+      <div className="flex items-center gap-3 relative z-10">
+        <FaHeart className="w-5 h-5" />
+        <span>
+          {loadingInterestedUsers
+            ? 'Loading...'
+            : isInterested
+            ? 'Interested Users'
+            : 'Check Interested Users'}
+        </span>
+      </div>
+      
+      <div className="relative z-10">
+        <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+          {interestedCount} {interestedCount === 1 ? 'person' : 'people'} interested
+        </span>
+      </div>
+    </button>
 
         {/* Ownership History Button */}
         <button

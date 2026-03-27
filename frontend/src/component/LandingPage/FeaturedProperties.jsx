@@ -5,6 +5,7 @@ import { API } from "../../../utils/API";
 import { AuthContext } from "../../../contexts/AuthContext.jsx"
 import { useContext } from "react";
 import { toast } from "react-toastify";
+import { getFileUrl } from "../../../../backend/utils/getFileUrl.js";
 
 const FeaturedProperties = () => {
   const { user } = useContext(AuthContext);
@@ -182,7 +183,7 @@ const FeaturedProperties = () => {
                     {land.image ? (
                       <>
                         <img
-                          src={`http://localhost:5000/uploads/${land.image}`}
+                          src={getFileUrl(land.image)}
                           alt={land.landtype || "land"}
                           className="w-full h-full object-cover transition-transform duration-700"
                           style={{ transform: isHovered ? 'scale(1.1)' : 'scale(1)' }}

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext, useRef } from "react";
 import axios from "axios";
 import io from "socket.io-client";
 import { useParams, useLocation } from "react-router-dom";
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../../contexts/AuthContext";
 
 const SOCKET_URL = "http://localhost:5000";
 

@@ -12,6 +12,7 @@ import HowItWorks from "./HowItWorks";
 import Testimonials from "./Testimonials";
 import FeaturedProperties from "./FeaturedProperties";
 import CTA from "./CTA";
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -23,30 +24,38 @@ const Home = () => {
   const navigate = useNavigate();
 
   // Fetch land data from backend
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    
-    fetch("http://localhost:5000/api/lands/get-land", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
-    .then((res) => res.json())
-    .then((data) => {
-      let allLands = Array.isArray(data.data) ? data.data : [];
-      
-      if (user && user.role === "lawyer") {
+useEffect(() => {
+  if (!user) return; // wait until user is loaded
+
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  const fetchLands = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/lands/get-land", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      const allLands = Array.isArray(data.data) ? data.data : [];
+
+      if (user.role?.toLowerCase() === "lawyer") {
+        // Lawyers see ALL lands
         setLands(allLands);
         setFilteredLands(allLands);
       } else {
-        const approved = allLands.filter((land) => land.status === "approved");
+        // Others see only approved lands
+        const approved = allLands.filter((l) => l.status === "approved");
         setLands(approved);
         setFilteredLands(approved);
       }
-    })
-    .catch((error) => console.error("Error fetching data:", error));
-  }, [user]);
+    } catch (error) {
+      console.error("Error fetching lands:", error);
+      toast.error("Failed to fetch lands.");
+    }
+  };
+
+  fetchLands();
+}, [user]);
 
   useEffect(() => {
     if (user) {
@@ -203,7 +212,7 @@ const Home = () => {
                       <div className="h-48 overflow-hidden">
                         {land.image ? (
                           <img
-                            src={`http://localhost:5000/uploads/${land.image}`}
+                            src={getFileUrl(land.image)}
                             alt={land.landtype || "land"}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           />
@@ -236,12 +245,22 @@ const Home = () => {
                             Verified
                           </div>
                         )}
-                        {user?.role === "lawyer" && land.status !== "approved" && (
-                          <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center">
-                            <span className="mr-1">⚠</span>
-                            Under Review
-                          </div>
-                        )}
+                       {/* Lawyer Badges */}
+{user?.role === "lawyer" && (
+  <>
+    {land.assignedLawyer && land.status !== "approved"  ? (
+      <div className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center">
+        <span className="mr-1">⚠</span>
+        Under Review
+      </div>
+    ) : land.status !== "approved" ? (
+      <div className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center">
+        <span className="mr-1">🆕</span>
+        New Land
+      </div>
+    ) : null}
+  </>
+)}
                       </div>
                     </div>
 

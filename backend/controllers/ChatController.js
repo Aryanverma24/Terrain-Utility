@@ -6,114 +6,106 @@ import mongoose from "mongoose";
 import User from "../modals/UserModal.js";
 import { io } from "../index.js";
 import Notification from "../modals/NotificationModal.js"
+import { resolveChatRoles } from "../utils/Chathelper.js";
 // --- Create or get a chat between buyer and owner for a land ---
+const normalizeRole = (role) => {
+  if (!role) return "buyer"; // fallback safe
+
+  if (["buyer", "owner", "lawyer", "admin"].includes(role)) {
+    return role;
+  }
+
+  // 🔥 map your custom roles
+  if (role === "normal") return "buyer"; // or "user" if you add it later
+
+  return "buyer"; // default fallback
+};
 export const getOrCreateChat = asyncHandler(async (req, res) => {
-  const { landId, buyerId, ownerId } = req.body;
+  const { participants, landId, chatType } = req.body;
 
-  if (!landId || !buyerId || !ownerId) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!participants || participants.length < 2) {
+    return res.status(400).json({ error: "Participants required" });
   }
 
-  if (
-    !mongoose.Types.ObjectId.isValid(landId) ||
-    !mongoose.Types.ObjectId.isValid(buyerId) ||
-    !mongoose.Types.ObjectId.isValid(ownerId)
-  ) {
-    return res.status(400).json({ error: "Invalid IDs provided" });
-  }
+  // ✅ Normalize + sort
+  const sortedParticipants = [...participants]
+    .map(id => id.toString())
+    .sort();
 
-  if (buyerId === ownerId) {
-    return res.status(400).json({
-      error: "Buyer and Owner cannot be same user",
-    });
-  }
+  // ✅ IMPORTANT: include landId in key
+  const chatKey =
+    sortedParticipants.join("_") + "_" + (landId || "global");
 
-  try {
-    // ✅ FETCH USERS
-    const buyer = await User.findById(buyerId).select("username");
-    const owner = await User.findById(ownerId).select("username");
-
-    if (!buyer || !owner) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // 🔥 ATOMIC OPERATION WITH NAMES
-    const chat = await Chat.findOneAndUpdate(
-      { landId, buyerId, ownerId },
-      {
-        $setOnInsert: {
-          landId,
-          buyerId,
-          ownerId,
-          buyerName: buyer.username,
-          ownerName: owner.username,
-        },
+  const chat = await Chat.findOneAndUpdate(
+    { chatKey },
+    {
+      $setOnInsert: {
+        participants: sortedParticipants,
+        chatKey,
+        landId: landId || null,
+        chatType: chatType || "normal",
       },
-      { new: true, upsert: true }
-    );
+    },
+    { new: true, upsert: true }
+  );
 
-    res.json(chat);
-  } catch (err) {
-    console.error("Chat creation error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
+  res.json(chat);
 });
-
 // --- Fetch all chats for a particular owner ---
 // In your backend chatController.js
-export const getOwnerChats = asyncHandler(async (req, res) => {
-  const { ownerId } = req.params;
+// export const getOwnerChats = asyncHandler(async (req, res) => {
+//   const { ownerId } = req.params;
 
-  // ✅ VALIDATION
-  if (!mongoose.Types.ObjectId.isValid(ownerId)) {
-    return res.status(400).json({ error: "Invalid owner ID" });
-  }
+//   // ✅ VALIDATION
+//   if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+//     return res.status(400).json({ error: "Invalid owner ID" });
+//   }
 
-  const objectId = new mongoose.Types.ObjectId(ownerId);
+//   const objectId = new mongoose.Types.ObjectId(ownerId);
 
-  // ✅ FETCH CHATS WHERE USER IS OWNER
-  const chats = await Chat.find({ ownerId: objectId })
-    .populate("buyerId", "username") // 🔥 important
-    .sort({ lastMessageAt: -1 })
-    .lean();
+//   // ✅ FETCH CHATS WHERE USER IS OWNER
+//   const chats = await Chat.find({ ownerId: objectId })
+//     .populate("buyerId", "username") // 🔥 important
+//     .sort({ lastMessageAt: -1 })
+//     .lean();
 
-  // ✅ FORMAT RESPONSE
-  const formatted = chats.map((c) => ({
-    ...c,
-    buyerName: c.buyerId?.username || "Buyer",
-  }));
+//   // ✅ FORMAT RESPONSE
+//   const formatted = chats.map((c) => ({
+//     ...c,
+//     buyerName: c.buyerId?.username || "Buyer",
+//   }));
 
-  console.log("Owner chats fetched:", formatted.length);
+//   // console.log("Owner chats fetched:", formatted.length);
 
-  res.json(formatted);
-});
+//   res.json(formatted);
+// });
 
 
 // --- Fetch all chats for a particular buyer ---
-export const getBuyerChats = asyncHandler(async (req, res) => {
-  const { buyerId, userId } = req.params;
+// export const getBuyerChats = asyncHandler(async (req, res) => {
+//   const { buyerId, userId } = req.params;
 
-  const actualBuyerId = buyerId || userId;
+//   const actualBuyerId = buyerId || userId;
 
-  // console.log("Buyer ID:", actualBuyerId);
+//   // console.log("Buyer ID:", actualBuyerId);
 
-  // 🔥 FIX: convert to ObjectId
-  const objectId = new mongoose.Types.ObjectId(actualBuyerId);
+//   // 🔥 FIX: convert to ObjectId
+//   const objectId = new mongoose.Types.ObjectId(actualBuyerId);
 
-  const chats = await Chat.find({ buyerId: objectId })
-    .populate("ownerId", "username")
-    .sort({ lastMessageAt: -1 })
-    .lean();
+//   const chats = await Chat.find({ buyerId: objectId })
+//     .populate("ownerId", "username")
+//     .sort({ lastMessageAt: -1 })
+//     .lean();
 
-  // console.log("Chats fetched:", chats.length);
+//   // console.log("Chats fetched:", chats.length);
 
-  const formatted = chats.map((c) => ({
-    ...c,
-    ownerName: c.ownerId?.username || "Owner",
-  }));
+//   const formatted = chats.map((c) => ({
+//     ...c,
+//     ownerName: c.ownerId?.username || "Owner",
+//   }));
 
-  res.json(formatted);
-});
+//   res.json(formatted);
+// });
 
 // --- Fetch messages for a chat ---
 export const getMessages = asyncHandler(async (req, res) => {
@@ -161,6 +153,24 @@ export const getUnreadCount = asyncHandler(async (req, res) => {
 
   res.json(result);
 });
+
+export const getChatById = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(chatId)) {
+    return res.status(400).json({ error: "Invalid chat ID" });
+  }
+
+  const chat = await Chat.findById(chatId)
+    .populate("participants", "username role email") // 🔥 MAIN FIX
+    .populate("landId", "title");
+
+  if (!chat) {
+    return res.status(404).json({ error: "Chat not found" });
+  }
+
+  res.json(chat);
+});
 export const markChatAsRead = asyncHandler(async (req, res) => {
   const { chatId, userId } = req.params;
 
@@ -179,26 +189,55 @@ export const markChatAsRead = asyncHandler(async (req, res) => {
 export const getUserChats = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
-  // ✅ Validate ID
+  // ✅ Validate ObjectId (prevents 500 crash)
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ error: "Invalid user ID" });
   }
 
-  const objectId = new mongoose.Types.ObjectId(userId);
-
+  // ✅ Fetch chats (ONLY participants-based system)
   const chats = await Chat.find({
-    $or: [{ ownerId: objectId }, { buyerId: objectId }],
+    participants: { $in: [userId] },
   })
+    .populate("participants", "username role") // 🔥 KEY FIX
+    .populate("landId", "title owner")
     .sort({ updatedAt: -1 })
     .lean();
 
-  res.json(chats);
+  // ✅ Format response (clean + frontend ready)
+  const formattedChats = chats.map((chat) => {
+    const { owner, buyer, lawyer } = resolveChatRoles(chat, userId);
+
+    return {
+      _id: chat._id,
+      chatType: chat.chatType,
+
+      land: chat.landId
+        ? {
+            _id: chat.landId._id,
+            title: chat.landId.title,
+            owner: chat.landId.owner,
+          }
+        : null,
+
+      participants: chat.participants, // ✅ already has username
+
+      owner,
+      buyer,
+      lawyer,
+
+      lastMessage: chat.lastMessage || "",
+      lastMessageAt: chat.lastMessageAt || null,
+      updatedAt: chat.updatedAt,
+    };
+  });
+
+  res.status(200).json(formattedChats);
 });
 // --- Send a message in a chat ---
 export const sendMessage = asyncHandler(async (req, res) => {
   const { chatId, senderId, receiverId, message } = req.body;
 
-  // 🔥 VALIDATION
+  // ✅ VALIDATION
   if (!chatId || !senderId || !receiverId || !message) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -215,15 +254,34 @@ export const sendMessage = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Sender and receiver cannot be same" });
   }
 
-  // 🔥 FETCH USERS
-  const sender = await User.findById(senderId).select("username");
-  const receiver = await User.findById(receiverId).select("username");
+  // ✅ FETCH CHAT
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return res.status(404).json({ error: "Chat not found" });
+  }
+
+  // ✅ VALIDATE PARTICIPANTS
+  const isSenderValid = chat.participants.some(
+    (p) => p.toString() === senderId
+  );
+
+  const isReceiverValid = chat.participants.some(
+    (p) => p.toString() === receiverId
+  );
+
+  if (!isSenderValid || !isReceiverValid) {
+    return res.status(400).json({ error: "Invalid chat users" });
+  }
+
+  // ✅ FETCH USERS (SAFE)
+  const sender = await User.findById(senderId).select("username role");
+  const receiver = await User.findById(receiverId).select("username role");
 
   if (!sender || !receiver) {
     return res.status(400).json({ error: "Invalid users" });
   }
 
-  // 🔥 SAVE MESSAGE
+  // ✅ CREATE MESSAGE
   const msg = await Message.create({
     chatId,
     senderId,
@@ -231,43 +289,50 @@ export const sendMessage = asyncHandler(async (req, res) => {
     receiverId,
     receiverName: receiver.username,
     message,
-    isRead: false, // ✅ IMPORTANT
-  });
-
-  // 🔥 UPDATE CHAT (CRITICAL FIX)
-  const chat = await Chat.findByIdAndUpdate(
-    chatId,
-    {
-      lastMessage: message,          // ✅ FIXES "No messages yet"
-      lastMessageAt: new Date(),     // ✅ FIXES "Invalid date"
-    },
-    { new: true }
-  );
-
-  // 🔥 DETERMINE ROLE
-  const targetRole =
-    receiverId.toString() === chat.ownerId.toString()
-      ? "owner"
-      : "buyer";
-
-  // 🔥 CREATE NOTIFICATION (optional if using chat-based unread)
-  const notification = await Notification.create({
-    userId: receiverId,
-    title: `New message from ${sender.username}`,
-    message: message.slice(0, 20) + "...",
     isRead: false,
-    chatId: chatId,
-    targetRole,
   });
 
-  // 🔥 SOCKET (REAL-TIME)
-  if (io) {
-    // send message in real-time
-    io.to(chatId.toString()).emit("newMessage", msg);
+  // ✅ UPDATE CHAT META
+  await Chat.findByIdAndUpdate(chatId, {
+    lastMessage: message,
+    lastMessageAt: new Date(),
+  });
 
-    // send notification
-    io.to(receiverId.toString()).emit("newNotification", notification);
+  // ✅ CREATE NOTIFICATION (SAFE BLOCK)
+  let notification = null;
+
+  try {
+    const targetRole = normalizeRole(receiver.role);
+
+    notification = await Notification.create({
+      userId: receiverId,
+      title: `New message from ${sender.username}`,
+      message: message.slice(0, 20) + "...",
+      isRead: false,
+      chatId: chatId,
+      targetRole,
+    });
+
+    // ✅ SOCKET EMIT
+    if (io) {
+      io.to(receiverId.toString()).emit("newNotification", notification);
+     io.to(chatId.toString()).emit("message", msg); // 🔥 MATCH SOCKET SERVER // 🔥 REALTIME CHAT
+    }
+  } catch (err) {
+    console.error("Notification error:", err.message);
   }
 
+  // ✅ CRITICAL FIX (YOU WERE MISSING THIS)
   res.status(201).json(msg);
 });
+// export const getLawyerChats = asyncHandler(async (req, res) => {
+//   const { lawyerId } = req.params;
+
+//   const chats = await Chat.find({
+//     lawyerId: new mongoose.Types.ObjectId(lawyerId),
+//   })
+//   .sort({ lastMessageAt: -1 })
+//   .lean();
+
+//   res.json(chats);
+// });

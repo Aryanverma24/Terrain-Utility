@@ -904,12 +904,15 @@ const markInterested = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       message: "Land marked as interested successfully",
+       interestedUsers: land.interestedUsers, // full array of objects
+  count: land.interestedUsers.length,
     });
 
   } catch (error) {
     console.error("Error marking land as interested:", error);
     res.status(500).json({
       message: "Server error while marking land as interested",
+      
       error: error.message,
     });
   }
@@ -956,6 +959,8 @@ const unmarkInterested = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       message: "Land unmarked as interested successfully",
+       interestedUsers: land.interestedUsers, // full array of objects
+  count: land.interestedUsers.length,
     });
 
   } catch (error) {

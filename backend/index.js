@@ -27,10 +27,11 @@ import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
-
+import Chat from "./modals/chatmodel.js";
+import Message from "./modals/messageModel.js";
 import { Server } from 'socket.io';
 import http from 'http';
-import Message from "./modals/messageModel.js";
+
 
 // Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
@@ -72,67 +73,62 @@ let rooms = {}; // In-memory store (optional)
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // -----------------------
-  // JOIN ROOM
-  // -----------------------
+  // ✅ JOIN ROOM
   socket.on("joinRoom", async ({ room }) => {
-    try {
-      if (!room) return;
-      socket.join(room);
-      console.log(`Socket ${socket.id} joined room ${room}`);
+  try {
+    if (!room) return;
 
-      // Send last 100 messages
-      const history = await Message.find({ room })
-        .sort({ timestamp: 1 })
-        .limit(100)
-        .lean();
+    socket.join(room);
 
-      socket.emit("messageHistory", history);
-    } catch (err) {
-      console.error("joinRoom error:", err);
-    }
-  });
+    // ✅ FIX HERE
+    const history = await Message.find({ chatId: room })
+      .sort({ createdAt: 1 })
+      .limit(100);
 
-  // -----------------------
-  // SEND MESSAGE
-  // -----------------------
+    socket.emit("messageHistory", history);
+
+  } catch (err) {
+    console.error("joinRoom error:", err);
+  }
+});
+
+  // ✅ SEND MESSAGE
   socket.on("sendMessage", async (data) => {
     try {
       const {
-        room,
-        landId,
+        chatId,
         senderId,
         senderName,
         receiverId,
         receiverName,
-        message: text
+        message,
       } = data;
 
-      if (!room || !senderId || !receiverId || !text) {
-        console.warn("sendMessage missing fields:", data);
-        return;
-      }
-
-      if (String(senderId) === String(receiverId)) {
-        console.warn("sendMessage blocked: sender === receiver");
+      if (!chatId) {
+        console.log("❌ chatId missing");
         return;
       }
 
       const msg = await Message.create({
-        room,
-        landId: landId ? new mongoose.Types.ObjectId(landId) : undefined,
-        senderId: new mongoose.Types.ObjectId(senderId),
-        senderName,
-        receiverId: new mongoose.Types.ObjectId(receiverId),
-        receiverName,
-        message: text,
-        timestamp: new Date(),
+  chatId,
+  senderId,
+  senderName,
+  receiverId,
+  receiverName,
+  message,
+  isRead: false,
+  delivered: true, // ✅ ADD
+});
+
+      await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: message,
+        lastMessageAt: new Date(),
       });
 
-      const converted = msg.toObject();
+      // ✅ EMIT TO SAME ROOM
+      io.to(chatId).emit("message", msg);
 
-      // Broadcast to users in room
-      io.to(room).emit("message", converted);
+      console.log("✅ EMITTED:", msg);
 
     } catch (err) {
       console.error("socket sendMessage error:", err);
@@ -142,9 +138,30 @@ io.on("connection", (socket) => {
   // -----------------------
   // TYPING INDICATOR
   // -----------------------
-  socket.on("typing", ({ room, senderName }) => {
-    socket.to(room).emit("typing", { senderName });
-  });
+socket.on("typing", ({ room, senderName }) => {
+ 
+
+  socket.to(room).emit("typing", { senderName });
+});
+socket.on("stopTyping", ({ room }) => {
+  socket.to(room).emit("stopTyping");
+});
+  socket.on("markAsRead", async ({ chatId, userId }) => {
+  try {
+    await Message.updateMany(
+      {
+        chatId,
+        receiverId: userId,
+        isRead: false,
+      },
+      { $set: { isRead: true } }
+    );
+
+    io.to(chatId).emit("messagesRead", { chatId });
+  } catch (err) {
+    console.error(err);
+  }
+});
 
 
   // JOIN notification personal room
