@@ -860,7 +860,7 @@ const getCitiesWithVerifiedLands = asyncHandler(async (req, res) => {
 
 
 
-//mark land as interested
+// mark land as interested
 const markInterested = asyncHandler(async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
@@ -879,7 +879,7 @@ const markInterested = asyncHandler(async (req, res) => {
       });
     }
 
-    // ✅ FIX: check inside object
+    // Check if user already marked interest
     const alreadyInterested = land.interestedUsers.some(
       (item) => item.user.toString() === userId.toString()
     );
@@ -890,29 +890,34 @@ const markInterested = asyncHandler(async (req, res) => {
       });
     }
 
-    // ✅ FIX: push OBJECT (not userId)
+    // Push the full object with user reference
     land.interestedUsers.push({
       user: userId,
       status: "pending",
       createdAt: new Date(),
     });
 
-    // ✅ update count
+    // Update count
     land.interestedUsersCount = land.interestedUsers.length;
 
     await land.save();
 
+    // Populate user info before sending response
+    await land.populate({
+      path: "interestedUsers.user",
+      select: "username fullName",
+    });
+
     res.status(200).json({
       message: "Land marked as interested successfully",
-       interestedUsers: land.interestedUsers, // full array of objects
-  count: land.interestedUsers.length,
+      interestedUsers: land.interestedUsers, // now includes username & fullName
+      count: land.interestedUsers.length,
     });
 
   } catch (error) {
     console.error("Error marking land as interested:", error);
     res.status(500).json({
       message: "Server error while marking land as interested",
-      
       error: error.message,
     });
   }
@@ -1020,9 +1025,11 @@ const getLandDashboard = async (req, res) => {
   const { id } = req.params;
 
   const land = await Land.findById(id)
-    .populate("owner", "name")
-    .populate("ownershipHistory")
-    .populate("interestedUsers.user", "name");
+  .populate("ownershipHistory")
+  .populate({
+    path: "interestedUsers.user",
+    select: "username  _id", // include both username and fullName
+  });
 
   if (!land) {
     return res.status(404).json({ msg: "Land not found" });

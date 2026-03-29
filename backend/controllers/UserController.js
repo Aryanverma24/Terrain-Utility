@@ -248,7 +248,17 @@ const updateUserById = asyncHandler (async(req,res)=>{
     }
 })
 
+ const getLawyers = async (req, res) => {
+  try {
+    const lawyers = await User.find({ role: "lawyer" }).select(
+      "_id username email"
+    );
 
+    res.json(lawyers);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching lawyers" });
+  }
+};
 export {
     createUser,
     loginUser,
@@ -258,5 +268,6 @@ export {
     updateCurrentUserProfile,
     deleteUser,
     getUserById,
-    updateUserById
+    updateUserById,
+    getLawyers,
 } 

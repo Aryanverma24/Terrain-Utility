@@ -1,10 +1,12 @@
 // controllers/chatController.js
 import asyncHandler from "express-async-handler";
 import Chat from "../modals/chatmodel.js";
+import Land from "../modals/LandModal.js";
 import Message from "../modals/messageModel.js";
 import mongoose from "mongoose";
 import User from "../modals/UserModal.js";
 import { io } from "../index.js";
+import Case from "../modals/caseModal.js";
 import Notification from "../modals/NotificationModal.js"
 import { resolveChatRoles } from "../utils/Chathelper.js";
 // --- Create or get a chat between buyer and owner for a land ---
@@ -329,14 +331,193 @@ export const sendMessage = asyncHandler(async (req, res) => {
   // ✅ CRITICAL FIX (YOU WERE MISSING THIS)
   res.status(201).json(msg);
 });
-// export const getLawyerChats = asyncHandler(async (req, res) => {
-//   const { lawyerId } = req.params;
+export const getOrCreateConsultationChat = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { landId, lawyerId } = req.body;
 
-//   const chats = await Chat.find({
-//     lawyerId: new mongoose.Types.ObjectId(lawyerId),
-//   })
-//   .sort({ lastMessageAt: -1 })
-//   .lean();
+    if (!landId) {
+      return res.status(400).json({ message: "LandId required" });
+    }
 
-//   res.json(chats);
-// });
+    const chatKey = `CONSULT_${landId}_${userId}`;
+
+    // 🔍 Step 1: Check existing chat
+    let chat = await Chat.findOne({ chatKey }).populate("participants");
+
+    if (chat) {
+      // ✅ Chat already exists → return directly
+      return res.status(200).json(chat);
+    }
+
+    // ❌ No chat → must select lawyer
+    if (!lawyerId) {
+      return res.status(400).json({
+        message: "Please select a lawyer to start consultation",
+      });
+    }
+
+    // 🆕 Create chat
+    chat = await Chat.create({
+      participants: [userId, lawyerId],
+      landId,
+      chatType: "consultation",
+      chatKey,
+    });
+
+    res.status(200).json(chat);
+  } catch (err) {
+    res.status(500).json({ message: "Error creating consultation chat" });
+  }
+};
+
+
+export const startLegalProcess = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { landId } = req.body;
+
+    // 🔍 Get land
+    const land = await Land.findById(landId);
+    if (!land) return res.status(404).json({ message: "Land not found" });
+
+    const ownerId = land.owner;
+
+    // 🔍 Get consultation chat (to extract lawyer)
+    const consultKey = `CONSULT_${landId}_${userId}`;
+    const consultChat = await Chat.findOne({ chatKey: consultKey });
+
+    if (!consultChat) {
+      return res.status(400).json({
+        message: "Consultation required before legal process",
+      });
+    }
+
+    const lawyerId = consultChat.participants.find(
+      (p) => p.toString() !== userId
+    );
+
+    // ❌ Check if case already exists
+    let existingCase = await Case.findOne({ landId, buyerId: userId });
+
+    if (existingCase) {
+      return res.status(200).json(existingCase);
+    }
+
+    // 🆕 Create chats
+
+    const buyerLawyerChat = await Chat.create({
+      participants: [userId, lawyerId],
+      landId,
+      chatType: "legal",
+      chatKey: `LEGAL_BL_${landId}_${userId}`,
+    });
+
+    const ownerLawyerChat = await Chat.create({
+      participants: [ownerId, lawyerId],
+      landId,
+      chatType: "legal",
+      chatKey: `LEGAL_OL_${landId}_${ownerId}`,
+    });
+
+    // 🆕 Create case
+    const newCase = await Case.create({
+      landId,
+      buyerId: userId,
+      ownerId,
+      lawyerId,
+      buyerLawyerChat: buyerLawyerChat._id,
+      ownerLawyerChat: ownerLawyerChat._id,
+    });
+
+    res.status(201).json(newCase);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error starting legal process" });
+  }
+};
+//for owner to see all his related cases for a land 
+export const getOwnerCases = async (req, res) => {
+  try {
+    const ownerId = req.user.id;
+
+    const cases = await Case.find({ ownerId })
+      .populate("landId", "landtype city state")
+      .populate("buyerId", "username email")
+      .populate("lawyerId", "username email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(cases);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching owner cases" });
+  }
+};
+export const getCasesByLand = async (req, res) => {
+  try {
+    const { landId } = req.params;
+    const ownerId = req.user.id;
+
+    const cases = await Case.find({ landId, ownerId })
+      .populate("buyerId", "username email")
+      .populate("lawyerId", "username email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(cases);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching land cases" });
+  }
+};
+//this is to check whether the legalchat exists fro woner lawyer and bueyr
+export const checkLegalChatExists = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { landId } = req.params;
+
+    const chat = await Chat.findOne({
+      landId: landId, // ✅ FIXED
+      chatType: "legal",
+      participants: { $in: [userId] }, // ✅ FIXED
+    });
+
+    if (chat) {
+      return res.status(200).json({
+        exists: true,
+        chatId: chat._id,
+      });
+    }
+
+    return res.status(200).json({ exists: false });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+// to check whether lawyer and buyer ahs a chat 
+export const checkConsultationExists = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { landId } = req.params;
+
+    const chat = await Chat.findOne({
+      landId: landId, // ✅ FIXED
+      chatType: "consultation",
+      participants: { $in: [userId] }, // ✅ FIXED
+    });
+
+    if (chat) {
+      return res.status(200).json({
+        exists: true,
+        chatId: chat._id,
+      });
+    }
+
+    return res.status(200).json({ exists: false });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

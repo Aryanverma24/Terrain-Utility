@@ -17,10 +17,10 @@ const chatSchema = new mongoose.Schema(
     },
 
     chatType: {
-      type: String,
-      enum: ["normal", "legal"],
-      default: "normal",
-    },
+  type: String,
+  enum: ["normal", "consultation", "legal"],
+  default: "normal",
+},
 
     chatKey: {
       type: String,

@@ -7,7 +7,8 @@ import StarIconOutline from "@heroicons/react/24/outline/StarIcon";
 import axios from "axios";
 import { FaMapMarkerAlt,FaRegHeart, FaCompass,FaRulerCombined, FaTag, FaUser, FaPhone, FaStar, FaShieldAlt, FaHome, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaFileAlt, FaComments, FaArrowLeft, FaArrowRight, FaRegStar, FaStar as FaStarSolid, FaHeart, FaHistory, FaTimes } from "react-icons/fa";
 import { getFileUrl } from "../../../../backend/utils/getFileUrl";
-
+import { useContext } from "react";
+import { AuthContext } from "../../../contexts/AuthContext";
 /**
  * Decode JWT (very small utility) - returns parsed payload or null
  */
@@ -168,7 +169,14 @@ const SingleLand = () => {
   const [showInterestedUsersModal, setShowInterestedUsersModal] = useState(false);
   const [interestedUsersData, setInterestedUsersData] = useState([]);
   const [loadingInterestedUsers, setLoadingInterestedUsers] = useState(false);
-
+  //for showcaisng land cases to owner
+  const [showCases, setShowCases] = useState(false);
+const [landCases, setLandCases] = useState([]);
+const { user } = useContext(AuthContext);
+const isOwner =
+  user?._id?.toString() ===
+  (land?.owner?._id?.toString() || land?.owner?.toString());
+ 
 // Combine main photo + additional land photos
 const landPhotos = [
    land?.image,, // main image uploaded during land creation
@@ -203,6 +211,24 @@ useEffect(() => {
   }, 3000); // slide every 5 seconds
   return () => clearInterval(interval);
 }, [landPhotos.length]);
+//fucntion to get all the land cases fetch 
+const fetchLandCases = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await API.get(`/api/chat/land/${land._id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    setLandCases(res.data);
+    setShowCases(true);
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to fetch land cases");
+  }
+};
 // --- Inside fetchLand or wherever you set fullDocs ---
 // Extract full sub-documents for lawyer/owner actions
 const fetchLand = useCallback(async () => {
@@ -259,10 +285,9 @@ const fetchLand = useCallback(async () => {
 }, [id, token]);
 
 
-  useEffect(() => {
-    fetchLand();
-  }, [fetchLand]);
-
+ useEffect(() => {
+  fetchLand();
+}, [id]); // or [landId]
 
 // explore more fucntion for the explore more land button
 const handleExploreMore = () => {
@@ -984,6 +1009,41 @@ const allDocsApproved =
         </span>
       </div>
     </button>
+{/* land cases Button */}
+{isOwner && (
+  <button
+    onClick={fetchLandCases}
+    className="bg-purple-700 text-white px-4 py-2 rounded-lg mt-4"
+  >
+    ⚖️ View Legal Cases
+  </button>
+)}
+{showCases && (
+  <div className="mt-6 bg-white shadow-lg rounded-xl p-4">
+    <h2 className="text-lg font-bold mb-3">⚖️ Legal Cases for this Land</h2>
+
+    {landCases.length === 0 ? (
+      <p className="text-gray-500">No cases for this land</p>
+    ) : (
+      landCases.map((c) => (
+        <div
+          key={c._id}
+          className="border rounded-lg p-3 mb-3"
+        >
+          <p><strong>Buyer:</strong> {c.buyerId?.username}</p>
+          <p><strong>Lawyer:</strong> {c.lawyerId?.username}</p>
+
+          <button
+            onClick={() => navigate(`/chat/${c.ownerLawyerChat}`)}
+            className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
+          >
+            Chat with Lawyer
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+)}
 
         {/* Ownership History Button */}
         <button

@@ -14,7 +14,8 @@ import {
     getAllUser,
     deleteUser,
     getUserById,
-    updateUserById
+    updateUserById,
+    getLawyers
 
 } from '../controllers/UserController.js'
 
@@ -87,6 +88,7 @@ router.get("/lawyer/data", roleAuth("lawyer"), (req, res) => {
 
 router.route("/logout").post(logout)
 
+router.get("/lawyers",authenticate,getLawyers);
 //profile update
 
 router.route("/profile")

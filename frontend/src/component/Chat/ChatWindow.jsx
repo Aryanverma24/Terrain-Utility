@@ -27,7 +27,25 @@ export default function ChatWindow() {
   const [typingUser, setTypingUser] = useState("");
 
   const typingTimeoutRef = useRef(null);
+useEffect(() => {
+  if (!chatId) return;
 
+  const fetchChat = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/chat/${chatId}`
+      );
+
+      console.log("💬 CHAT DATA:", res.data);
+      setChat(res.data); // ✅ IMPORTANT
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchChat();
+}, [chatId]);
   // ✅ SOCKET SETUP
   useEffect(() => {
     if (!chatId) return;
@@ -172,7 +190,11 @@ return (
           {otherUser?.username}
         </span>
       </div>
-
+{chat.chatType === "consultation" && (
+  <div className="p-2 bg-yellow-100 text-xs text-gray-600 text-center">
+    ⚖️ This is a consultation chat. Start legal process to proceed further.
+  </div>
+)}
 {/* 🔥 HEADER */}
 <div className="px-6 py-4 flex items-center gap-4 bg-white/70 backdrop-blur-md border-b">
 
