@@ -143,9 +143,25 @@ socket.on("typing", ({ room, senderName }) => {
 
   socket.to(room).emit("typing", { senderName });
 });
+
 socket.on("stopTyping", ({ room }) => {
   socket.to(room).emit("stopTyping");
 });
+
+let onlineUsers = [];
+
+io.on("connection", (socket) => {
+  socket.on("join", (userId) => {
+    if (!onlineUsers.includes(userId)) onlineUsers.push(userId);
+    io.emit("onlineUsers", onlineUsers);
+  });
+
+  socket.on("disconnect", () => {
+    onlineUsers = onlineUsers.filter(id => id !== socket.userId);
+    io.emit("onlineUsers", onlineUsers);
+  });
+});
+
   socket.on("markAsRead", async ({ chatId, userId }) => {
   try {
     await Message.updateMany(

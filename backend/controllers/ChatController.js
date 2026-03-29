@@ -199,7 +199,7 @@ export const getUserChats = asyncHandler(async (req, res) => {
     participants: { $in: [userId] },
   })
     .populate("participants", "username role") // 🔥 KEY FIX
-    .populate("landId", "title owner")
+    .populate("landId", " landtype image city state pincode owner")
     .sort({ updatedAt: -1 })
     .lean();
 
@@ -211,13 +211,17 @@ export const getUserChats = asyncHandler(async (req, res) => {
       _id: chat._id,
       chatType: chat.chatType,
 
-      land: chat.landId
-        ? {
-            _id: chat.landId._id,
-            title: chat.landId.title,
-            owner: chat.landId.owner,
-          }
-        : null,
+     land: chat.landId
+  ? {
+      _id: chat.landId._id,
+      image:chat.landId.image,
+       landtype: chat.landId.landtype,
+      city: chat.landId.city,
+      state: chat.landId.state,
+      pincode: chat.landId.pincode,
+      owner: chat.landId.owner,
+    }
+  : null,
 
       participants: chat.participants, // ✅ already has username
 

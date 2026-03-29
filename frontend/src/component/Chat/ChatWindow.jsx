@@ -3,7 +3,7 @@ import { useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { io } from "socket.io-client";
-
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 const socket = io("http://localhost:5000");
 
 const getId = (val) => {
@@ -18,6 +18,8 @@ export default function ChatWindow() {
 
   const initialChat = state?.chat;
   const userId = getId(user?._id);
+
+  const chatEndRef = useRef(null);
 
   const [chat, setChat] = useState(initialChat);
   const [messages, setMessages] = useState([]);
@@ -145,6 +147,16 @@ export default function ChatWindow() {
     (p) => getId(p._id || p) !== userId
   );
 
+//typing scroll
+ const chatContainerRef = useRef(null);
+
+useEffect(() => {
+  const el = chatContainerRef.current;
+  if (el) {
+    el.scrollTop = el.scrollHeight;
+  }
+}, [typingUser]);
+
   if (!chat) return <div>Loading...</div>;
 return (
 <div className="flex justify-center items-start min-h-screen pt-24 pb-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
@@ -161,22 +173,48 @@ return (
         </span>
       </div>
 
-      {/* 🔥 HEADER */}
-      <div className="px-6 py-4 flex items-center gap-4 bg-white/70 backdrop-blur-md border-b">
+{/* 🔥 HEADER */}
+<div className="px-6 py-4 flex items-center gap-4 bg-white/70 backdrop-blur-md border-b">
 
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold shadow-sm">
-          {otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
-        </div>
+  {/* USER AVATAR */}
+  <div className="flex-shrink-0">
+    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold shadow-sm">
+      {otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
+    </div>
+  </div>
 
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900">
-            {otherUser?.username}
-          </h2>
-          <p className="text-xs text-gray-400">
-            Active conversation
-          </p>
-        </div>
-      </div>
+  {/* USER + LAND INFO */}
+  <div className="flex-1 flex flex-col">
+
+    <div className="flex items-center gap-3">
+      {/* USERNAME */}
+      <h2 className="text-sm font-semibold text-gray-900 truncate">
+        {otherUser?.username}
+      </h2>
+
+       {/* LAND IMAGE THUMBNAIL */}
+      {chat?.land?.landPhotos?.length > 0 && (
+        <img
+          src={getFileUrl(chat.land.landPhotos[0])} // first image in landPhotos array
+          alt={chat.land.title || "Land"}
+          className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0"
+        />
+      )}
+    </div>
+
+    {/* LAND TYPE + ADDRESS */}
+    {chat?.land && (
+      <p className="text-xs text-gray-500 truncate mt-1">
+        {chat.land.landtype || "Land"} – {chat.land.city}, {chat.land.state}
+      </p>
+    )}
+
+    <p className="text-xs text-gray-400">
+      Active conversation
+    </p>
+
+  </div>
+</div>
 
       {/* 🔥 CHAT BODY */}
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 bg-gradient-to-b from-white/40 to-transparent">
@@ -236,17 +274,23 @@ return (
 
    
        {/* 🔥 TYPING BAR (FIXED POSITION) */}
-{ typingUser && (
-  <div className="px-5 py-2 flex items-center gap-2 text-xs text-gray-500 bg-white border-t">
-    <span>{typingUser}</span>
+<div
+  ref={chatContainerRef}
+  className="flex-1 overflow-y-auto"
+>
+  {/* messages */}
 
-    <div className="flex gap-1">
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+  {typingUser && (
+    <div className="px-5 py-2 flex items-center gap-2 text-xs text-gray-500 bg-yellow-100 border-t mb-10">
+      <span>{typingUser}</span>
+      <div className="flex gap-1">
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+      </div>
     </div>
-  </div>
-)}
+  )}
+</div>
 
       </div>
 

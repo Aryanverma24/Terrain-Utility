@@ -2,7 +2,8 @@ import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../../../contexts/AuthContext";
-
+import { io } from "socket.io-client";
+const socket = io("http://localhost:5000");
 const getId = (val) => {
   if (!val) return null;
   return typeof val === "object" ? val._id?.toString() : val.toString();
@@ -15,6 +16,7 @@ export default function ChatList({ type, onSelectChat }) { // ✅ added type
 
   const [chats, setChats] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState([]);
 
   const fetchChats = async () => {
     try {
@@ -36,6 +38,19 @@ export default function ChatList({ type, onSelectChat }) { // ✅ added type
       console.error(err);
     }
   };
+
+useEffect(() => {
+  if (!user?._id) return;
+
+  socket.emit("join", user._id);
+
+  const handleOnlineUsers = (users) => setOnlineUsers(users);
+  socket.on("onlineUsers", handleOnlineUsers);
+
+  return () => {
+    socket.off("onlineUsers", handleOnlineUsers); // remove listener properly
+  };
+}, [user?._id]);
 
   useEffect(() => {
     fetchChats();
@@ -109,7 +124,14 @@ export default function ChatList({ type, onSelectChat }) { // ✅ added type
             </div>
 
             {/* ONLINE DOT */}
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+         {/* Status Dot */}
+ {/* Status Dot */}
+<span
+  className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
+    onlineUsers.includes(getId(otherUser._id)) ? "bg-green-500" : "bg-gray-400"
+  }`}
+  title={onlineUsers.includes(getId(otherUser._id)) ? "Online" : "Offline"}
+></span>
           </div>
 
           {/* 🔥 CONTENT */}
@@ -128,12 +150,25 @@ export default function ChatList({ type, onSelectChat }) { // ✅ added type
               </span>
             </div>
 
-            {/* LAND INFO */}
-            {land && (
-              <p className="text-xs text-gray-500 truncate mt-1">
-                📍 {land.title || "Land listing"}
-              </p>
-            )}
+         {/* LAND INFO */}
+{/* LAND INFO */}
+{land && (
+  <div className="mt-2 flex flex-col gap-1">
+    {/* Land type highlighted */}
+    <p className="text-xs font-semibold text-emerald-600 truncate">
+      {land.landtype || "Land"}
+    </p>
+
+    {/* Pin + Address */}
+    <span className="text-xs text-gray-500 truncate flex items-center gap-1">
+      <span>📍</span>
+      <span>
+        {land.city || "Unknown City"}, {land.state || "Unknown State"}
+        {land.pincode ? ` - ${land.pincode}` : ""}
+      </span>
+    </span>
+  </div>
+)}
 
             {/* LAST MESSAGE */}
             <p className="text-sm text-gray-600 truncate mt-1">
