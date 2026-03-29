@@ -254,7 +254,7 @@ useEffect(() => {
               </Link>
               
               <Link 
-                to="/MyLands" 
+                to="/mylands" 
                 onClick={() => setMenubar(false)}
                 className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
               >

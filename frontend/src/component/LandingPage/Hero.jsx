@@ -22,14 +22,8 @@ const Hero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           {/* Left Content */}
-          <div className="text-center lg:text-left">
-            {/* Premium Badge */}
-            <div className="inline-flex items-center px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-400 text-sm font-medium mb-6 backdrop-blur-sm">
-              <FaCheckCircle className="mr-2" />
-              Trusted by 10,000+ Landowners & Renters
-            </div>
-
-            {/* Main Heading */}
+          <div className="text-center lg:text-left md:pt-12">
+                {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               Find Your Perfect
               <span className="block bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-2">

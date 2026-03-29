@@ -54,22 +54,22 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
   const hasActiveFilters = Object.values(localFilters).some(value => value && value !== '');
 
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 sticky top-24">
+    <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:border-emerald-400/30 transition-all duration-500 sticky top-24">
       {/* Filter Header */}
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <FaSlidersH className="text-emerald-600 mr-3" />
-            <h3 className="text-lg font-bold text-gray-900">Filters</h3>
+            <FaSlidersH className="text-emerald-400 mr-3" />
+            <h3 className="text-lg font-bold text-emerald-400">Filters</h3>
             {hasActiveFilters && (
-              <span className="ml-2 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+              <span className="ml-2 px-2 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-400 text-xs">
                 Active
               </span>
             )}
           </div>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="lg:hidden p-2 hover:bg-white/20 rounded-lg transition-colors"
           >
             {isExpanded ? <FaTimes /> : <FaFilter />}
           </button>
@@ -81,13 +81,13 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
         <div className="p-6 space-y-6">
           {/* Land Type Filter */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-sm font-semibold text-emerald-400 mb-3">
               Land Type
             </label>
             <select
               value={localFilters.landType}
               onChange={(e) => handleInputChange('landType', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
+              className="w-full px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300"
             >
               <option value="">All Types</option>
               {landTypes.map(type => (
