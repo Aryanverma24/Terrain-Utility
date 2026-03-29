@@ -17,8 +17,7 @@ const normalizeRole = (role) => {
     return role;
   }
 
-  // 🔥 map your custom roles
-  if (role === "normal") return "buyer"; // or "user" if you add it later
+  if (role === "normal") return "buyer"; 
 
   return "buyer"; // default fallback
 };
@@ -29,13 +28,11 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Participants required" });
   }
 
-  // ✅ Normalize + sort
   const sortedParticipants = [...participants]
     .map(id => id.toString())
     .sort();
 
-  // ✅ IMPORTANT: include landId in key
-  const chatKey =
+  
     sortedParticipants.join("_") + "_" + (landId || "global");
 
   const chat = await Chat.findOneAndUpdate(
@@ -124,14 +121,14 @@ export const getMessages = asyncHandler(async (req, res) => {
 export const getUnreadCount = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
-  // ✅ Validate ID
+
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ error: "Invalid user ID" });
   }
 
   const objectId = new mongoose.Types.ObjectId(userId);
 
-  // ✅ GROUP unread per chat
+ 
   const unreadCounts = await Message.aggregate([
     {
       $match: {
@@ -147,7 +144,7 @@ export const getUnreadCount = asyncHandler(async (req, res) => {
     },
   ]);
 
-  // ✅ Convert to map: { chatId: count }
+ 
   const result = {};
   unreadCounts.forEach((item) => {
     result[item._id] = item.count;
@@ -164,7 +161,7 @@ export const getChatById = asyncHandler(async (req, res) => {
   }
 
   const chat = await Chat.findById(chatId)
-    .populate("participants", "username role email") // 🔥 MAIN FIX
+    .populate("participants", "username role email") 
     .populate("landId", "title");
 
   if (!chat) {
@@ -191,12 +188,12 @@ export const markChatAsRead = asyncHandler(async (req, res) => {
 export const getUserChats = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
-  // ✅ Validate ObjectId (prevents 500 crash)
+ 
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     return res.status(400).json({ error: "Invalid user ID" });
   }
 
-  // ✅ Fetch chats (ONLY participants-based system)
+  // Fetch chats (ONLY participants-based system)
   const chats = await Chat.find({
     participants: { $in: [userId] },
   })
@@ -205,7 +202,7 @@ export const getUserChats = asyncHandler(async (req, res) => {
     .sort({ updatedAt: -1 })
     .lean();
 
-  // ✅ Format response (clean + frontend ready)
+  //  Format response 
   const formattedChats = chats.map((chat) => {
     const { owner, buyer, lawyer } = resolveChatRoles(chat, userId);
 
@@ -225,7 +222,7 @@ export const getUserChats = asyncHandler(async (req, res) => {
     }
   : null,
 
-      participants: chat.participants, // ✅ already has username
+      participants: chat.participants, 
 
       owner,
       buyer,
@@ -243,7 +240,7 @@ export const getUserChats = asyncHandler(async (req, res) => {
 export const sendMessage = asyncHandler(async (req, res) => {
   const { chatId, senderId, receiverId, message } = req.body;
 
-  // ✅ VALIDATION
+  //  VALIDATION
   if (!chatId || !senderId || !receiverId || !message) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -260,13 +257,13 @@ export const sendMessage = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Sender and receiver cannot be same" });
   }
 
-  // ✅ FETCH CHAT
+  // FETCH CHAT
   const chat = await Chat.findById(chatId);
   if (!chat) {
     return res.status(404).json({ error: "Chat not found" });
   }
 
-  // ✅ VALIDATE PARTICIPANTS
+  // VALIDATE PARTICIPANTS
   const isSenderValid = chat.participants.some(
     (p) => p.toString() === senderId
   );
@@ -279,7 +276,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Invalid chat users" });
   }
 
-  // ✅ FETCH USERS (SAFE)
+  // FETCH USERS (SAFE)
   const sender = await User.findById(senderId).select("username role");
   const receiver = await User.findById(receiverId).select("username role");
 
@@ -287,7 +284,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Invalid users" });
   }
 
-  // ✅ CREATE MESSAGE
+  // CREATE MESSAGE
   const msg = await Message.create({
     chatId,
     senderId,
@@ -298,13 +295,13 @@ export const sendMessage = asyncHandler(async (req, res) => {
     isRead: false,
   });
 
-  // ✅ UPDATE CHAT META
+  //  UPDATE CHAT META
   await Chat.findByIdAndUpdate(chatId, {
     lastMessage: message,
     lastMessageAt: new Date(),
   });
 
-  // ✅ CREATE NOTIFICATION (SAFE BLOCK)
+  // CREATE NOTIFICATION (SAFE BLOCK)
   let notification = null;
 
   try {
@@ -319,7 +316,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
       targetRole,
     });
 
-    // ✅ SOCKET EMIT
+    //  SOCKET EMIT
     if (io) {
       io.to(receiverId.toString()).emit("newNotification", notification);
      io.to(chatId.toString()).emit("message", msg); // 🔥 MATCH SOCKET SERVER // 🔥 REALTIME CHAT
@@ -328,7 +325,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     console.error("Notification error:", err.message);
   }
 
-  // ✅ CRITICAL FIX (YOU WERE MISSING THIS)
+  
   res.status(201).json(msg);
 });
 export const getOrCreateConsultationChat = async (req, res) => {
@@ -342,22 +339,22 @@ export const getOrCreateConsultationChat = async (req, res) => {
 
     const chatKey = `CONSULT_${landId}_${userId}`;
 
-    // 🔍 Step 1: Check existing chat
+    //  Step 1: Check existing chat
     let chat = await Chat.findOne({ chatKey }).populate("participants");
 
     if (chat) {
-      // ✅ Chat already exists → return directly
+      // Chat already exists → return directly
       return res.status(200).json(chat);
     }
 
-    // ❌ No chat → must select lawyer
+    //  No chat → must select lawyer
     if (!lawyerId) {
       return res.status(400).json({
         message: "Please select a lawyer to start consultation",
       });
     }
 
-    // 🆕 Create chat
+    //  Create chat
     chat = await Chat.create({
       participants: [userId, lawyerId],
       landId,
@@ -377,13 +374,13 @@ export const startLegalProcess = async (req, res) => {
     const userId = req.user.id;
     const { landId } = req.body;
 
-    // 🔍 Get land
+    // Get land
     const land = await Land.findById(landId);
     if (!land) return res.status(404).json({ message: "Land not found" });
 
     const ownerId = land.owner;
 
-    // 🔍 Get consultation chat (to extract lawyer)
+    //  Get consultation chat (to extract lawyer)
     const consultKey = `CONSULT_${landId}_${userId}`;
     const consultChat = await Chat.findOne({ chatKey: consultKey });
 
@@ -397,14 +394,14 @@ export const startLegalProcess = async (req, res) => {
       (p) => p.toString() !== userId
     );
 
-    // ❌ Check if case already exists
+    // Check if case already exists
     let existingCase = await Case.findOne({ landId, buyerId: userId });
 
     if (existingCase) {
       return res.status(200).json(existingCase);
     }
 
-    // 🆕 Create chats
+    //  Create chats
 
     const buyerLawyerChat = await Chat.create({
       participants: [userId, lawyerId],
@@ -420,7 +417,7 @@ export const startLegalProcess = async (req, res) => {
       chatKey: `LEGAL_OL_${landId}_${ownerId}`,
     });
 
-    // 🆕 Create case
+    // Create case
     const newCase = await Case.create({
       landId,
       buyerId: userId,
@@ -476,9 +473,9 @@ export const checkLegalChatExists = async (req, res) => {
     const { landId } = req.params;
 
     const chat = await Chat.findOne({
-      landId: landId, // ✅ FIXED
+      landId: landId, 
       chatType: "legal",
-      participants: { $in: [userId] }, // ✅ FIXED
+      participants: { $in: [userId] }, 
     });
 
     if (chat) {
@@ -502,9 +499,9 @@ export const checkConsultationExists = async (req, res) => {
     const { landId } = req.params;
 
     const chat = await Chat.findOne({
-      landId: landId, // ✅ FIXED
+      landId: landId, 
       chatType: "consultation",
-      participants: { $in: [userId] }, // ✅ FIXED
+      participants: { $in: [userId] }, 
     });
 
     if (chat) {

@@ -4,6 +4,7 @@ import axios from "axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { io } from "socket.io-client";
 import { getFileUrl } from "../../../../backend/utils/getFileUrl";
+
 const socket = io("http://localhost:5000");
 
 const getId = (val) => {
@@ -11,77 +12,76 @@ const getId = (val) => {
   return typeof val === "object" ? val._id?.toString() : val.toString();
 };
 
-export default function ChatWindow() {
-  const { chatId } = useParams();
+export default function ChatWindow({ chat: propChat }) {
+  const { chatId: paramChatId } = useParams();
   const { state } = useLocation();
   const { user } = useContext(AuthContext);
 
-  const initialChat = state?.chat;
+  const initialChat = state?.chat || propChat;
   const userId = getId(user?._id);
 
   const chatEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const [chat, setChat] = useState(initialChat);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [typingUser, setTypingUser] = useState("");
 
-  const typingTimeoutRef = useRef(null);
-useEffect(() => {
-  if (!chatId) return;
+  // Determine effective chatId
+  const effectiveChatId = paramChatId || initialChat?._id;
 
-  const fetchChat = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/chat/${chatId}`
-      );
 
-      console.log("💬 CHAT DATA:", res.data);
-      setChat(res.data); // ✅ IMPORTANT
 
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  fetchChat();
-}, [chatId]);
-  // ✅ SOCKET SETUP
+  // Fetch chat if not available
   useEffect(() => {
-    if (!chatId) return;
+    if (!effectiveChatId || chat) return;
 
-    socket.emit("joinRoom", { room: chatId });
+    const fetchChat = async () => {
+      try {
+      
+        const res = await axios.get(`http://localhost:5000/api/chat/${effectiveChatId}`);
+       
+        setChat(res.data);
+      } catch (err) {
+        
+      }
+    };
+
+    fetchChat();
+  }, [effectiveChatId, chat]);
+
+  // Socket setup
+  useEffect(() => {
+    if (!effectiveChatId) return;
+
+  
+    socket.emit("joinRoom", { room: effectiveChatId });
 
     const handleHistory = (history) => {
-      console.log("📜 HISTORY:", history);
+      
       setMessages(history);
     };
 
     const handleMessage = (msg) => {
-      console.log("🔥 LIVE MESSAGE:", msg);
-
-      setMessages((prev) => {
-        if (prev.find((m) => m._id === msg._id)) return prev;
-        return [...prev, msg];
-      });
+      
+      setMessages((prev) => (prev.find((m) => m._id === msg._id) ? prev : [...prev, msg]));
     };
 
-    // ✅ SOCKET typing handler (FIXED)
     const handleTyping = ({ senderName }) => {
+     
       setTypingUser(senderName);
     };
 
     const handleStopTyping = () => {
+      
       setTypingUser("");
     };
 
     const handleRead = () => {
-      setMessages((prev) =>
-        prev.map((m) => ({
-          ...m,
-          isRead: true,
-        }))
-      );
+      
+      setMessages((prev) => prev.map((m) => ({ ...m, isRead: true })));
     };
 
     socket.on("messageHistory", handleHistory);
@@ -91,45 +91,47 @@ useEffect(() => {
     socket.on("messagesRead", handleRead);
 
     return () => {
+     
       socket.off("messageHistory", handleHistory);
       socket.off("message", handleMessage);
       socket.off("typing", handleTyping);
       socket.off("stopTyping", handleStopTyping);
       socket.off("messagesRead", handleRead);
     };
-  }, [chatId]);
+  }, [effectiveChatId]);
 
-  // ✅ MARK AS READ
+  // Mark messages as read
   useEffect(() => {
-    if (!chatId || !userId) return;
+    if (!effectiveChatId || !userId) return;
 
-    socket.emit("markAsRead", {
-      chatId,
-      userId,
-    });
-  }, [chatId, userId]);
+    
+    socket.emit("markAsRead", { chatId: effectiveChatId, userId });
+  }, [effectiveChatId, userId]);
 
-  // ✅ FETCH FALLBACK
+  // Fetch messages fallback
   useEffect(() => {
-    if (!chatId) return;
+    if (!effectiveChatId) return;
 
+   
     axios
-      .get(`http://localhost:5000/api/chat/${chatId}/messages`)
-      .then((res) => setMessages(res.data))
-      .catch((err) => console.error(err));
-  }, [chatId]);
+      .get(`http://localhost:5000/api/chat/${effectiveChatId}/messages`)
+      .then((res) => {
+       
+        setMessages(res.data);
+      })
+      .catch((err) => console.error("❌ ChatWindow | Error fetching messages fallback:", err));
+  }, [effectiveChatId]);
 
-  // ✅ SEND MESSAGE
+  // Send message
   const sendMessage = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !chat) return;
 
-    const receiver = chat.participants.find(
-      (p) => getId(p._id || p) !== userId
-    );
+    const receiver = chat.participants.find((p) => getId(p._id || p) !== userId);
+   
 
     socket.emit("sendMessage", {
-      chatId,
-      room: chatId,
+      chatId: effectiveChatId,
+      room: effectiveChatId,
       senderId: userId,
       senderName: user.username,
       receiverId: getId(receiver._id || receiver),
@@ -138,209 +140,95 @@ useEffect(() => {
     });
 
     setText("");
-
-    // ✅ stop typing when message sent
-    socket.emit("stopTyping", { room: chatId });
+    socket.emit("stopTyping", { room: effectiveChatId });
   };
 
-  // ✅ INPUT HANDLER (FIXED)
+  // Typing input handler
   const handleInputChange = (e) => {
     setText(e.target.value);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
 
-    socket.emit("typing", {
-      room: chatId,
-      senderName: user.username,
-    });
+    socket.emit("typing", { room: effectiveChatId, senderName: user.username });
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stopTyping", { room: chatId });
+      socket.emit("stopTyping", { room: effectiveChatId });
     }, 1000);
   };
 
-  const otherUser = chat?.participants?.find(
-    (p) => getId(p._id || p) !== userId
-  );
+  // Scroll to bottom
+  useEffect(() => {
+    const el = chatContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+     
+    }
+  }, [messages, typingUser]);
 
-//typing scroll
- const chatContainerRef = useRef(null);
+  const otherUser = chat?.participants?.find((p) => getId(p._id || p) !== userId);
 
-useEffect(() => {
-  const el = chatContainerRef.current;
-  if (el) {
-    el.scrollTop = el.scrollHeight;
-  }
-}, [typingUser]);
+  if (!chat) return <div>Loading chat...</div>;
 
-  if (!chat) return <div>Loading...</div>;
-return (
-<div className="flex justify-center items-start min-h-screen pt-24 pb-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
+  return (
+    <div className="flex justify-center items-start min-h-screen pt-24 pb-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
+      <div className="w-full max-w-3xl h-[88vh] flex flex-col rounded-3xl overflow-hidden bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+        <div className="text-center text-xs text-gray-500 py-2 bg-white/60 border-b">
+          You are chatting with <span className="font-semibold text-gray-700">{otherUser?.username}</span>
+        </div>
 
-    {/* 💎 FLOATING CHAT PANEL */}
-    <div className="w-full max-w-3xl h-[88vh] flex flex-col rounded-3xl overflow-hidden 
-    bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+        {chat.chatType === "consultation" && (
+          <div className="p-2 bg-yellow-100 text-xs text-gray-600 text-center">
+            ⚖️ This is a consultation chat. Start legal process to proceed further.
+          </div>
+        )}
 
-      {/* 🔥 CONTEXT BAR */}
-      <div className="text-center text-xs text-gray-500 py-2 bg-white/60 border-b">
-        You are chatting with{" "}
-        <span className="font-semibold text-gray-700">
-          {otherUser?.username}
-        </span>
-      </div>
-{chat.chatType === "consultation" && (
-  <div className="p-2 bg-yellow-100 text-xs text-gray-600 text-center">
-    ⚖️ This is a consultation chat. Start legal process to proceed further.
-  </div>
-)}
-{/* 🔥 HEADER */}
-<div className="px-6 py-4 flex items-center gap-4 bg-white/70 backdrop-blur-md border-b">
-
-  {/* USER AVATAR */}
-  <div className="flex-shrink-0">
-    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-semibold shadow-sm">
-      {otherUser?.username?.charAt(0)?.toUpperCase() || "U"}
-    </div>
-  </div>
-
-  {/* USER + LAND INFO */}
-  <div className="flex-1 flex flex-col">
-
-    <div className="flex items-center gap-3">
-      {/* USERNAME */}
-      <h2 className="text-sm font-semibold text-gray-900 truncate">
-        {otherUser?.username}
-      </h2>
-
-       {/* LAND IMAGE THUMBNAIL */}
-      {chat?.land?.landPhotos?.length > 0 && (
-        <img
-          src={getFileUrl(chat.land.landPhotos[0])} // first image in landPhotos array
-          alt={chat.land.title || "Land"}
-          className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm flex-shrink-0"
-        />
-      )}
-    </div>
-
-    {/* LAND TYPE + ADDRESS */}
-    {chat?.land && (
-      <p className="text-xs text-gray-500 truncate mt-1">
-        {chat.land.landtype || "Land"} – {chat.land.city}, {chat.land.state}
-      </p>
-    )}
-
-    <p className="text-xs text-gray-400">
-      Active conversation
-    </p>
-
-  </div>
-</div>
-
-      {/* 🔥 CHAT BODY */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5 bg-gradient-to-b from-white/40 to-transparent">
-
-        {messages.map((msg) => {
-          const isMine = getId(msg.senderId) === userId;
-
-          return (
-            <div
-              key={msg._id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-            >
-              <div className="flex flex-col max-w-[70%]">
-
-                {/* NAME (only other user) */}
-                {!isMine && (
-                  <span className="text-[11px] text-gray-400 mb-1 ml-1">
-                    {otherUser?.username}
-                  </span>
-                )}
-
-                {/* MESSAGE */}
-                <div
-                  className={`
-                    px-4 py-2.5 text-sm leading-relaxed
-                    ${isMine
-                      ? "bg-emerald-500/90 text-white rounded-2xl rounded-br-md shadow-sm"
-                      : "bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-md shadow-sm"}
-                  `}
-                >
-                  {msg.message}
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-5 bg-gradient-to-b from-white/40 to-transparent">
+          {messages.map((msg) => {
+            const isMine = getId(msg.senderId) === userId;
+            return (
+              <div key={msg._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                <div className="flex flex-col max-w-[70%]">
+                  {!isMine && <span className="text-[11px] text-gray-400 mb-1 ml-1">{otherUser?.username}</span>}
+                  <div className={`px-4 py-2.5 text-sm leading-relaxed ${isMine ? "bg-emerald-500/90 text-white rounded-2xl rounded-br-md shadow-sm" : "bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-md shadow-sm"}`}>
+                    {msg.message}
+                  </div>
+                  <div className={`text-[10px] mt-1 ${isMine ? "text-right text-gray-400" : "text-gray-400"}`}>
+                    {msg.createdAt && new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {isMine && <span className="ml-1">{msg.isRead ? "✓✓" : "✓"}</span>}
+                  </div>
                 </div>
+              </div>
+            );
+          })}
 
-                {/* META */}
-                <div
-                  className={`text-[10px] mt-1 ${
-                    isMine ? "text-right text-gray-400" : "text-gray-400"
-                  }`}
-                >
-                  {msg.createdAt &&
-                    new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-
-                  {isMine && (
-                    <span className="ml-1">
-                      {msg.isRead ? "✓✓" : "✓"}
-                    </span>
-                  )}
-                </div>
-
+          {typingUser && (
+            <div className="px-5 py-2 flex items-center gap-2 text-xs text-gray-500 bg-yellow-100 border-t mb-10">
+              <span>{typingUser}</span>
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
               </div>
             </div>
-          );
-        })}
+          )}
+        </div>
 
-   
-       {/* 🔥 TYPING BAR (FIXED POSITION) */}
-<div
-  ref={chatContainerRef}
-  className="flex-1 overflow-y-auto"
->
-  {/* messages */}
-
-  {typingUser && (
-    <div className="px-5 py-2 flex items-center gap-2 text-xs text-gray-500 bg-yellow-100 border-t mb-10">
-      <span>{typingUser}</span>
-      <div className="flex gap-1">
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+        <div className="px-4 py-3 bg-white/70 backdrop-blur-md border-t flex items-center gap-3">
+          <input
+            type="text"
+            value={text}
+            onChange={handleInputChange}
+            placeholder="Type a message..."
+            className="flex-1 px-4 py-2.5 text-sm bg-gray-100/80 rounded-full outline-none focus:ring-2 focus:ring-emerald-300 transition"
+          />
+          <button
+            onClick={sendMessage}
+            className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.97] transition-all"
+          >
+            Send
+          </button>
+        </div>
       </div>
     </div>
-  )}
-</div>
-
-      </div>
-
-      {/* 🔥 INPUT */}
-      <div className="px-4 py-3 bg-white/70 backdrop-blur-md border-t flex items-center gap-3">
-
-        <input
-          type="text"
-          value={text}
-          onChange={handleInputChange}
-          placeholder="Type a message..."
-          className="flex-1 px-4 py-2.5 text-sm bg-gray-100/80 rounded-full outline-none 
-          focus:ring-2 focus:ring-emerald-300 transition"
-        />
-
-        <button
-          onClick={sendMessage}
-          className="px-5 py-2.5 text-sm font-medium text-white 
-          bg-gradient-to-r from-emerald-500 to-teal-500 
-          rounded-full shadow-sm 
-          hover:shadow-md hover:scale-[1.02] 
-          active:scale-[0.97] transition-all"
-        >
-          Send
-        </button>
-
-      </div>
-    </div>
-  </div>
-);
+  );
 }

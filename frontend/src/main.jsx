@@ -63,8 +63,10 @@ const router = createBrowserRouter(
 
        {/* Chat Routes */}
       <Route path="/chat" element={<ChatList />} />
-<Route path="/chat/:chatId" element={<ChatWindow />} />
+{/* <Route path="/chat/:chatId" element={<ChatWindow />} /> */}
+      <Route path="/inbox" element={<Inbox />}>
 
+</Route>
       {/* Face Authentication Routes */}
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}
       {/* <Route path='/add-face' element={<FaceSetup />} /> */}
