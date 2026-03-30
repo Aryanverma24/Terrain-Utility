@@ -37,6 +37,7 @@ useEffect(() => {
       const allLands = Array.isArray(data.data) ? data.data : [];
 
       if (user.role?.toLowerCase() === "lawyer") {
+        console.log("User role:", user.role);
         // Lawyers see ALL lands
         setLands(allLands);
         setFilteredLands(allLands);

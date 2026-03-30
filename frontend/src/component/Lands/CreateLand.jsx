@@ -3,7 +3,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
 import { FaSpinner } from "react-icons/fa";
-
+import { stateCoordinates } from "../../../../backend/utils/stateCoordinates";
+import MapPicker from "../GeoComponents/mapPicker";
 function CreateLand() {
   const [landtype, setLandtype] = useState("");
   const [city, setCity] = useState("");
@@ -33,8 +34,21 @@ function CreateLand() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100%
   
+  //geo based states 
+  const [selectedState, setSelectedState] = useState("");
+const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
+const [coordinates, setCoordinates] = useState(null);
   const navigate = useNavigate();
+//function to handle the cooridinate based on selected state
+  const handleStateChange = (e) => {
+  const state = e.target.value;
+  setSelectedState(state);
 
+  const coords =
+    stateCoordinates[state] || { lat: 20.5937, lng: 78.9629 };
+
+  setMapCenter(coords);
+};
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -80,7 +94,13 @@ function CreateLand() {
       formData.append("length", length);
       formData.append("breadth", breadth);
       formData.append("description", description);
-
+      formData.append("latitude", coordinates.lat);
+formData.append("longitude", coordinates.lng);
+if (!coordinates) {
+  toast.error("Please select land location on map.");
+  setLoading(false);
+  return;
+}
       const landRes = await axios.post(
         "http://localhost:5000/create-land",
         formData,
@@ -173,7 +193,7 @@ function CreateLand() {
                 <option value="residential">Residential</option>
               </select>
               <input type="text" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} className="px-4 py-2 border rounded-lg" />
-              <select value={state} onChange={(e) => setState(e.target.value)} className="px-4 py-2 border rounded-lg">
+              <select  value={state}  onChange={(e) => {setState(e.target.value);handleStateChange(e); }} className="px-4 py-2 border rounded-lg">
                 <option value="" disabled>Select State</option>
                 {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh",
                   "Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland",
@@ -212,6 +232,25 @@ function CreateLand() {
               <input type="file" name="Bills" multiple onChange={handleDocChange} className="p-2 border rounded-lg" />
             </div>
           </div>
+          {/* ---------------- MAP PICKER ---------------- */}
+{selectedState && (
+  <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border">
+    <h3 className="text-xl font-semibold mb-4 text-gray-800">
+      Select Land Location on Map
+    </h3>
+
+    <MapPicker
+      center={mapCenter}
+      setCoordinates={setCoordinates}
+    />
+
+    {coordinates && (
+      <p className="mt-3 text-sm text-gray-600">
+        Selected: Lat {coordinates.lat}, Lng {coordinates.lng}
+      </p>
+    )}
+  </div>
+)}
 
           {/* ---------------- SUBMIT BUTTON ---------------- */}
           <button

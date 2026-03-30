@@ -3,7 +3,7 @@ import { useParams ,useNavigate} from "react-router-dom";
 import { API } from "../../../utils/API";
 import { toast } from "react-toastify";
 import axios from "axios";
-
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 const InterestDashboard = () => {
   const { landId } = useParams();
 
@@ -169,6 +169,7 @@ const fetchLawyers = async (landId) => {
         });
 
         setLand(res.data.land);
+        console.log("Land Coordinates:", res.data.land.coordinates);
         setOwnershipHistory(res.data.ownershipHistory || []);
         setCurrentOwner(res.data.currentOwner);
       } catch (err) {
@@ -275,6 +276,33 @@ return (
         </div>
       )}
 
+{/* 🌍 SELECTED LOCATION MAP */}
+{/* ========================= */}
+<div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-4 text-center">
+  <h3 className="text-lg font-semibold text-gray-800 mb-2">📍 Selected Location</h3>
+
+  {land?.location?.coordinates ? (
+    <div className="h-64 w-full"> {/* fixed height wrapper */}
+      <MapContainer
+        center={[land.location.coordinates[1], land.location.coordinates[0]]} // [lat, lng]
+        zoom={13}
+        scrollWheelZoom={false}
+        dragging={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        className="h-full w-full"
+      >
+        <TileLayer
+          attribution='© OpenStreetMap contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={[land.location.coordinates[1], land.location.coordinates[0]]} />
+      </MapContainer>
+    </div>
+  ) : (
+    <p className="text-gray-500 text-sm">No location selected for this land.</p>
+  )}
+</div>
       {/* ========================= */}
       {/* ⚖️ LEGAL SECTION */}
       {/* ========================= */}

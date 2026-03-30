@@ -6,7 +6,7 @@ import { useContext, useEffect } from "react";
 import { AuthContext } from "../contexts/authContext";
 import { useLocation } from "react-router-dom";
 import Footer from "./component/Footer.jsx";
-
+import "leaflet/dist/leaflet.css";
 function App() {
   const { getUser, user } = useContext(AuthContext);
   

@@ -29,7 +29,7 @@ const createLand = asyncHandler(async (req, res) => {
 
   const { landtype, city, state, pincode, price, length, breadth, description } = req.body;
   const { id, username } = req.user;
-
+const { latitude, longitude } = req.body;
   if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
     return res.status(400).send("All fields are required, including image!");
   }
@@ -57,6 +57,10 @@ const createLand = asyncHandler(async (req, res) => {
       ownerName: username,
       status: "pending",
       approvedBy: null,
+      location: {
+  type: "Point",
+  coordinates: [parseFloat(longitude), parseFloat(latitude)],
+},
     });
 
     await land.save();

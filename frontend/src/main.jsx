@@ -1,13 +1,14 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+
 import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
 import { createBrowserRouter } from "react-router-dom";
 import { createRef } from "react";
 import Login from './component/Auth/Login.jsx';
 import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
-import AuthState from '../contexts/AuthContext.jsx';
+import AuthState from '../contexts/authContext.jsx';
 import Home from './component/LandingPage/Home.jsx';
 import CreateLand from './component/Lands/CreateLand.jsx';
 import Lands from './component/Lands/Lands.jsx';
@@ -15,6 +16,7 @@ import AdminDashboard from './component/AdminDashboard/AdminDashboard.jsx';
 import MyLand from './component/Lands/MyLands.jsx';
 import SingleLand from './component/Lands/SingleLand.jsx';
 import Profile from './component/Profile.jsx';
+import DynamicHome from './component/LandingPage/DynamicHome.jsx';
 // Admin Components
 import UserManagement from './component/AdminDashboard/components/UserManagement.jsx';
 import LandManagement from './component/AdminDashboard/components/LandManagement.jsx';
@@ -48,7 +50,7 @@ const router = createBrowserRouter(
 
       {/* User Routes */}
       <Route path="/userProfile" element={<Profile />} />
-      <Route index element={<Home />} />
+      <Route index element={<DynamicHome />} />
       <Route path="/about" element={<About />} />
       <Route path="/uploads" element={<CreateLand />} />
       <Route path="/mylands" element={<MyLand />} />

@@ -62,7 +62,18 @@ const LandSchema = new mongoose.Schema(
     },
 
     rejectionReason: { type: String },
-
+    
+location: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    default: "Point",
+  },
+  coordinates: {
+    type: [Number], // [lng, lat]
+    default: undefined,
+  },
+},
     dimensions: {
       length: { type: Number, required: true },
       breadth: { type: Number, required: true },
