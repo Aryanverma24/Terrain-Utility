@@ -312,6 +312,32 @@ const handleExploreMore = () => {
   navigate(`/interest-dashboard/${land._id}`);
 };
 // Chat navigation
+//owner redirection to lawyer
+const handleLawyerChatRedirect = async (c) => {
+  try {
+    const ownerId = c.ownerId?._id || c.ownerId;
+    const lawyerId = c.lawyerId?._id || c.lawyerId;
+
+    if (!ownerId || !lawyerId) {
+      console.error("Invalid participants", c);
+      return;
+    }
+
+    const res = await axios.post(
+      "http://localhost:5000/api/chat/get-or-create",
+      {
+        participants: [ownerId, lawyerId],
+        landId: c.landId?._id || c.landId,
+        chatType: "legal",
+      }
+    );
+
+    navigate(`/inbox?chatId=${res.data._id}`);
+  } catch (err) {
+    console.error(err);
+  }
+};
+//buyer redirection to owner 
 const handleRedirectToChat = async () => {
   const currentUserId = user?._id;
 
@@ -331,7 +357,7 @@ const handleRedirectToChat = async () => {
 
     const chat = res.data;
 
-    // ✅ ALWAYS redirect with chatId
+    //  redirect with chatId
     navigate(`/inbox?chatId=${chat._id}`);
 
   } catch (err) {
@@ -364,7 +390,7 @@ const handleInterestToggle = async () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    // 🔑 Fetch updated land to keep state authoritative
+    //  Fetch updated land to keep state authoritative
     const updatedLandRes = await API.get(`/api/lands/dashboard/${land._id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -372,7 +398,7 @@ const handleInterestToggle = async () => {
 
     setLand(updatedLand);
 
-    // ✅ derive isInterested and count from updated data
+    // derive isInterested and count from updated data
     const isUserInterested = updatedLand.interestedUsers?.some(item => {
       const userId = typeof item.user === "object" ? item.user._id : item.user;
       return String(userId) === String(currentUserId);
@@ -492,13 +518,13 @@ const handleSubmitReview = async () => {
   try {
     setSubmittingReview(true);
 
-    // 1️⃣ Call the backend API
+    
     const payload = { review: trimmed, rating: Number(newRating) };
     const { data } = await API.post(`/api/lands/${land._id}/reviews`, payload, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    // 2️⃣ Update local state with the review returned from backend
+    
     if (data?.createdReview) {
       setLand((prev) => ({
         ...prev,
@@ -506,7 +532,7 @@ const handleSubmitReview = async () => {
       }));
     }
 
-    // 3️⃣ Reset inputs
+    
     setNewReview("");
     setNewRating(5);
 
@@ -1027,7 +1053,7 @@ const allDocsApproved =
           <p><strong>Lawyer:</strong> {c.lawyerId?.username}</p>
 
           <button
-            onClick={() => navigate(`/chat/${c.ownerLawyerChat}`)}
+            onClick={() => handleLawyerChatRedirect(c)}
             className="mt-2 bg-blue-600 text-white px-3 py-1 rounded"
           >
             Chat with Lawyer

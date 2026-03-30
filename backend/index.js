@@ -68,19 +68,19 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
-configureCloudinary(); // ✅ now safe // Custom DB connection
+configureCloudinary(); 
 let rooms = {}; // In-memory store (optional)
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // ✅ JOIN ROOM
+  //  JOIN ROOM
   socket.on("joinRoom", async ({ room }) => {
   try {
     if (!room) return;
 
     socket.join(room);
 
-    // ✅ FIX HERE
+    
     const history = await Message.find({ chatId: room })
       .sort({ createdAt: 1 })
       .limit(100);
@@ -92,7 +92,7 @@ io.on("connection", (socket) => {
   }
 });
 
-  // ✅ SEND MESSAGE
+  
   socket.on("sendMessage", async (data) => {
     try {
       const {
@@ -117,7 +117,7 @@ io.on("connection", (socket) => {
   receiverName,
   message,
   isRead: false,
-  delivered: true, // ✅ ADD
+  delivered: true, 
 });
 
       await Chat.findByIdAndUpdate(chatId, {
@@ -125,7 +125,7 @@ io.on("connection", (socket) => {
         lastMessageAt: new Date(),
       });
 
-      // ✅ EMIT TO SAME ROOM
+      // EMIT TO SAME ROOM
       io.to(chatId).emit("message", msg);
 
       console.log("✅ EMITTED:", msg);

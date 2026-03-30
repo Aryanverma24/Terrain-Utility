@@ -12,7 +12,7 @@ const getId = (val) => {
 export default function ChatList({ type, onSelectChat }) {
   const { user } = useContext(AuthContext);
   const userId = getId(user?._id);
-
+const isLawyer = user?.role === "lawyer";
   const [chats, setChats] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -152,16 +152,27 @@ useEffect(() => {
   };
 }, [userId, type]);
   // 🔹 Filter chats based on section type
- const filteredChats = chats.filter((chat) => {
-  
-
+const filteredChats = chats.filter((chat) => {
   const landOwnerId = getId(chat.land?.owner);
   const isLegalChat = chat.chatType === "legal";
   const isConsultationChat = chat.chatType === "consultation";
 
-  if (type === "buyer") return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
-  if (type === "owner") return landOwnerId === userId && !isLegalChat && !isConsultationChat;
-  if (type === "legal") return isLegalChat || isConsultationChat;
+  //  LAWYER LOGIC
+  if (isLawyer) {
+    if (type === "owner") return landOwnerId === userId;
+    if (type === "buyer") return landOwnerId !== userId;
+    return true;
+  }
+
+  //  NORMAL USER LOGIC
+  if (type === "buyer")
+    return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
+
+  if (type === "owner")
+    return landOwnerId === userId && !isLegalChat && !isConsultationChat;
+
+  if (type === "legal")
+    return isLegalChat || isConsultationChat;
 
   return true;
 });
