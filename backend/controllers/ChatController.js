@@ -21,6 +21,9 @@ const normalizeRole = (role) => {
 
   return "buyer"; // default fallback
 };
+
+
+
 export const getOrCreateChat = asyncHandler(async (req, res) => {
   const { participants, landId, chatType } = req.body;
 
@@ -32,8 +35,8 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
     .map(id => id.toString())
     .sort();
 
-  
-    sortedParticipants.join("_") + "_" + (landId || "global");
+  // 🔑 Generate chatKey
+  const chatKey = sortedParticipants.join("_") + "_" + (landId || "global");
 
   const chat = await Chat.findOneAndUpdate(
     { chatKey },

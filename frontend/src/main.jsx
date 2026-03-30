@@ -3,7 +3,7 @@ import App from './App.jsx';
 import './index.css';
 import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
 import { createBrowserRouter } from "react-router-dom";
-
+import { createRef } from "react";
 import Login from './component/Auth/Login.jsx';
 import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
@@ -34,6 +34,7 @@ import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
+const inboxRef = createRef();
 
 // Define the routes
 const router = createBrowserRouter(
@@ -66,6 +67,19 @@ const router = createBrowserRouter(
 {/* <Route path="/chat/:chatId" element={<ChatWindow />} /> */}
       <Route path="/inbox" element={<Inbox />}>
 
+{/* <Route path to open chat from single land to inbox*/}
+<Route path="/inbox" element={<Inbox ref={inboxRef} />}>
+  <Route
+    path="land/:id"
+    element={
+      <SingleLand
+        onOpenChat={(chat) =>
+          inboxRef.current?.openChatInInbox(chat)
+        }
+      />
+    }
+  />
+</Route>
 </Route>
       {/* Face Authentication Routes */}
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}

@@ -12,77 +12,53 @@ const getId = (val) => {
   return typeof val === "object" ? val._id?.toString() : val.toString();
 };
 
-export default function ChatWindow({ chat: propChat }) {
-  const { chatId: paramChatId } = useParams();
-  const { state } = useLocation();
-  const { user } = useContext(AuthContext);
 
-  const initialChat = state?.chat || propChat;
+
+export default function ChatWindow({ chat: propChat }) {
+  const { user } = useContext(AuthContext);
   const userId = getId(user?._id);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  const [chat, setChat] = useState(initialChat);
+  const [chat, setChat] = useState(propChat || null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [typingUser, setTypingUser] = useState("");
 
-  // Determine effective chatId
-  const effectiveChatId = paramChatId || initialChat?._id;
+  const effectiveChatId = chat?._id;
 
-
-
-  // Fetch chat if not available
+  // Fetch chat if not passed as prop (optional, fallback)
   useEffect(() => {
-    if (!effectiveChatId || chat) return;
+    if (!effectiveChatId) return;
+    if (chat) return;
 
     const fetchChat = async () => {
       try {
-      
         const res = await axios.get(`http://localhost:5000/api/chat/${effectiveChatId}`);
-       
         setChat(res.data);
       } catch (err) {
-        
+        console.error("❌ ChatWindow | Error fetching chat:", err);
       }
     };
 
     fetchChat();
   }, [effectiveChatId, chat]);
 
-  // Socket setup
+  // Socket setup and message handling remains identical
   useEffect(() => {
     if (!effectiveChatId) return;
 
-  
     socket.emit("joinRoom", { room: effectiveChatId });
 
-    const handleHistory = (history) => {
-      
-      setMessages(history);
-    };
-
-    const handleMessage = (msg) => {
-      
+    const handleHistory = (history) => setMessages(history);
+    const handleMessage = (msg) =>
       setMessages((prev) => (prev.find((m) => m._id === msg._id) ? prev : [...prev, msg]));
-    };
-
-    const handleTyping = ({ senderName }) => {
-     
-      setTypingUser(senderName);
-    };
-
-    const handleStopTyping = () => {
-      
-      setTypingUser("");
-    };
-
-    const handleRead = () => {
-      
+    const handleTyping = ({ senderName }) => setTypingUser(senderName);
+    const handleStopTyping = () => setTypingUser("");
+    const handleRead = () =>
       setMessages((prev) => prev.map((m) => ({ ...m, isRead: true })));
-    };
 
     socket.on("messageHistory", handleHistory);
     socket.on("message", handleMessage);
@@ -91,7 +67,6 @@ export default function ChatWindow({ chat: propChat }) {
     socket.on("messagesRead", handleRead);
 
     return () => {
-     
       socket.off("messageHistory", handleHistory);
       socket.off("message", handleMessage);
       socket.off("typing", handleTyping);
@@ -103,8 +78,6 @@ export default function ChatWindow({ chat: propChat }) {
   // Mark messages as read
   useEffect(() => {
     if (!effectiveChatId || !userId) return;
-
-    
     socket.emit("markAsRead", { chatId: effectiveChatId, userId });
   }, [effectiveChatId, userId]);
 
@@ -112,15 +85,13 @@ export default function ChatWindow({ chat: propChat }) {
   useEffect(() => {
     if (!effectiveChatId) return;
 
-   
     axios
       .get(`http://localhost:5000/api/chat/${effectiveChatId}/messages`)
-      .then((res) => {
-       
-        setMessages(res.data);
-      })
+      .then((res) => setMessages(res.data))
       .catch((err) => console.error("❌ ChatWindow | Error fetching messages fallback:", err));
   }, [effectiveChatId]);
+
+  // sendMessage, typing, scroll logic remain the same
 
   // Send message
   const sendMessage = () => {

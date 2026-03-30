@@ -130,7 +130,7 @@ const UnitConverter = ({ dimensions }) => {
 /**
  * Main SingleLand component
  */
-const SingleLand = () => {
+const SingleLand = ({ onOpenChat }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -311,38 +311,32 @@ const handleExploreMore = () => {
 
   navigate(`/interest-dashboard/${land._id}`);
 };
-
-
-  // Chat navigation
+// Chat navigation
 const handleRedirectToChat = async () => {
+  const currentUserId = user?._id;
+
   if (role === "lawyer") return toast.error("Lawyer cannot chat.");
   if (!land) return toast.error("No land selected.");
   if (!currentUserId) return toast.error("Login required.");
 
   try {
-    console.log("Sending:", {
-      landId: land._id,
-      participants: [currentUserId, land.owner],
-    });
-
     const res = await axios.post(
       "http://localhost:5000/api/chat/get-or-create",
       {
         landId: land._id,
-        participants: [currentUserId, land.owner], // ✅ FIXED
-        chatType: "normal", // ✅ ADD THIS
+        participants: [currentUserId, land.owner],
+        chatType: "normal",
       }
     );
 
     const chat = res.data;
 
-    navigate(`/chat/${chat._id}`, {
-      state: { chat },
-    });
+    // ✅ ALWAYS redirect with chatId
+    navigate(`/inbox?chatId=${chat._id}`);
 
   } catch (err) {
-    console.error("Chat creation error:", err.response?.data || err);
-    toast.error(err.response?.data?.error || "Failed to start chat");
+    console.error(err);
+    toast.error("Failed to start chat");
   }
 };
  
@@ -956,11 +950,10 @@ const allDocsApproved =
     <FaArrowRight className="w-4 h-4" />
   </div>
 </button>
-        {/* Chat Button */}
-        <button
-          onClick={handleRedirectToChat}
-          className="group relative w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-[1.02] flex items-center justify-between overflow-hidden"
-        >
+       <button
+ onClick={handleRedirectToChat}
+  className="group relative w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-[1.02] flex items-center justify-between overflow-hidden"
+>
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
           
           <div className="flex items-center gap-3 relative z-10">

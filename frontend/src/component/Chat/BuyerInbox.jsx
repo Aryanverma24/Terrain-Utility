@@ -1,38 +1,100 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
+import { useLocation } from "react-router-dom"; // ✅ ADD THIS
 import ChatList from "../Chat/ChatList";
 import ChatWindow from "../Chat/ChatWindow";
 import axios from "axios";
 
 const getId = (val) => (val?._id ? val._id.toString() : val?.toString());
 
-const Inbox = () => {
+const Inbox = forwardRef((props, ref) => {
   const { user } = useContext(AuthContext);
+  const location = useLocation(); // ✅ ADD THIS
+
   const [selectedChat, setSelectedChat] = useState(null);
-  const [activeSection, setActiveSection] = useState("buyer"); // "buyer" | "owner" | "legal"
-  const [unreadCounts, setUnreadCounts] = useState({ buyer: 0, owner: 0, legal: 0 });
+  const [activeSection, setActiveSection] = useState("buyer");
+  const [unreadCounts, setUnreadCounts] = useState({
+    buyer: 0,
+    owner: 0,
+    legal: 0,
+  });
 
   const userId = getId(user);
 
-  // Fetch unread counts for each section
+  // ✅ EXISTING FUNCTION (KEEP)
+  const openChatInInbox = (chat) => {
+    if (!chat) return;
+
+    setSelectedChat(chat);
+
+    setActiveSection(
+      chat.chatType === "legal" || chat.chatType === "consultation"
+        ? "legal"
+        : getId(chat.land?.owner) === userId
+        ? "owner"
+        : "buyer"
+    );
+  };
+
+  // ✅ EXPOSE (optional now, but safe to keep)
+  useImperativeHandle(ref, () => ({
+    openChatInInbox,
+  }));
+
+  // ✅ 🔥 NEW: Open chat from URL (MAIN FIX)
+  useEffect(() => {
+    const chatId = new URLSearchParams(location.search).get("chatId");
+
+    if (!chatId || !userId) return;
+
+    const fetchChatAndOpen = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/${chatId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        openChatInInbox(res.data); // ✅ open automatically
+      } catch (err) {
+        console.error("Failed to load chat:", err);
+      }
+    };
+
+    fetchChatAndOpen();
+  }, [location.search, userId]);
+
+  // ✅ EXISTING: Fetch unread counts
   useEffect(() => {
     const fetchUnread = async () => {
       if (!userId) return;
+
       try {
-        const res = await axios.get(`http://localhost:5000/api/chat/unread/${userId}`);
-        // Process unread counts per chat type (placeholder logic, can refine)
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/unread/${userId}`
+        );
+
         const counts = { buyer: 0, owner: 0, legal: 0 };
+
         Object.entries(res.data).forEach(([chatId, count]) => {
-          // Real implementation would fetch chat type here
-          counts.buyer += 0;
-          counts.owner += 0;
-          counts.legal += 0;
+          // You can enhance this later
         });
+
         setUnreadCounts(counts);
       } catch (err) {
-        console.error("Error fetching unread counts", err);
+        console.error(err);
       }
     };
+
     fetchUnread();
   }, [userId]);
 
@@ -42,10 +104,10 @@ const Inbox = () => {
     { key: "legal", label: "Legal / Consultation", color: "purple" },
   ];
 
-  return (
+ return (
     <div className="h-screen flex flex-col bg-[#f4f7f6]">
 
-      {/* TOPMOST SECTION: Section selection with unread badges */}
+     
      {/* TOPMOST SECTION: Section selection with unread badges */}
 <div className="flex justify-center gap-4 px-5 py-3 bg-white border-b shadow-sm mt-20">
   {sections.map((s) => (
@@ -109,7 +171,8 @@ const Inbox = () => {
         </div>
       </div>
     </div>
+    
   );
-};
+});
 
 export default Inbox;
