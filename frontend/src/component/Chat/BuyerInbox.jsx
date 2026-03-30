@@ -1,3 +1,4 @@
+import socket from "../../../utils/socket";
 import React, {
   useContext,
   useState,
@@ -10,13 +11,15 @@ import { useLocation } from "react-router-dom"; // ✅ ADD THIS
 import ChatList from "../Chat/ChatList";
 import ChatWindow from "../Chat/ChatWindow";
 import axios from "axios";
+import { useRef } from "react";
+
 
 const getId = (val) => (val?._id ? val._id.toString() : val?.toString());
 
 const Inbox = forwardRef((props, ref) => {
   const { user } = useContext(AuthContext);
   const location = useLocation(); // ✅ ADD THIS
-
+const chatsRef = useRef([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [activeSection, setActiveSection] = useState("buyer");
   const [unreadCounts, setUnreadCounts] = useState({
@@ -26,27 +29,79 @@ const Inbox = forwardRef((props, ref) => {
   });
 
   const userId = getId(user);
+useEffect(() => {
+  const handleMessage = (msg) => {
+    const chatId = msg.chatId;
 
-  // ✅ EXISTING FUNCTION (KEEP)
-  const openChatInInbox = (chat) => {
-    if (!chat) return;
+    // ✅ Ignore if currently open chat
+   if (getId(selectedChat?._id) === getId(chatId)) return;
 
-    setSelectedChat(chat);
-
-    setActiveSection(
-      chat.chatType === "legal" || chat.chatType === "consultation"
-        ? "legal"
-        : getId(chat.land?.owner) === userId
-        ? "owner"
-        : "buyer"
+    const chat = chatsRef.current.find(
+      (c) => getId(c._id) === getId(chatId)
     );
+
+    // 🔥 NEW CHAT CASE
+    if (!chat) {
+      axios
+        .get(`http://localhost:5000/api/chat/${chatId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+        .then((res) => {
+          chatsRef.current.push(res.data);
+          updateUnread(res.data);
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // EXISTING CHAT
+    fetchUnread(); // 🔥 FULL SYNC
   };
 
-  // ✅ EXPOSE (optional now, but safe to keep)
-  useImperativeHandle(ref, () => ({
-    openChatInInbox,
-  }));
+  socket.on("message", handleMessage);
 
+  return () => {
+    socket.off("message", handleMessage); // ✅ CORRECT CLEANUP
+  };
+}, [selectedChat, userId]);
+
+const updateUnread = (chat) => {
+  setUnreadCounts((prev) => {
+    const updated = { ...prev };
+
+    const landOwnerId = getId(chat.land?.owner);
+    const isLegal =
+      chat.chatType === "legal" || chat.chatType === "consultation";
+
+    if (isLegal) updated.legal += 1;
+    else if (landOwnerId === userId) updated.owner += 1;
+    else updated.buyer += 1;
+
+    return updated;
+  });
+};
+const openChatInInbox = (chat) => {
+  if (!chat) return;
+
+  setSelectedChat(chat);
+
+  const section =
+    chat.chatType === "legal" || chat.chatType === "consultation"
+      ? "legal"
+      : getId(chat.land?.owner) === userId
+      ? "owner"
+      : "buyer";
+
+  setActiveSection(section);
+
+  // ✅ RESET ONLY THAT SECTION
+  setUnreadCounts((prev) => ({
+    ...prev,
+    [section]: 0,
+  }));
+};
   // ✅ 🔥 NEW: Open chat from URL (MAIN FIX)
   useEffect(() => {
     const chatId = new URLSearchParams(location.search).get("chatId");
@@ -74,29 +129,54 @@ const Inbox = forwardRef((props, ref) => {
   }, [location.search, userId]);
 
   // ✅ EXISTING: Fetch unread counts
-  useEffect(() => {
-    const fetchUnread = async () => {
-      if (!userId) return;
 
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/chat/unread/${userId}`
-        );
+  const fetchUnread = async () => {
+    if (!userId) return;
 
-        const counts = { buyer: 0, owner: 0, legal: 0 };
+    try {
+      const [unreadRes, chatsRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/chat/unread/${userId}`),
+        axios.get(`http://localhost:5000/api/chat/user/${userId}`)
+      ]);
+;
 
-        Object.entries(res.data).forEach(([chatId, count]) => {
-          // You can enhance this later
-        });
+// ✅ ADD THIS
 
-        setUnreadCounts(counts);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+      const unreadMap = unreadRes.data;
+      const chats = chatsRes.data;
+chatsRef.current = chats;
+      const counts = { buyer: 0, owner: 0, legal: 0 };
 
-    fetchUnread();
-  }, [userId]);
+      chats.forEach((chat) => {
+        const chatId = getId(chat._id);
+        const unread = unreadMap[chatId] || 0;
+
+        if (unread === 0) return;
+
+        const landOwnerId = getId(chat.land?.owner);
+        const isLegal =
+          chat.chatType === "legal" || chat.chatType === "consultation";
+
+        if (isLegal) {
+          counts.legal += unread;
+        } else if (landOwnerId === userId) {
+          counts.owner += unread;
+        } else {
+          counts.buyer += unread;
+        }
+      });
+
+      setUnreadCounts(counts);
+
+    } catch (err) {
+      console.error("Unread fetch error:", err);
+    }
+  };
+
+  fetchUnread();
+useEffect(() => {
+  fetchUnread();
+}, [userId]);
 
   const sections = [
     { key: "buyer", label: "Buyer Chats", color: "emerald" },
@@ -160,9 +240,9 @@ const Inbox = forwardRef((props, ref) => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
-            {selectedChat ? (
-              <ChatWindow chat={selectedChat} />
-            ) : (
+           {selectedChat ? (
+  <ChatWindow key={selectedChat._id} chat={selectedChat} />
+) : (
               <div className="text-center text-gray-400 mt-20">
                 Select a chat from the left to start
               </div>

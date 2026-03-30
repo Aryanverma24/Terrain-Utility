@@ -322,7 +322,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     //  SOCKET EMIT
     if (io) {
       io.to(receiverId.toString()).emit("newNotification", notification);
-     io.to(chatId.toString()).emit("message", msg); // 🔥 MATCH SOCKET SERVER // 🔥 REALTIME CHAT
+     io.to(chatId.toString()).emit("message", msg); 
     }
   } catch (err) {
     console.error("Notification error:", err.message);

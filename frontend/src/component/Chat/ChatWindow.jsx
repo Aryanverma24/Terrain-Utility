@@ -28,6 +28,15 @@ export default function ChatWindow({ chat: propChat }) {
   const [typingUser, setTypingUser] = useState("");
 
   const effectiveChatId = chat?._id;
+useEffect(() => {
+  if (!chat?._id) return;
+
+  socket.emit("joinChat", chat._id);
+
+  return () => {
+    socket.emit("leaveChat", chat._id);
+  };
+}, [chat._id]);
 
   // Fetch chat if not passed as prop (optional, fallback)
   useEffect(() => {
@@ -141,8 +150,8 @@ export default function ChatWindow({ chat: propChat }) {
   if (!chat) return <div>Loading chat...</div>;
 
   return (
-    <div className="flex justify-center items-start min-h-screen pt-24 pb-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
-      <div className="w-full max-w-3xl h-[88vh] flex flex-col rounded-3xl overflow-hidden bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+    <div className="flex justify-center items-start h-full w-full bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
+      <div className="w-full max-w-3xl h-full flex flex-col rounded-3xl overflow-hidden bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
         <div className="text-center text-xs text-gray-500 py-2 bg-white/60 border-b">
           You are chatting with <span className="font-semibold text-gray-700">{otherUser?.username}</span>
         </div>
@@ -152,8 +161,7 @@ export default function ChatWindow({ chat: propChat }) {
             ⚖️ This is a consultation chat. Start legal process to proceed further.
           </div>
         )}
-
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-5 bg-gradient-to-b from-white/40 to-transparent">
+<div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-5 min-h-0 bg-gradient-to-b from-white/40 to-transparent">
           {messages.map((msg) => {
             const isMine = getId(msg.senderId) === userId;
             return (
