@@ -17,7 +17,8 @@ import {
   markInterested,
   unmarkInterested,
   getInterestedUsers,
-  getLandDashboard
+  getLandDashboard,
+  geoVerifyLand
 } from "../controllers/LandController.js";
 
 import { authenticate } from "../middlerwares/landauthenticate.js";
@@ -76,7 +77,7 @@ router.route("/:id/reviews").get(getLandReviews).post(authenticate, createReview
 //     res.status(500).json({ error: "Internal server error" });
 //   }
 // });
-
+router.put("/geo-verify/:id", authenticate, geoVerifyLand);
 router.route("/:landId/interested").post(authenticate,markInterested);
 router.route("/:landId/uninterested").post(authenticate,unmarkInterested);
 router.route("/:landId/interested-users").get(authenticate,getInterestedUsers);

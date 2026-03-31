@@ -993,6 +993,19 @@ const allDocsApproved =
         </button>
       </div>
     )}
+{role === "lawyer" &&
+  land?.assignedLawyer &&
+  String(land.assignedLawyer) === String(currentUserId) && (
+    <button
+      onClick={() => navigate(`/lawyer/documents/${land._id}`)}
+      className="mt-4 w-full sm:w-auto px-5 py-2.5 
+                 bg-indigo-600 hover:bg-indigo-700 
+                 text-white font-semibold rounded-xl 
+                 shadow-md transition-all duration-200"
+    >
+      ⚖️ Review Documents
+    </button>
+)}
 
    {/* Owner Action Buttons */}
 {String(currentUserId) === String(land.owner) && (
@@ -1028,6 +1041,16 @@ const allDocsApproved =
         </span>
       </div>
     </button>
+
+{String(currentUserId) === String(land.owner) && (
+  <button
+    onClick={() => navigate(`/land/${land._id}/owner-documents`)}
+    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition"
+  >
+    📄 View Your Uploaded Documents
+  </button>
+)}
+
 {/* land cases Button */}
 {isOwner && (
   <button
@@ -1063,6 +1086,7 @@ const allDocsApproved =
     )}
   </div>
 )}
+
 
         {/* Ownership History Button */}
         <button
@@ -1335,180 +1359,107 @@ const allDocsApproved =
           </p>
         </div>
 
-      {/* Documents Section */}
-        {Array.isArray(fullDocs) && fullDocs.length > 0 && (String(currentUserId) === String(land.owner) || role === "lawyer") && (
-        
-        <div className="mt-12 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-emerald-200">
+        {/* Reject Modal */}
+        {showRejectModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-[9999]">
+            <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900">Reject Land — Provide a reason</h3>
+              <textarea 
+                value={rejectReason} 
+                onChange={(e) => setRejectReason(e.target.value)} 
+                rows={4} 
+                className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+                placeholder="Please provide a reason for rejection..."
+              />
 
-            <div className="flex items-center mb-6">
-              <FaFileAlt className="text-emerald-600 text-2xl mr-3" />
-              <h2 className="text-3xl font-bold text-gray-900">Uploaded Documents</h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
-              {fullDocs.map((doc) => (
-                <div
-                  key={doc._id}
-                  className="bg-white border border-gray-200 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+              <div className="mt-6 flex gap-3 justify-end">
+                <button 
+                  onClick={() => setShowRejectModal(false)} 
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-xl transition-colors duration-200"
                 >
-                  <div className="aspect-video bg-gray-100">
-                    {doc.file ? (
-                      <img
-                        src={getFileUrl(doc.file)}
-                        alt={doc.type || "Document"}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <FaFileAlt className="text-gray-400 text-3xl" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="font-semibold text-gray-900 text-center mb-2 truncate">
-                      {doc.type || "Document"}
-                    </h3>
-
-                    <div className="flex justify-center mb-3">
-
-                      {doc.status === "approved" && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <FaCheckCircle className="mr-1" />
-                          Approved
-                        </span>
-                      )}
-
-                      {doc.status === "rejected" && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <FaTimesCircle className="mr-1" />
-                          Rejected
-                        </span>
-                      )}
-
-                      {doc.status === "pending" && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          <FaClock className="mr-1" />
-                          Pending
-                        </span>
-                      )}
-
-                    </div>
-
-                    <a
-                      href={doc.file ? `http://localhost:5000/uploads/${doc.file}` : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-lg transition-colors duration-200"
-                    >
-                      View Document
-                    </a>
-
-                    {/* Lawyer action buttons */}
-                    {role === "lawyer" && String(land.assignedLawyer) === String(currentUserId) && (
-                      <div className="mt-3 flex gap-2">
-   
-                        <button
-                          onClick={() => updateDocStatus(doc._id, "approved")}
-                          className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50"
-                          disabled={doc.status === "approved" || doc.status === "rejected"}
-                        >
-                          Approve
-                        </button>
-
-                        <button
-                          onClick={() => updateDocStatus(doc._id, "rejected")}
-                          className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50"
-                          disabled={doc.status === "approved" || doc.status === "rejected"}
-                        >
-                          Reject
-                        </button>
-
-                      </div>
-                    )}
-
-                    {/* Owner re-upload */}
-                    {doc.status === "rejected" && String(currentUserId) === String(land.owner) && (
-                      <div className="mt-3">
-                        <label className="block w-full cursor-pointer">
-                          <div className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors duration-200">
-                            Re-upload Document
-                          </div>
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => handleReuploadDocument(doc.parentDocumentId || doc._id, doc._id, e.target.files?.[0])}
-                          />
-                        </label>
-                      </div>
-                    )}
-
-                  </div>
-
-                </div>
-              ))}
-
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleRejectSubmit} 
+                  disabled={processingAction} 
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors duration-200 disabled:opacity-50"
+                >
+                  {processingAction ? "Processing..." : "Submit Rejection"}
+                </button>
+              </div>
+            </div>
           </div>
+        )}
+ {/* Reviews section */}
+{role !== "lawyer" && land && (
+  <div className="mt-12 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-emerald-200">
+    
+    {/* Header */}
+    <div className="flex items-center mb-8">
+      <FaStar className="text-emerald-600 text-2xl mr-3" />
+      <h2 className="text-3xl font-bold text-gray-900">Reviews & Ratings</h2>
+    </div>
 
-        {/* Reviews section */}
-        {role !== "lawyer" && (
-          <div className="mt-12 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-emerald-200">
-            <div className="flex items-center mb-8">
-              <FaStar className="text-emerald-600 text-2xl mr-3" />
-              <h2 className="text-3xl font-bold text-gray-900">Reviews & Ratings</h2>
-            </div>
+    {/* Existing reviews */}
+    <div className="space-y-6 mb-8">
+      {land.reviews && land.reviews.length > 0 ? (
+        land.reviews.map((review, idx) => {
+          const rating = review.rating ?? review.stars ?? 0;
+          const text = review.review ?? review.comment ?? review.text ?? "";
+          const username =
+            review.user?.username ||
+            review.username ||
+            review.userName ||
+            (typeof review.user === "string" ? review.user : "Anonymous");
+          const userId = review.user?._id || review.user || review.userId;
 
-            {/* Existing reviews */}
-            <div className="space-y-6 mb-8">
-              {land.reviews && land.reviews.length > 0 ? (
-                land.reviews.map((review, idx) => {
-                  const rating = review.rating ?? review.stars ?? 0;
-                  const text = review.review ?? review.comment ?? review.text ?? "";
-                  const username = review.user?.username || review.username || review.userName || (typeof review.user === "string" ? review.user : "Anonymous");
-                  const userId = review.user?._id || review.user || review.userId;
-
-                  return (
-                    <div
-                      key={review._id || idx}
-                      className="bg-white border border-gray-200 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900">{username}</h4>
-                          <div className="flex text-yellow-400 mt-1">
-                            {[1,2,3,4,5].map((n) =>
-                              n <= rating ? (
-                                <FaStarSolid key={n} className="w-4 h-4" />
-                              ) : (
-                                <FaRegStar key={n} className="w-4 h-4 text-gray-300" />
-                              )
-                            )}
-                          </div>
-                        </div>
-                        {String(userId) === String(currentUserId) && (
-                          <button
-                            onClick={() => handleDeleteReview(userId)}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-gray-700 leading-relaxed">{text}</p>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FaStar className="text-4xl text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg">No reviews yet — be the first to review!</p>
+          return (
+            <div
+              key={review._id || idx}
+              className="bg-white border border-gray-200 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">{username}</h4>
+                  <div className="flex text-yellow-400 mt-1">
+                    {[1, 2, 3, 4, 5].map((n) =>
+                      n <= rating ? (
+                        <FaStarSolid key={n} className="w-4 h-4" />
+                      ) : (
+                        <FaRegStar key={n} className="w-4 h-4 text-gray-300" />
+                      )
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {/* Delete button if current user's review */}
+                {String(userId) === String(currentUserId) && (
+                  <button
+                    onClick={() => handleDeleteReview(userId)}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+
+              <p className="text-gray-700 leading-relaxed">{text}</p>
             </div>
+          );
+        })
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          <FaStar className="text-4xl text-gray-300 mx-auto mb-4" />
+          <p className="text-lg">No reviews yet — be the first to review!</p>
+        </div>
+      )}
+    </div>
+    
+  </div>
+)}
 
-
-            {/* Add review form */}
+        
+ {/* Add review form */}
             {String(land.owner) !== String(currentUserId) && role !== "lawyer" && (
               <div className="bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-xl p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-6">Add a Review</h3>
@@ -1556,47 +1507,13 @@ const allDocsApproved =
 
               </div>
             )}
-          </div>
-        )}
-
-        {/* Reject Modal */}
-        {showRejectModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-[9999]">
-            <div className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900">Reject Land — Provide a reason</h3>
-              <textarea 
-                value={rejectReason} 
-                onChange={(e) => setRejectReason(e.target.value)} 
-                rows={4} 
-                className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
-                placeholder="Please provide a reason for rejection..."
-              />
-
-              <div className="mt-6 flex gap-3 justify-end">
-                <button 
-                  onClick={() => setShowRejectModal(false)} 
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-xl transition-colors duration-200"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleRejectSubmit} 
-                  disabled={processingAction} 
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors duration-200 disabled:opacity-50"
-                >
-                  {processingAction ? "Processing..." : "Submit Rejection"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+        
         </div>
-        )}
+        
 
 
       </div>
-      </div>
+      
       </>
   );
 };

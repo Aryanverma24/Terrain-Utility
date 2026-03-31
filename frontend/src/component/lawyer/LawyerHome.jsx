@@ -91,7 +91,19 @@ const LawyerHome = () => {
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lands.map((land) => {
+              {lands
+  .filter((land) => {
+    //  Hide approved lands
+    if (land.status === "approved") return false;
+
+    //  NEW → visible to all lawyers
+    if (!land.assignedLawyer) return true;
+
+    //  UNDER REVIEW → only assigned lawyer
+    return land.assignedLawyer === user?._id 
+      || land.assignedLawyer?._id === user?._id;
+  })
+  .map((land) => {
                 const averageRating = calculateAverageRating(land.reviews);
                 const isInWishlist = wishlist.includes(land._id);
                 const isHovered = hoveredCard === land._id;
@@ -147,11 +159,11 @@ const LawyerHome = () => {
                           </Link>
                         </div>
 
-                        {land.status === "approved" && (
+                        {/* {land.status === "approved" && (
                           <div className="absolute top-3 left-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
                             <FaCheckCircle className="mr-1 text-xs" /> Verified
                           </div>
-                        )}
+                        )} */}
                       </div>
 
                       <div className="p-4 sm:p-6 lg:p-8 relative z-10">

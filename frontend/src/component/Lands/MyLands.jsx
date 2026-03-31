@@ -176,9 +176,11 @@ const MyLand = () => {
 
             return (
               <div
-                key={land._id}
-                className="bg-[#ACE1AF] backdrop-blur-lg p-5 rounded-xl text-white"
-              >
+  key={land._id}
+  onClick={() => navigate(`/land/${land._id}`)}
+  className="bg-[#ACE1AF] backdrop-blur-lg p-5 rounded-xl text-white 
+             cursor-pointer hover:scale-[1.02] transition-all duration-200"
+>
                 {/* Image */}
                 {land.image && (
                   <img

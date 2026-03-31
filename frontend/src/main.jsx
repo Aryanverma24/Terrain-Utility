@@ -31,7 +31,8 @@ import ChatList from './component/Chat/ChatList.jsx';
 import Inbox from './component/Chat/BuyerInbox.jsx';
 import OwnerInbox from './component/Chat/OwnerInbox.jsx';
 import About from './component/AboutUs/About.jsx';
-import ChatWindow from './component/Chat/ChatWindow.jsx';
+import OwnerDocuments from './component/Lands/ownerDocuments.jsx';
+import LawyerDocuments from './component/lawyer/lawyerDocuments.jsx';
 import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
@@ -83,6 +84,9 @@ const router = createBrowserRouter(
   />
 </Route>
 </Route>
+
+<Route path="/land/:id/owner-documents" element={<OwnerDocuments />} />
+<Route path="/lawyer/documents/:id" element={<LawyerDocuments />} />
       {/* Face Authentication Routes */}
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}
       {/* <Route path='/add-face' element={<FaceSetup />} /> */}

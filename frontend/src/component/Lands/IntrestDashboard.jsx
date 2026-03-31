@@ -19,7 +19,7 @@ const [selectedLandId, setSelectedLandId] = useState(null);
 const [hasConsultation, setHasConsultation] = useState(false);
 const [showLawyerModal, setShowLawyerModal] = useState(false);
 const [hasLegalChat, setHasLegalChat] = useState(false);
-
+const [showGeoDialog, setShowGeoDialog] = useState(false);
 const [existingChatId, setExistingChatId] = useState(null);
 const navigate = useNavigate();
 //to check whether the leagl chats exists to sethasleagl chat and change button veiw to leagla process started
@@ -266,7 +266,7 @@ return (
       </div>
 
       {/* ========================= */}
-      {/* 🔥 INTEREST COUNT */}
+      {/*INTEREST COUNT */}
       {/* ========================= */}
       {totalInterested > 0 && (
         <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 text-center shadow-md">
@@ -276,33 +276,134 @@ return (
         </div>
       )}
 
-{/* 🌍 SELECTED LOCATION MAP */}
-{/* ========================= */}
+{/*  SELECTED LOCATION MAP */}
 <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-4 text-center">
-  <h3 className="text-lg font-semibold text-gray-800 mb-2">📍 Selected Location</h3>
+  
+  {/* HEADER */}
+  <div className="flex items-center justify-between mb-2">
+    <h3 className="text-lg font-semibold text-gray-800">
+      📍 Selected Location
+    </h3>
+
+    {/*STATUS BADGE */}
+    {land?.geoVerification?.status !== "pending" && (
+      <span
+        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+          land.geoVerification.status === "matched"
+            ? "bg-green-100 text-green-700"
+            : "bg-red-100 text-red-700"
+        }`}
+      >
+        {land.geoVerification.status === "matched"
+          ? "✔ Geo Verified Land"
+          : "⚠ Suspicious Land"}
+      </span>
+    )}
+  </div>
+
+  {/* OWNER COORDINATES */}
+  {land?.location?.coordinates && (
+    <p className="text-sm text-gray-600 mb-2">
+      Lat: {land.location.coordinates[1]} | Lng: {land.location.coordinates[0]}
+    </p>
+  )}
 
   {land?.location?.coordinates ? (
-    <div className="h-64 w-full"> {/* fixed height wrapper */}
+    <div className="h-64 w-full">
       <MapContainer
-        center={[land.location.coordinates[1], land.location.coordinates[0]]} // [lat, lng]
+        center={[land.location.coordinates[1], land.location.coordinates[0]]}
         zoom={13}
         scrollWheelZoom={false}
-        dragging={false}
-        doubleClickZoom={false}
-        touchZoom={false}
+        doubleClickZoom={true}
+        dragging={true}
+        touchZoom={true}
         className="h-full w-full"
       >
         <TileLayer
-          attribution='© OpenStreetMap contributors'
+          attribution="© OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Marker position={[land.location.coordinates[1], land.location.coordinates[0]]} />
       </MapContainer>
     </div>
   ) : (
-    <p className="text-gray-500 text-sm">No location selected for this land.</p>
+    <p className="text-gray-500 text-sm">
+      No location selected for this land.
+    </p>
+  )}
+
+  {/*  VIEW DETAILS BUTTON */}
+  {land?.geoVerification?.status !== "pending" && (
+    <button
+      onClick={() => setShowGeoDialog(true)}
+      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+    >
+      View Verification Details
+    </button>
   )}
 </div>
+{/*dailog to showcase the deatils */}
+{showGeoDialog && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    
+    <div className="bg-white rounded-2xl p-6 w-[90%] max-w-lg shadow-xl relative">
+
+      {/* CLOSE */}
+      <button
+        onClick={() => setShowGeoDialog(false)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-black"
+      >
+        ✖
+      </button>
+
+      <h2 className="text-xl font-bold mb-4 text-gray-800">
+        Geo Verification Details
+      </h2>
+
+      <div className="space-y-2 text-sm text-gray-700">
+
+        <p>
+          <strong>Status:</strong>{" "}
+          <span className={`font-semibold ${
+            land.geoVerification.status === "matched"
+              ? "text-green-600"
+              : "text-red-600"
+          }`}>
+            {land.geoVerification.status}
+          </span>
+        </p>
+
+        <p>
+          <strong>Distance:</strong>{" "}
+          {land.geoVerification.distance?.toFixed(3)} km
+        </p>
+
+        <p>
+          <strong>Owner Coordinates:</strong>{" "}
+          Lat: {land.location?.coordinates?.[1]} | 
+          Lng: {land.location?.coordinates?.[0]}
+        </p>
+
+        <p>
+          <strong>Lawyer Coordinates:</strong>{" "}
+          Lat: {land.geoVerification.lawyerCoordinates?.[1]} | 
+          Lng: {land.geoVerification.lawyerCoordinates?.[0]}
+        </p>
+
+        <p>
+          <strong>Lawyer Note:</strong>{" "}
+          {land.geoVerification.note || "No note provided"}
+        </p>
+
+        <p className="text-xs text-gray-500 mt-2">
+          Verified at:{" "}
+          {new Date(land.geoVerification.verifiedAt).toLocaleString()}
+        </p>
+
+      </div>
+    </div>
+  </div>
+)}
       {/* ========================= */}
       {/* ⚖️ LEGAL SECTION */}
       {/* ========================= */}

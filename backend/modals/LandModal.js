@@ -73,6 +73,7 @@ location: {
     type: [Number], // [lng, lat]
     default: undefined,
   },
+  
 },
     dimensions: {
       length: { type: Number, required: true },
@@ -83,9 +84,44 @@ location: {
 
     reviews: [ReviewSchema],
     averageRating: { type: Number, default: 0 },
+// =========================
+// GEO VERIFICATION
+// =========================
+geoVerification: {
+  lawyerCoordinates: {
+    type: [Number], // [lng, lat]
+    default: null,
+  },
 
+  status: {
+    type: String,
+    enum: ["pending", "matched", "mismatched"],
+    default: "pending",
+  },
+
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+
+  verifiedAt: {
+    type: Date,
+    default: null,
+  },
+
+  distance: {
+    type: Number, // distance in KM
+    default: null,
+  },
+
+  note: {
+    type: String,
+    default: "",
+  },
+},
     // =========================
-    // 🔥 UPDATED INTEREST SYSTEM
+    //  UPDATED INTEREST SYSTEM
     // =========================
     interestedUsers: [
       {
@@ -125,7 +161,7 @@ location: {
     documents: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
 
     // =========================
-    // 🔥 OWNERSHIP FEATURES
+    // OWNERSHIP FEATURES
     // =========================
     ownershipHistory: [
       {
@@ -147,9 +183,9 @@ location: {
   { timestamps: true }
 );
 
-// 🔥 PERFORMANCE INDEXES
+//  PERFORMANCE INDEXES
 LandSchema.index({ ownershipCount: -1 });
 LandSchema.index({ "interestedUsers.user": 1 });
-
+LandSchema.index({ location: "2dsphere" });
 export const Land = mongoose.model("Land", LandSchema);
 export default Land;

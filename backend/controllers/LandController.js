@@ -1054,7 +1054,58 @@ const getLandDashboard = async (req, res) => {
     interests: land.interestedUsers,
   });
 };
+//geo verifiacation api
+const geoVerifyLand = async (req, res) => {
+  try {
+    const { lat, lng, note } = req.body;
+    const land = await Land.findById(req.params.id);
 
+    if (!land) {
+      return res.status(404).json({ message: "Land not found" });
+    }
+
+    const [ownerLng, ownerLat] = land.location.coordinates;
+
+    // Haversine Formula
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    const distance = getDistance(ownerLat, ownerLng, lat, lng);
+
+    // Threshold: 100 meters
+    const status = distance < 0.1 ? "matched" : "mismatched";
+
+    land.geoVerification = {
+      lawyerCoordinates: [lng, lat],
+      status,
+      verifiedBy: req.user._id,
+      verifiedAt: new Date(),
+      distance,
+      note,
+    };
+
+    await land.save();
+
+    res.json({
+      message: "Geo verification completed",
+      geoVerification: land.geoVerification,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Geo verification failed" });
+  }
+};
 
 
 // ----------------------------------------------
@@ -1078,5 +1129,6 @@ export {
   markInterested,
   unmarkInterested,
   getInterestedUsers,
-  getLandDashboard
+  getLandDashboard,
+  geoVerifyLand,
 };
