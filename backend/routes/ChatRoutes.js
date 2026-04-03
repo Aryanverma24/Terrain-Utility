@@ -18,6 +18,7 @@ import {
   getCasesByLand,
   checkLegalChatExists,
   checkConsultationExists,
+  getConsultationLands,
   // getLawyerChats
 } from "../controllers/ChatController.js";
 import { authenticate } from "../middlerwares/authMiddlewares.js";
@@ -54,10 +55,14 @@ router.get("/exists/:landId", authenticate, checkLegalChatExists);
 // route to check whrte lawyer and buyer chatted 
 router.get("/consultation-exists/:landId",authenticate,checkConsultationExists
 );
+//route to get consultation land for lawyer
+router.get("/consultation", authenticate, getConsultationLands);
 //route to ger cases by land 
 router.get("/land/:landId", authenticate, getCasesByLand);
 // dynamic routes 
 router.get("/:chatId", getChatById); // ✅ ADD THIS
 // Get messages for a chat
 router.get("/:chatId/messages", getMessages);
+
+
 export default router;

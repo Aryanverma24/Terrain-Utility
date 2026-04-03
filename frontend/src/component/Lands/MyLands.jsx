@@ -13,7 +13,7 @@ const MyLand = () => {
   const [editingLand, setEditingLand] = useState(null);
   const [selectedDocs, setSelectedDocs] = useState(null);
   const [showDocsModal, setShowDocsModal] = useState(false);
-
+const [consultationLands, setConsultationLands] = useState([]);
   const [formData, setFormData] = useState({
     landtype: "",
     city: "",
@@ -48,6 +48,7 @@ const MyLand = () => {
       fetchUserLands(user.username);
       if (role === "lawyer") fetchApprovedUsers();
     }
+     fetchConsultationLands();
   }, []);
 
   const fetchUserLands = async (identifier) => {
@@ -159,7 +160,27 @@ const MyLand = () => {
       toast.error("Update failed");
     }
   };
+const fetchConsultationLands = async () => {
+  try {
+    const res = await axios.get(
+  "http://localhost:5000/api/chat/consultation",
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
 
+    // console.log("CONSULTATION API:", res.data); 
+    
+    if (Array.isArray(res.data)) {
+      setConsultationLands(res.data);
+    } else {
+      setConsultationLands([]);
+    }
+  } catch (err) {
+    console.error("Error fetching consultation lands", err);
+    setConsultationLands([]); // fallback
+  }
+};
   const formatDimensions = (dim) => {
     if (!dim) return "N/A";
     if (typeof dim === "object") {
@@ -343,6 +364,54 @@ const MyLand = () => {
           </form>
         </div>
       )}
+
+      {/* Consultation Lands (Only for Lawyers) */}
+{role === "lawyer" && consultationLands.length > 0 && (
+  <div className="mt-10">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">
+      🟣 Consultation Lands
+    </h2>
+
+    <div className="grid md:grid-cols-2 gap-4">
+      {consultationLands.map((land) => (
+        <div
+          key={land._id}
+          className="bg-white border border-purple-200 rounded-2xl shadow-sm p-4 hover:shadow-md transition"
+        >
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-gray-800">
+            {land.title}
+          </h3>
+
+          {/* City */}
+          <p className="text-sm text-gray-500">{land.city}</p>
+
+          {/* Tag */}
+          <span className="inline-block mt-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+            Consultation Access
+          </span>
+
+          {/* Actions */}
+          <div className="flex gap-3 mt-4">
+            <Link
+              to={`/land/${land._id}`}
+              className="text-sm px-3 py-1 bg-gray-800 text-white rounded-lg hover:bg-black transition"
+            >
+              View Land
+            </Link>
+
+            <Link
+  to={`/inbox?chatId=${land.chatId}`}
+              className="text-sm px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              Open Chat
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
     </div>
   );
 };

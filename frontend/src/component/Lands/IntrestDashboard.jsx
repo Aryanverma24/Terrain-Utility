@@ -34,7 +34,7 @@ const checkLegalChatExists = async () => {
     });
 
     setHasLegalChat(res.data.exists);
-    setExistingChatId(res.data.chatId); // 🔥 IMPORTANT
+    setExistingChatId(res.data.chatId); 
 
   } catch (err) {
     console.error(err);
@@ -57,7 +57,7 @@ const handleStartLegal = async () => {
 
     toast.success("Legal process started");
 
-    // 👉 Redirect to buyer-lawyer legal chat
+    //  Redirect to buyer-lawyer legal chat
     navigate(`/chat/${res.data.buyerLawyerChat}`);
 
   } catch (err) {
@@ -90,9 +90,25 @@ const startLawyerChat = async (landId, lawyerId = null) => {
   try {
     const token = localStorage.getItem("token");
 
+    // STEP 1: Check if consultation already exists
+    const check = await API.get(`/api/chat/consultation-exists/${landId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("CONSULTATION CHECK:", check.data);
+
+    // If exists → go directly
+    if (check.data.exists) {
+    navigate(`/inbox?chatId=${check.data.chatId}`);
+      return;
+    }
+
+    // STEP 2: Create chat
     const res = await API.post(
       "/api/chat/lawyer",
-      { landId, lawyerId }, // lawyerId can be null
+      { landId, lawyerId },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -100,25 +116,27 @@ const startLawyerChat = async (landId, lawyerId = null) => {
       }
     );
 
-    // ✅ If chat exists OR created → redirect
-    navigate(`/chat/${res.data._id}`);
+    // console.log("CHAT CREATED:", res.data);
 
-// ✅ ADD THIS
-setHasConsultation(true);
-setTimeout(() => {
-  checkConsultationExists(); // refresh from backend
-}, 500);
+    navigate(`/inbox?chatId=${check.data.chatId}`);
+
+    setHasConsultation(true);
+
+    setTimeout(() => {
+      checkConsultationExists();
+    }, 500);
+
   } catch (err) {
-    // 🔥 KEY LOGIC
+    // HANDLE LAWYER REQUIRED
     if (
-      err.response &&
-      err.response.data.message ===
-        "Please select a lawyer to start consultation"
+      err.response?.data?.message ===
+      "Please select a lawyer to start consultation"
     ) {
-      // 👉 Open lawyer modal ONLY if no chat exists
-      fetchLawyers(landId);
+      console.log("No lawyer selected → opening modal");
+
+      fetchLawyers(landId); // open modal
     } else {
-      console.error(err);
+      console.error("FULL ERROR:", err.response || err);
       toast.error("Failed to start lawyer chat");
     }
   }
@@ -136,7 +154,7 @@ const fetchLawyers = async (landId) => {
 
     setLawyers(res.data);
 
-    // 👉 store landId for later selection
+    //  store landId for later selection
     setSelectedLandId(landId);
 
     setShowLawyerModal(true);
@@ -191,7 +209,7 @@ useEffect(() => {
     checkConsultationExists();
     checkLegalChatExists();
   }
-}, [landId]);// ✅ FIXED
+}, [landId]);
 
   if (loading)
     return (
@@ -258,7 +276,7 @@ return (
     <div className="max-w-5xl mx-auto space-y-8">
 
       {/* ========================= */}
-      {/* 🔥 HERO INFO */}
+      {/*  HERO INFO */}
       {/* ========================= */}
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{welcomeMessage}</h2>
@@ -410,7 +428,7 @@ return (
       <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
         <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">⚖️ Legal Actions</h3>
 
-        {/* 🟦 Consultation Button */}
+        {/* Consultation Button */}
         <button
           onClick={() => startLawyerChat(land._id)}
           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
@@ -419,7 +437,7 @@ return (
           <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{hasConsultation ? "You have consulted" : "Consultation Required"}</span>
         </button>
 
-        {/* 🟪 Start Legal Process */}
+        {/*  Start Legal Process */}
         {!hasConsultation && (
           <button
             disabled
@@ -440,7 +458,7 @@ return (
           </button>
         )}
 
-        {/* 🟩 Continue Legal Process */}
+        {/*  Continue Legal Process */}
         {hasLegalChat && (
           <button
             onClick={() => navigate(`/chat/${existingChatId}`)}
@@ -451,7 +469,7 @@ return (
           </button>
         )}
 
-        {/* 👨‍💼 Lawyer Modal */}
+        {/*  Lawyer Modal */}
         {showLawyerModal && (
           <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40">
             <div className="bg-white w-96 rounded-xl shadow-2xl p-6 space-y-4">
@@ -482,7 +500,7 @@ return (
       </div>
 
       {/* ========================= */}
-      {/* 📊 INTEREST LIST */}
+      {/*  INTEREST LIST */}
       {/* ========================= */}
       {sortedInterests.length > 0 && (
         <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
@@ -540,7 +558,7 @@ return (
       )}
 
       {/* ========================= */}
-      {/* 🧾 OWNERSHIP HISTORY */}
+      {/* OWNERSHIP HISTORY */}
       {/* ========================= */}
       <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
@@ -562,7 +580,7 @@ return (
     </div>
 
     {/* ========================= */}
-    {/* 📊 MODAL: Ownership Flow */}
+    {/*  MODAL: Ownership Flow */}
     {/* ========================= */}
     {showHistoryModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">

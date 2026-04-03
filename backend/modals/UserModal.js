@@ -16,7 +16,18 @@ const userSchema = new mongoose.Schema({
   type: mongoose.Schema.Types.ObjectId,
   ref: "UserDocuments",
 },
-
+consultationLands: [
+  {
+    landId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Land",
+    },
+    chatId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chat",
+    },
+  },
+],
 isVerifiedBuyer: {
   type: Boolean,
   default: false,

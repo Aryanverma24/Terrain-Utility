@@ -137,7 +137,7 @@ if (isLawyer) {
           }
         );
 
-        openChatInInbox(res.data); // ✅ open automatically
+        openChatInInbox(res.data); 
       } catch (err) {
         console.error("Failed to load chat:", err);
       }
@@ -188,7 +188,7 @@ chatsRef.current = chats;
     }
   };
 
-  fetchUnread();
+  
 useEffect(() => {
   fetchUnread();
 }, [userId]);

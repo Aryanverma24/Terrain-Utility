@@ -123,7 +123,7 @@ const flattenUserDocs = (docs) => {
   const flattened = docs.flatMap((docGroup) =>
     docGroup.documents?.map((doc) => ({
       ...doc,
-      parentId: docGroup._id, // 🔥 IMPORTANT (for update API)
+      parentId: docGroup._id, 
       userId: docGroup.user?._id,
       userName: docGroup.user?.username,
       userEmail: docGroup.user?.email,
