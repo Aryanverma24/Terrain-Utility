@@ -12,6 +12,15 @@ const userSchema = new mongoose.Schema({
    gender: { type: String, default: "unknown" },
    age: { type: Number, default: 20 },
    faceDescriptor: { type: [Number], default: [] },
+   documentId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "UserDocuments",
+},
+
+isVerifiedBuyer: {
+  type: Boolean,
+  default: false,
+},
    bio: { type: String, default: "" }
 });
 

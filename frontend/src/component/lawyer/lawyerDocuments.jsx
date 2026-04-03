@@ -10,7 +10,7 @@ const LawyerDocuments = () => {
   const navigate = useNavigate();
 
   const [fullDocs, setFullDocs] = useState([]);
-  const [land, setLand] = useState(null); // ✅ FIXED (was missing)
+  const [land, setLand] = useState(null); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 const { user } = useContext(AuthContext);
@@ -69,7 +69,7 @@ const handlePreVerify = () => {
 
   setCalculatedDistance(dist);
   setAutoStatus(status);
-  setShowGeoResult(true); // 👈 SHOW DIV
+  setShowGeoResult(true);
 };
 //geo handle function 
 const handleFinalSubmit = async () => {
@@ -142,7 +142,7 @@ const handleFinalSubmit = async () => {
     }
   };
 
-  // ✅ FETCH LOGIC
+  // FETCH LOGIC
   const fetchLand = useCallback(async () => {
     try {
       setLoading(true);
@@ -152,7 +152,7 @@ const handleFinalSubmit = async () => {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      setLand(landData); // ✅ FIXED (was missing)
+      setLand(landData); 
 console.log("LAWYER DOC LAND:", landData);
 console.log("ASSIGNED LAWYER:", landData.assignedLawyer);
 console.log("CURRENT USER:", currentUserId);
@@ -168,7 +168,7 @@ console.log("CURRENT USER:", currentUserId);
           return res.data;
         })
       );
-
+//function to map each required documents to be uploaded
       const flattenedDocs = documentDocs.flatMap(doc =>
         doc.documents
           ? doc.documents.map(subDoc => ({
@@ -197,7 +197,7 @@ console.log("CURRENT USER:", currentUserId);
 
   useEffect(() => {
     fetchLand();
-  }, [fetchLand]); // ✅ FIXED dependency
+  }, [fetchLand]); 
 
   // ================= UI =================
 return (

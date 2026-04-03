@@ -18,7 +18,16 @@ const LawyerHome = () => {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredCard, setHoveredCard] = useState(null);
+  //states for veriying user uploaded docs
+const [userDocs, setUserDocs] = useState([]);
+const [docLoading, setDocLoading] = useState(true);
+const [selectedUserDocs, setSelectedUserDocs] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
 
+const openUserDocs = (docGroup) => {
+  setSelectedUserDocs(docGroup);
+  setIsModalOpen(true);
+};
   // Fetch all lands for lawyers
   useEffect(() => {
     if (!user || user.role?.toLowerCase() !== "lawyer") return;
@@ -45,7 +54,88 @@ const LawyerHome = () => {
 
     fetchLands();
   }, [user]);
+ const token = localStorage.getItem("token");
+  if (!token) return;
+//to update the status of each doc 
+const updateUserDocStatus = async (parentId, status, childId = null) => {
+  const token = localStorage.getItem("token");
+  if (!token) return toast.error("Login required");
 
+  try {
+    const res = await API.put(
+      `/api/users/file/${parentId}/${status}`,
+      { childId }, // childId is optional for individual updates
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const updatedParent = res.data.parentDoc;
+
+    // Update userDocs state
+    setUserDocs(prev =>
+      prev.map(userDoc =>
+        userDoc._id === updatedParent._id ? { ...updatedParent } : userDoc
+      )
+    );
+
+    // Update selectedUserDocs (modal)
+    setSelectedUserDocs(prev =>
+      prev && prev._id === updatedParent._id ? { ...updatedParent } : prev
+    );
+
+    toast.success(`Document ${status} ✅`);
+  } catch (err) {
+    console.error("User doc update error:", err);
+    toast.error("Failed to update document");
+  }
+};
+  useEffect(() => {
+  if (!user || user.role?.toLowerCase() !== "lawyer") return;
+
+ 
+//function to get userdocs 
+  const fetchUserDocs = async () => {
+    try {
+       const token = localStorage.getItem("token");
+     
+      
+      if (!token) return;
+      const res = await fetch("http://localhost:5000/api/users/pending", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      setUserDocs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching user docs:", err);
+      toast.error("Failed to fetch user documents");
+    } finally {
+      setDocLoading(false);
+    }
+  };
+
+  fetchUserDocs();
+}, [user]);
+//function for opening all docs separtely
+const flattenUserDocs = (docs) => {
+  const flattened = docs.flatMap((docGroup) =>
+    docGroup.documents?.map((doc) => ({
+      ...doc,
+      parentId: docGroup._id, // 🔥 IMPORTANT (for update API)
+      userId: docGroup.user?._id,
+      userName: docGroup.user?.username,
+      userEmail: docGroup.user?.email,
+    })) || []
+  );
+
+  return Array.from(
+    new Map(flattened.map((d) => [d._id, d])).values()
+  );
+};
+
+const userDocGroups = userDocs;
   // Fetch wishlist
   useEffect(() => {
     if (!user) return;
@@ -189,7 +279,129 @@ const LawyerHome = () => {
           </div>
         </section>
       )}
+{/* user documents sections */}
+<section className="py-16 bg-gray-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+      User Document Verification
+    </h1>
 
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {userDocGroups.map((docGroup) => (
+        <div
+          key={docGroup._id}
+          className="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300"
+        >
+          <h3 className="text-xl font-semibold text-gray-900 mb-1">
+            {docGroup.user?.username}
+          </h3>
+          <p className="text-sm text-gray-500 mb-2">{docGroup.user?.email}</p>
+
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-gray-700 font-medium">
+              Documents: <span className="font-semibold">{docGroup.documents?.length || 0}</span>
+            </p>
+
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold
+                ${docGroup.status === "approved" ? "bg-green-100 text-green-700" :
+                  docGroup.status === "rejected" ? "bg-red-100 text-red-700" :
+                  "bg-yellow-100 text-yellow-700"}`}
+            >
+              {docGroup.status}
+            </span>
+          </div>
+
+          <button
+            onClick={() => openUserDocs(docGroup)}
+            className="mt-5 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg transition-colors"
+          >
+            View Documents
+          </button>
+        </div>
+      ))}
+    </div>
+
+    {/* Modal for documents */}
+    {isModalOpen && selectedUserDocs && (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+        <div className="bg-white rounded-2xl shadow-xl w-[95%] max-w-5xl max-h-[85vh] overflow-y-auto p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+            {selectedUserDocs.user?.username}'s Documents
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {selectedUserDocs.documents.map((doc) => {
+              const fileUrl = getFileUrl(doc.file);
+              return (
+                <div key={doc._id} className="border border-gray-200 rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <img
+                    src={fileUrl}
+                    alt={doc.type}
+                    className="w-full h-40 object-cover rounded-lg mb-2"
+                  />
+                  <p className="text-center text-sm font-medium text-gray-700">{doc.type}</p>
+
+                  <div className="flex justify-center mt-2">
+                    <span className={`px-2 py-1 text-xs rounded-full
+                      ${doc.status === "approved" ? "bg-green-100 text-green-700" :
+                        doc.status === "rejected" ? "bg-red-100 text-red-700" :
+                        "bg-yellow-100 text-yellow-700"}`}
+                    >
+                      {doc.status || "pending"}
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => updateUserDocStatus(selectedUserDocs._id, "approved", doc._id)}
+                      disabled={doc.status !== "pending"}
+                      className="flex-1 bg-green-600 text-white py-1 rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => updateUserDocStatus(selectedUserDocs._id, "rejected", doc._id)}
+                      disabled={doc.status !== "pending"}
+                      className="flex-1 bg-red-600 text-white py-1 rounded hover:bg-red-700 disabled:bg-gray-400 transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              onClick={() => updateUserDocStatus(selectedUserDocs._id, "approved")}
+              disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
+              className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+            >
+              Approve All
+            </button>
+
+            <button
+              onClick={() => updateUserDocStatus(selectedUserDocs._id, "rejected")}
+              disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
+              className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:bg-gray-400 transition-colors"
+            >
+              Reject All
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="mt-6 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
       <HowItWorks />
       <Testimonials />
       <BackToTop />

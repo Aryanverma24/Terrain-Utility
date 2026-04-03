@@ -15,14 +15,31 @@ import {
     deleteUser,
     getUserById,
     updateUserById,
-    getLawyers
-
+    getLawyers,
+    uploadUserDocuments,
+    getMyDocuments,
+    getPendingUserDocuments,
+    updateUserDocumentStatus,
+reuploadUserDocumentHandler, 
+getApprovedUsersByLawyer,
+getUserDocumentsByUserId
 } from '../controllers/UserController.js'
 
 const router = express.Router();
 import { authenticate,authorizeAdmin } from "../middlerwares/authMiddlewares.js";
 import { roleAuth } from "../middlerwares/roleAuth.js";
+import upload from "../utils/multerConfig.js";
 
+//reupload document
+router.put(
+  "/file/:docId/reupload",
+  (req, res, next) => {
+    console.log("Headers:", req.headers);
+    next();
+  },authenticate,
+  upload.single("file"),
+  reuploadUserDocumentHandler
+);
 //home route
 router.route("/").get( getAllUser);
 
@@ -80,14 +97,40 @@ router.post("/auth", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+//user upload document
+router.post(
+  "/upload-user-docs",
+  authenticate,
+ upload.any(), 
+  uploadUserDocuments
+);
+//for user to see his uploaded docs 
+router.get("/my-documents", authenticate, getMyDocuments);
+
+//  Get all pending user docs (for lawyers)
+router.get("/pending", authenticate, getPendingUserDocuments);
+
+//  Update document status
+router.put("/file/:docId/:status", authenticate, updateUserDocumentStatus);
 
 // Only lawyer can access lawyer dashboard API
 router.get("/lawyer/data", roleAuth("lawyer"), (req, res) => {
   res.json({ message: "Lawyer authorized" });
 });
 
-router.route("/logout").post(logout)
-
+router.route("/logout").post(logout);
+//route for getting approved users in my land for lawyer 
+router.get(
+  "/approved-users",
+  authenticate,
+  getApprovedUsersByLawyer
+);
+//route for the funtion to show documents approved for laawyer
+router.get(
+  "/user-documents/:userId",
+  authenticate,
+  getUserDocumentsByUserId
+);
 router.get("/lawyers",authenticate,getLawyers);
 //profile update
 

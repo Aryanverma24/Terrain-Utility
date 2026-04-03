@@ -68,31 +68,35 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
-configureCloudinary(); 
-let rooms = {}; // In-memory store (optional)
+configureCloudinary();
+
+let onlineUsers = [];
+
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  //  JOIN ROOM
+  // -----------------------
+  // JOIN CHAT ROOM
+  // -----------------------
   socket.on("joinRoom", async ({ room }) => {
-  try {
-    if (!room) return;
+    try {
+      if (!room) return;
 
-    socket.join(room);
+      socket.join(room);
 
-    
-    const history = await Message.find({ chatId: room })
-      .sort({ createdAt: 1 })
-      .limit(100);
+      const history = await Message.find({ chatId: room })
+        .sort({ createdAt: 1 })
+        .limit(100);
 
-    socket.emit("messageHistory", history);
+      socket.emit("messageHistory", history);
+    } catch (err) {
+      console.error("joinRoom error:", err);
+    }
+  });
 
-  } catch (err) {
-    console.error("joinRoom error:", err);
-  }
-});
-
-  
+  // -----------------------
+  // SEND MESSAGE
+  // -----------------------
   socket.on("sendMessage", async (data) => {
     try {
       const {
@@ -104,101 +108,87 @@ io.on("connection", (socket) => {
         message,
       } = data;
 
-      if (!chatId) {
-        console.log("❌ chatId missing");
-        return;
-      }
+      if (!chatId) return;
 
       const msg = await Message.create({
-  chatId,
-  senderId,
-  senderName,
-  receiverId,
-  receiverName,
-  message,
-  isRead: false,
-  delivered: true, 
-});
+        chatId,
+        senderId,
+        senderName,
+        receiverId,
+        receiverName,
+        message,
+        isRead: false,
+        delivered: true,
+      });
 
       await Chat.findByIdAndUpdate(chatId, {
         lastMessage: message,
         lastMessageAt: new Date(),
       });
 
-      // EMIT TO SAME ROOM
       io.to(chatId).emit("message", msg);
-
-      console.log("✅ EMITTED:", msg);
-
     } catch (err) {
       console.error("socket sendMessage error:", err);
     }
   });
 
   // -----------------------
-  // TYPING INDICATOR
+  // TYPING
   // -----------------------
-socket.on("typing", ({ room, senderName }) => {
- 
+  socket.on("typing", ({ room, senderName }) => {
+    socket.to(room).emit("typing", { senderName });
+  });
 
-  socket.to(room).emit("typing", { senderName });
-});
+  socket.on("stopTyping", ({ room }) => {
+    socket.to(room).emit("stopTyping");
+  });
 
-socket.on("stopTyping", ({ room }) => {
-  socket.to(room).emit("stopTyping");
-});
-
-let onlineUsers = [];
-
-io.on("connection", (socket) => {
+  // -----------------------
+  // ONLINE USERS
+  // -----------------------
   socket.on("join", (userId) => {
-    if (!onlineUsers.includes(userId)) onlineUsers.push(userId);
+    socket.userId = userId; // ✅ IMPORTANT
+
+    if (!onlineUsers.includes(userId)) {
+      onlineUsers.push(userId);
+    }
+
     io.emit("onlineUsers", onlineUsers);
   });
 
-  socket.on("disconnect", () => {
-    onlineUsers = onlineUsers.filter(id => id !== socket.userId);
-    io.emit("onlineUsers", onlineUsers);
-  });
-});
-
+  // -----------------------
+  // MARK AS READ
+  // -----------------------
   socket.on("markAsRead", async ({ chatId, userId }) => {
-  try {
-    await Message.updateMany(
-      {
-        chatId,
-        receiverId: userId,
-        isRead: false,
-      },
-      { $set: { isRead: true } }
-    );
+    try {
+      await Message.updateMany(
+        { chatId, receiverId: userId, isRead: false },
+        { $set: { isRead: true } }
+      );
 
-    io.to(chatId).emit("messagesRead", { chatId });
-  } catch (err) {
-    console.error(err);
-  }
-});
+      io.to(chatId).emit("messagesRead", { chatId });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-
-  // JOIN notification personal room
-  socket.on("join", (userId) => {
-    console.log(`📥 User joined NOTIFICATION room: ${userId}`);
+  // -----------------------
+  // NOTIFICATIONS
+  // -----------------------
+  socket.on("join-notification", (userId) => {
     socket.join(userId);
   });
-// role rooms
-socket.on("join-role", (role) => {
-  socket.join(role);
-});
-  // SEND a notification to a specific user
-socket.on("send-notification", async (data) => {
-    const { receiverId, receiverRole, title, message, type = "system" } = data;
+
+  socket.on("join-role", (role) => {
+    socket.join(role);
+  });
+
+  socket.on("send-notification", async (data) => {
+    const { receiverId, receiverRole, title, message, type = "SYSTEM" } = data;
 
     try {
-      let notif = null;
-
-      // --- SEND TO SINGLE USER ---
       if (receiverId) {
-        notif = await Notification.create({
+        const notif = await Notification.create({
           userId: receiverId,
           title,
           message,
@@ -206,12 +196,10 @@ socket.on("send-notification", async (data) => {
         });
 
         io.to(receiverId).emit("receive-notification", notif);
-        console.log(`🔔 Sent notification to USER: ${receiverId}`);
       }
 
-      // --- SEND TO ROLE (broadcast to all of them) ---
       if (receiverRole) {
-        notif = await Notification.create({
+        const notif = await Notification.create({
           targetRole: receiverRole,
           title,
           message,
@@ -219,37 +207,28 @@ socket.on("send-notification", async (data) => {
         });
 
         io.to(receiverRole).emit("receive-notification", notif);
-        console.log(`🔔 Sent notification to ROLE: ${receiverRole}`);
       }
     } catch (err) {
       console.log("❌ Notification error:", err.message);
     }
   });
 
-  // 4️⃣ Disconnect log
+  // -----------------------
+  // DISCONNECT
+  // -----------------------
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
+
+    if (socket.userId) {
+      onlineUsers = onlineUsers.filter((id) => id !== socket.userId);
+      io.emit("onlineUsers", onlineUsers);
+    }
   });
 });
-export { io }; 
 
+export { io };
   
 
-// Serve static files for uploaded images
-// const uploadsPath = path.join(__dirname, '..', 'uploads');
-// app.use('/uploads', express.static(uploadsPath));
-
-// // Multer configuration for file uploads
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/');
-//   },
-//   filename: function (req, file, cb) {
-//     const uniqueSuffix = Date.now() + '-' + file.originalname;
-//     cb(null, uniqueSuffix);
-//   }
-// });
-// const upload = multer({ storage: storage });
 
 
 // Routes
@@ -261,6 +240,10 @@ app.use("/api/wishlist",wishlistRoutes)
 app.use('/api/messages', chatRoutes); 
 app.use("/api/chat", chatRoutes); // Chat routes integration
 app.use("/api/lawyer",lawyerRoutes);
+app.use((req, res, next) => {
+  console.log("🌍 Incoming:", req.method, req.url);
+  next();
+});
 //add user face data
 app.post('/api/add-face', async (req, res) => {
   const { email, faceDescriptor } = req.body;

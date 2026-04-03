@@ -1024,6 +1024,54 @@ const getInterestedUsers = asyncHandler(async (req, res) => {
     });
   }
 });
+//update the intrest sattus either approve or reject
+//  const updateInterestStatus = async (req, res) => {
+//   try {
+//     const { landId, userId, action } = req.body;
+
+//     const land = await Land.findById(landId);
+
+//     if (!land) {
+//       return res.status(404).json({ message: "Land not found" });
+//     }
+
+//     const entry = land.interestedUsers.find(
+//       (item) => item.user.toString() === userId
+//     );
+
+//     if (!entry) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // ACCEPT
+//     if (action === "accepted") {
+//       land.selectedBuyer = userId;
+
+//       land.interestedUsers.forEach((item) => {
+//         if (item.user.toString() === userId) {
+//           item.status = "accepted";
+//         } else {
+//           item.status = "rejected";
+//         }
+//       });
+//     }
+
+//     // REJECT
+//     if (action === "rejected") {
+//       entry.status = "rejected";
+//     }
+
+//     await land.save();
+
+//     res.status(200).json({
+//       message: `User ${action} successfully`,
+//       interestedUsers: land.interestedUsers,
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 //to get the ownership table 
 const getLandDashboard = async (req, res) => {
   const { id } = req.params;
@@ -1032,17 +1080,17 @@ const getLandDashboard = async (req, res) => {
   .populate("ownershipHistory")
   .populate({
     path: "interestedUsers.user",
-    select: "username  _id", // include both username and fullName
+    select: "username  _id", 
   });
 
   if (!land) {
     return res.status(404).json({ msg: "Land not found" });
   }
 
-  // 🔥 Current Owner
+  //  Current Owner
   const currentOwner = land.owner;
 
-  // 🔥 Last Transfer
+  //  Last Transfer
   const lastTransfer =
     land.ownershipHistory[land.ownershipHistory.length - 1];
 
@@ -1131,4 +1179,5 @@ export {
   getInterestedUsers,
   getLandDashboard,
   geoVerifyLand,
+  // updateInterestStatus,
 };

@@ -18,11 +18,12 @@ import {
   unmarkInterested,
   getInterestedUsers,
   getLandDashboard,
-  geoVerifyLand
+  geoVerifyLand,
+  // updateInterestStatus
 } from "../controllers/LandController.js";
 
 import { authenticate } from "../middlerwares/landauthenticate.js";
-import { uploadAny} from "../middlerwares/multer.js";
+import upload from "../utils/multerConfig.js";
 import multer from "multer";
 import { uploadDocuments, resubmitLand } from "../controllers/LandController.js";
 
@@ -48,11 +49,11 @@ router.route("/owner/:userId")
 
 // Route for getting lands by username
 router.route("/user/:username").get(getLandsByUser); // Username-based search
-
-router.post("/create-land", authenticate, uploadAny, createLand);
+//route for creating a land 
+router.post("/create-land", authenticate, upload.any(), createLand);
 
 // Upload documents for a land
-router.post("/documents/upload/:landId", authenticate, uploadAny, uploadDocuments);
+router.post("/documents/upload/:landId", authenticate, upload.any(), uploadDocuments);
 router.put("/:id/resubmit", authenticate, resubmitLand);
 router.get("/lawyer/:lawyerId", getLawyerLands);
 
@@ -60,27 +61,17 @@ router.get("/cities/verified", getCitiesWithVerifiedLands);
 
 
 router.route("/:id/reviews").get(getLandReviews).post(authenticate, createReview).delete(
-// Make sure this route matches your params
-  authenticate, // Assuming you have authentication middleware
+  authenticate, 
   deleteReview
 );
-// router.get("/land/:landId", async (req, res) => {
-//   const { landId } = req.params;
-
-//   try {
-//     const messages = await messages.find({ land: landId })
-//       .sort({ timestamp: 1 }); // sort oldest → newest
-
-//     res.status(200).json(messages);
-//   } catch (error) {
-//     console.error("Error fetching messages:", error);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// });
+//route for geo cooridnate verification
 router.put("/geo-verify/:id", authenticate, geoVerifyLand);
+// the roytes for intrest users 
 router.route("/:landId/interested").post(authenticate,markInterested);
 router.route("/:landId/uninterested").post(authenticate,unmarkInterested);
 router.route("/:landId/interested-users").get(authenticate,getInterestedUsers);
+// router.put("/update-status", authenticate,updateInterestStatus);
+//route for getitng ownership history
 router.get("/dashboard/:id", getLandDashboard);
 
 export default router;
