@@ -1,51 +1,213 @@
-import React, { useContext, useState, useEffect } from "react";
+import socket from "../../../utils/socket";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
+import { useLocation } from "react-router-dom"; // ✅ ADD THIS
 import ChatList from "../Chat/ChatList";
 import ChatWindow from "../Chat/ChatWindow";
 import axios from "axios";
+import { useRef } from "react";
+
 
 const getId = (val) => (val?._id ? val._id.toString() : val?.toString());
 
-const Inbox = () => {
+const Inbox = forwardRef((props, ref) => {
   const { user } = useContext(AuthContext);
+  const location = useLocation(); // ✅ ADD THIS
+const chatsRef = useRef([]);
   const [selectedChat, setSelectedChat] = useState(null);
-  const [activeSection, setActiveSection] = useState("buyer"); // "buyer" | "owner" | "legal"
-  const [unreadCounts, setUnreadCounts] = useState({ buyer: 0, owner: 0, legal: 0 });
-
+  const [activeSection, setActiveSection] = useState("buyer");
+  const [unreadCounts, setUnreadCounts] = useState({
+    buyer: 0,
+    owner: 0,
+    legal: 0,
+  });
+const isLawyer = user?.role === "lawyer"; 
   const userId = getId(user);
 
-  // Fetch unread counts for each section
   useEffect(() => {
-    const fetchUnread = async () => {
-      if (!userId) return;
+  if (isLawyer && activeSection === "legal") {
+    setActiveSection("buyer");
+  }
+}, [isLawyer]);
+
+useEffect(() => {
+  const handleMessage = (msg) => {
+    const chatId = msg.chatId;
+
+    // Ignore if currently open chat
+   if (getId(selectedChat?._id) === getId(chatId)) return;
+
+    const chat = chatsRef.current.find(
+      (c) => getId(c._id) === getId(chatId)
+    );
+
+    
+    if (!chat) {
+      axios
+        .get(`http://localhost:5000/api/chat/${chatId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
+        .then((res) => {
+          chatsRef.current.push(res.data);
+          updateUnread(res.data);
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // EXISTING CHAT
+    fetchUnread(); // 
+  };
+
+  socket.on("message", handleMessage);
+
+  return () => {
+    socket.off("message", handleMessage); 
+  };
+}, [selectedChat, userId]);
+
+const updateUnread = (chat) => {
+  setUnreadCounts((prev) => {
+    const updated = { ...prev };
+
+    const landOwnerId = getId(chat.land?.owner);
+    const isLegal =
+      chat.chatType === "legal" || chat.chatType === "consultation";
+
+  if (!isLawyer && isLegal) {
+  updated.legal += 1;
+} else if (landOwnerId === userId) {
+  updated.owner += 1;
+} else {
+  updated.buyer += 1;
+}
+
+    return updated;
+  });
+};
+const openChatInInbox = (chat) => {
+  if (!chat) return;
+
+  setSelectedChat(chat);
+
+  let section;
+
+if (isLawyer) {
+  section =
+    getId(chat.land?.owner) === userId ? "owner" : "buyer";
+} else {
+  section =
+    chat.chatType === "legal" || chat.chatType === "consultation"
+      ? "legal"
+      : getId(chat.land?.owner) === userId
+      ? "owner"
+      : "buyer";
+}
+
+  setActiveSection(section);
+
+  //  RESET ONLY SECTION
+  setUnreadCounts((prev) => ({
+    ...prev,
+    [section]: 0,
+  }));
+};
+  //  NEW: Open chat from URL (MAIN FIX)
+  useEffect(() => {
+    const chatId = new URLSearchParams(location.search).get("chatId");
+
+    if (!chatId || !userId) return;
+
+    const fetchChatAndOpen = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/chat/unread/${userId}`);
-        // Process unread counts per chat type (placeholder logic, can refine)
-        const counts = { buyer: 0, owner: 0, legal: 0 };
-        Object.entries(res.data).forEach(([chatId, count]) => {
-          // Real implementation would fetch chat type here
-          counts.buyer += 0;
-          counts.owner += 0;
-          counts.legal += 0;
-        });
-        setUnreadCounts(counts);
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/${chatId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        openChatInInbox(res.data); 
       } catch (err) {
-        console.error("Error fetching unread counts", err);
+        console.error("Failed to load chat:", err);
       }
     };
-    fetchUnread();
-  }, [userId]);
 
-  const sections = [
-    { key: "buyer", label: "Buyer Chats", color: "emerald" },
-    { key: "owner", label: "Owner Chats", color: "blue" },
-    { key: "legal", label: "Legal / Consultation", color: "purple" },
-  ];
+    fetchChatAndOpen();
+  }, [location.search, userId]);
 
-  return (
+  // EXISTING: Fetch unread counts
+
+  const fetchUnread = async () => {
+    if (!userId) return;
+
+    try {
+      const [unreadRes, chatsRes] = await Promise.all([
+        axios.get(`http://localhost:5000/api/chat/unread/${userId}`),
+        axios.get(`http://localhost:5000/api/chat/user/${userId}`)
+      ]);
+;
+      const unreadMap = unreadRes.data;
+      const chats = chatsRes.data;
+chatsRef.current = chats;
+      const counts = { buyer: 0, owner: 0, legal: 0 };
+
+      chats.forEach((chat) => {
+        const chatId = getId(chat._id);
+        const unread = unreadMap[chatId] || 0;
+
+        if (unread === 0) return;
+
+        const landOwnerId = getId(chat.land?.owner);
+        const isLegal =
+          chat.chatType === "legal" || chat.chatType === "consultation";
+
+    if (!isLawyer && isLegal) {
+  counts.legal += unread;
+} else if (landOwnerId === userId) {
+  counts.owner += unread;
+} else {
+  counts.buyer += unread;
+}
+      });
+
+      setUnreadCounts(counts);
+
+    } catch (err) {
+      console.error("Unread fetch error:", err);
+    }
+  };
+
+  
+useEffect(() => {
+  fetchUnread();
+}, [userId]);
+
+ const sections = isLawyer
+  ? [
+      { key: "buyer", label: "Buyer Chats", color: "emerald" },
+      { key: "owner", label: "Owner Chats", color: "blue" },
+    ]
+  : [
+      { key: "buyer", label: "Buyer Chats", color: "emerald" },
+      { key: "owner", label: "Owner Chats", color: "blue" },
+      { key: "legal", label: "Legal / Consultation", color: "purple" },
+    ];
+
+ return (
     <div className="h-screen flex flex-col bg-[#f4f7f6]">
 
-      {/* TOPMOST SECTION: Section selection with unread badges */}
+     
      {/* TOPMOST SECTION: Section selection with unread badges */}
 <div className="flex justify-center gap-4 px-5 py-3 bg-white border-b shadow-sm mt-20">
   {sections.map((s) => (
@@ -81,11 +243,13 @@ const Inbox = () => {
         <div className="md:w-2/3 w-full bg-white flex flex-col shadow-sm">
           <div className="sticky top-0 bg-white z-10 px-5 py-4 border-b">
             <h2 className="text-lg font-semibold text-gray-800">
-              {activeSection === "buyer"
-                ? "Buyer Chats"
-                : activeSection === "owner"
-                ? "Owner Chats"
-                : "Legal / Consultation Chats"}
+             {activeSection === "buyer"
+  ? "Buyer Chats"
+  : activeSection === "owner"
+  ? "Owner Chats"
+  : !isLawyer
+  ? "Legal / Consultation Chats"
+  : ""}
             </h2>
             <p className="text-xs text-gray-500">
               {selectedChat
@@ -98,9 +262,9 @@ const Inbox = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
-            {selectedChat ? (
-              <ChatWindow chat={selectedChat} />
-            ) : (
+           {selectedChat ? (
+  <ChatWindow key={selectedChat._id} chat={selectedChat} />
+) : (
               <div className="text-center text-gray-400 mt-20">
                 Select a chat from the left to start
               </div>
@@ -109,7 +273,8 @@ const Inbox = () => {
         </div>
       </div>
     </div>
+    
   );
-};
+});
 
 export default Inbox;

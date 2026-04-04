@@ -1,5 +1,5 @@
 import { useEffect, useState,useContext } from 'react';
-import { AuthContext } from '../../contexts/authContext';
+import { AuthContext } from '../../contexts/AuthContext';
 import { API } from '../../utils/API';
 import { useNavigate } from 'react-router';
 import {toast} from 'react-toastify'
@@ -8,6 +8,8 @@ import { MdLocationOn ,MdCall ,MdEmail,MdCalendarMonth, MdLandscape, } from "rea
 import { TiUser } from "react-icons/ti";
 import { CiEdit } from "react-icons/ci";
 import { RxCross2 } from "react-icons/rx";
+import { getFileUrl } from '../../../backend/utils/getFileUrl';
+import axios from 'axios';
 import Wishlist from './Wishlist';
 
 const Profile = () => {
@@ -19,6 +21,7 @@ const Profile = () => {
 
   const {user} = useContext(AuthContext);
 
+const token = user?.token;
   const navigate = useNavigate();
 
   const [toggleEdit , setToggleEdit] = useState(false)
@@ -33,8 +36,70 @@ const Profile = () => {
   const [bio,setBio]  = useState("")
 
   const [wishlist,setWishlist] = useState([]);
-   
-  
+  //userdocument states 
+  const [showDocModal, setShowDocModal] = useState(false);
+  //for uplaoding the documnets 
+const [loadingDocsUpload, setLoadingDocsUpload] = useState(false);
+const [docs, setDocs] = useState({
+  Aadhaar: null,
+  PAN: null,
+  Passport: null,
+  VoterID: null,
+  DrivingLicense: null,
+  AddressProof: null,
+  ProfilePhoto: null,
+});
+//user document show states
+const [showDocs, setShowDocs] = useState(false);
+const [documents, setDocuments] = useState(null);
+//for reuploading docs
+const [loadingDocs, setLoadingDocs] = useState(false);
+  const [uploadingDocId, setUploadingDocId] = useState(null);
+//reuplaod of document
+const handleUserReupload = async (docId, file) => {
+  if (!file) return toast.error("No file selected");
+
+  try {
+    setUploadingDocId(docId);
+
+    const formData = new FormData();
+    formData.append("file", file);
+const res = await API.put(
+  `/api/users/file/${docId}/reupload`,
+  formData,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+);
+
+    const updatedDoc = res.data.document;
+console.log("UpdatedDoc:", updatedDoc);
+console.log("Prev state:", documents);
+    // ✅ UPDATE STATE INSTANTLY
+   setDocuments((prev) => ({
+  ...prev,
+  documents: prev.documents.map((doc) =>
+    doc._id === docId
+      ? {
+          ...doc,
+          file: updatedDoc.file,
+          status: updatedDoc.status,
+        }
+      : doc
+  ),
+}));
+
+    toast.success("Document reuploaded successfully");
+
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Upload failed");
+  } finally {
+    setUploadingDocId(null);
+  }
+};
   useEffect(() => {
     API.get("/api/users/profile")
     .then((response) => {
@@ -112,6 +177,117 @@ const Profile = () => {
       navigate("/userProfile")
     };
 
+    //doucmnt upload functions
+    const handleDocChange = (e) => {
+  setDocs({
+    ...docs,
+    [e.target.name]: e.target.files[0],
+  });
+};
+
+//to upload documents 
+const handleDocUpload = async () => {
+  if (!docs.Aadhaar || !docs.PAN || !docs.ProfilePhoto || !docs.AddressProof) {
+    return toast.error("Please upload all mandatory documents");
+  }
+
+  try {
+    setLoadingDocsUpload(true);
+
+    const formData = new FormData();
+    formData.append("Aadhaar", docs.Aadhaar);
+    formData.append("PAN", docs.PAN);
+    formData.append("ProfilePhoto", docs.ProfilePhoto);
+    formData.append("AddressProof", docs.AddressProof);
+
+    if (docs.optionalDocFile && docs.optionalDocType) {
+      formData.append("optionalDocFile", docs.optionalDocFile);
+      formData.append("optionalDocType", docs.optionalDocType);
+    }
+
+    await API.post("/api/users/upload-user-docs", formData);
+
+    toast.success("Documents uploaded successfully!");
+    setShowDocModal(false);
+    // Reset docs after upload
+    setDocs({
+      Aadhaar: null,
+      PAN: null,
+      ProfilePhoto: null,
+      AddressProof: null,
+      optionalDocType: "",
+      optionalDocFile: null,
+    });
+  } catch (error) {
+    console.error(error);
+    toast.error(error.response?.data?.message || "Upload failed");
+  } finally {
+    setLoadingDocsUpload(false);
+  }
+};
+//function to fetch uploaded document 
+// const fetchDocuments = async () => {
+//   try {
+//     const token = localStorage.getItem("token"); // 🔥 use this if unsure
+
+//     console.log("TOKEN:", token);
+
+//     if (!token) {
+//       alert("No token found. Please login again.");
+//       return;
+//     }
+
+//     setLoadingDocs(true);
+
+//     const res = await axios.get(
+//       "http://localhost:5000/api/users/my-documents",
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+
+//     setDocuments(res.data);
+//     setShowDocs(true);
+
+//   } catch (err) {
+//     console.log("ERROR:", err.response?.data || err.message);
+//     alert("Unauthorized. Please login again.");
+//   } finally {
+//     setLoadingDocs(false);
+//   }
+// };
+const fetchDocuments = async () => {
+  try {
+    const token = localStorage.getItem("token"); 
+
+    if (!token) {
+      alert("No token found. Please login again.");
+      return;
+    }
+
+    setLoadingDocs(true);
+
+    const res = await axios.get(
+      "http://localhost:5000/api/users/my-documents",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setDocuments(res.data);
+    setShowDocs(true);
+
+  } catch (err) {
+    console.log("ERROR:", err.response?.data || err.message);
+    alert("Unauthorized. Please login again.");
+  } finally {
+    setLoadingDocs(false);
+  }
+};
     //saved land count
     
       useEffect(()=>{
@@ -156,9 +332,212 @@ const Profile = () => {
                           <h2 className='text-3xl text-center py-2 font-bold'>{userdata.data.username}</h2>
                           <h3 className='px-2 py-1 text-md line-clamp-4'>{userdata.data.bio}</h3>
                         </div>
-
+<button
+  onClick={() => setShowDocModal(true)}
+  className="mt-4 px-3 py-2 bg-cardGreen text-darkWalnut rounded-xl font-semibold"
+>
+  Upload KYC Documents
+</button>
                          
-                       
+    {showDocModal && (
+  <div className="bg-black bg-opacity-50 fixed inset-0 flex justify-center items-center z-50">
+    <div className="bg-white p-6 rounded-xl w-[30rem] max-h-[90vh] overflow-y-auto">
+
+      <h2 className="text-xl font-bold mb-4 text-center">Upload KYC Documents</h2>
+
+      {/* Aadhaar */}
+      <label className="block mb-2">Aadhaar (Required)</label>
+      <input type="file" name="Aadhaar" onChange={handleDocChange} className="mb-4" />
+
+      {/* PAN */}
+      <label className="block mb-2">PAN (Required)</label>
+      <input type="file" name="PAN" onChange={handleDocChange} className="mb-4" />
+
+      {/* Profile Photo */}
+      <label className="block mb-2">Profile Photo (Required)</label>
+      <input type="file" name="ProfilePhoto" onChange={handleDocChange} className="mb-4" />
+
+      {/* Address Proof */}
+      <label className="block mb-2">Address Proof (Required)</label>
+      <input type="file" name="AddressProof" onChange={handleDocChange} className="mb-4" />
+
+      {/* Optional Document */}
+      <label className="block mb-2">Optional Document</label>
+      <div className="flex gap-2 mb-4">
+        <select
+          name="optionalDocType"
+          value={docs.optionalDocType || ""}
+          onChange={(e) => setDocs(prev => ({ ...prev, optionalDocType: e.target.value }))}
+          className="py-1 px-2 outline-2 outline-cardGreen rounded-md flex-1 text-black"
+        >
+          <option value="">Select Document</option>
+          <option value="Passport">Passport</option>
+          <option value="DrivingLicense">Driving License</option>
+          <option value="VoterID">Voter ID</option>
+        </select>
+        <input
+          type="file"
+          name="optionalDocFile"
+          onChange={(e) => setDocs(prev => ({ ...prev, optionalDocFile: e.target.files[0] }))}
+          className="flex-1"
+        />
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-between mt-4">
+        <button
+          onClick={() => setShowDocModal(false)}
+          className="px-4 py-2 bg-gray-400 rounded-lg"
+          disabled={loadingDocsUpload}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleDocUpload}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
+          disabled={loadingDocsUpload}
+        >
+          {loadingDocsUpload && (
+            <svg
+              className="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+          )}
+          {loadingDocsUpload ? "Uploading..." : "Upload"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+<button
+  onClick={fetchDocuments}
+  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+>
+  📄 View Uploaded Documents
+</button>
+{showDocs && (
+  <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+    <div className="bg-white w-[90%] max-w-4xl p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[85vh]">
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Your Documents</h2>
+        <button
+          onClick={() => setShowDocs(false)}
+          className="text-gray-500 hover:text-black text-lg"
+        >
+          ✖
+        </button>
+      </div>
+
+      {/* Loading */}
+      {loadingDocs ? (
+        <p className="text-center">Loading...</p>
+      ) : documents?.documents?.length > 0 ? (
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {documents.documents.map((doc, index) => (
+            <div
+  key={index}
+  className="border rounded-xl p-4 shadow-sm hover:shadow-md transition"
+>
+  {/* Type */}
+  <p className="font-semibold text-lg">{doc.type}</p>
+
+  {/* Status */}
+  <p
+    className={`text-sm mt-1 font-medium ${
+      doc.status === "approved"
+        ? "text-green-600"
+        : doc.status === "rejected"
+        ? "text-red-600"
+        : "text-yellow-600"
+    }`}
+  >
+    Status: {doc.status}
+  </p>
+
+  {/* Image */}
+  <img
+    src={getFileUrl(doc.file)}
+    alt={doc.type}
+    onClick={() => window.open(getFileUrl(doc.file), "_blank")}
+    className="mt-3 h-36 w-full object-cover rounded-lg cursor-pointer hover:opacity-80"
+  />
+
+  {/* Timestamp */}
+  <p className="text-xs text-gray-500 mt-2">
+    Uploaded: {new Date(doc.uploadedAt).toLocaleString()}
+  </p>
+
+  {/* 🔥 REUPLOAD BUTTON */}
+  {doc.status === "rejected" && (
+    <div className="mt-3">
+      <label className="block w-full cursor-pointer">
+
+        <div className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-2 px-3 rounded-lg text-center flex items-center justify-center gap-2">
+
+          {uploadingDocId === doc._id ? (
+            <>
+              <svg
+                className="animate-spin h-4 w-4 text-white"
+                viewBox="0 0 24 24"
+              >
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              </svg>
+              Uploading...
+            </>
+          ) : (
+            "Re-upload Document"
+          )}
+
+        </div>
+
+        <input
+          type="file"
+          className="hidden"
+          disabled={uploadingDocId === doc._id}
+          onChange={(e) =>
+            handleUserReupload(doc._id, e.target.files?.[0])
+          }
+        />
+
+      </label>
+    </div>
+  )}
+</div>
+          ))}
+
+        </div>
+
+      ) : (
+        <p className="text-center text-gray-500">
+          No documents uploaded
+        </p>
+      )}
+
+    </div>
+  </div>
+)}
 
                       </div>
                         {/* <div className="flex justify-center items-center">

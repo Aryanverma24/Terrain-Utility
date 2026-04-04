@@ -1,6 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import multer from "multer";
@@ -11,9 +9,7 @@ import bodyParser from "body-parser";
 
 import jwt from "jsonwebtoken";
 // Import utilities and routes
-import dbConnect from "./config/db.js"; 
-import { configureCloudinary } from "./config/cloudinary.js";
-
+import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js"
@@ -22,23 +18,26 @@ import lawyerRoutes from "./routes/LawyerRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import upload from "./utils/multerConfig.js";
 import notificationRoutes from "./routes/NotificationRoutes.js";
+import paymentRoutes from './routes/PaymentRoutes.js'
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
-import Chat from "./modals/chatmodel.js";
-import Message from "./modals/messageModel.js";
+
 import { Server } from 'socket.io';
 import http from 'http';
+import Message from "./modals/messageModel.js";
 
+import dotenv from "dotenv";
+dotenv.config();
 
 // Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize app
-
+dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
@@ -49,7 +48,6 @@ const io = new Server(server, {
     credentials: true
   }
 });
-app.set("io", io);
 
 // CORS options
 const corsOption = {
@@ -68,137 +66,193 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
-configureCloudinary(); // ✅ now safe // Custom DB connection
+<<<<<<< HEAD
+
 let rooms = {}; // In-memory store (optional)
+=======
+configureCloudinary();
+
+let onlineUsers = [];
+
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // ✅ JOIN ROOM
+  // -----------------------
+<<<<<<< HEAD
+  // JOIN ROOM
+=======
+  // JOIN CHAT ROOM
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
+  // -----------------------
   socket.on("joinRoom", async ({ room }) => {
-  try {
-    if (!room) return;
+    try {
+      if (!room) return;
+<<<<<<< HEAD
+      socket.join(room);
+      console.log(`Socket ${socket.id} joined room ${room}`);
 
-    socket.join(room);
+      // Send last 100 messages
+      const history = await Message.find({ room })
+        .sort({ timestamp: 1 })
+        .limit(100)
+        .lean();
 
-    // ✅ FIX HERE
-    const history = await Message.find({ chatId: room })
-      .sort({ createdAt: 1 })
-      .limit(100);
+      socket.emit("messageHistory", history);
+    } catch (err) {
+      console.error("joinRoom error:", err);
+    }
+  });
 
-    socket.emit("messageHistory", history);
+=======
 
-  } catch (err) {
-    console.error("joinRoom error:", err);
-  }
-});
+      socket.join(room);
 
-  // ✅ SEND MESSAGE
+      const history = await Message.find({ chatId: room })
+        .sort({ createdAt: 1 })
+        .limit(100);
+
+      socket.emit("messageHistory", history);
+    } catch (err) {
+      console.error("joinRoom error:", err);
+    }
+  });
+
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
+  // -----------------------
+  // SEND MESSAGE
+  // -----------------------
   socket.on("sendMessage", async (data) => {
     try {
       const {
+        room,
+        landId,
+        senderId,
+        senderName,
+        receiverId,
+        receiverName,
+        message: text
+      } = data;
+
+<<<<<<< HEAD
+      if (!room || !senderId || !receiverId || !text) {
+        console.warn("sendMessage missing fields:", data);
+        return;
+      }
+
+      if (String(senderId) === String(receiverId)) {
+        console.warn("sendMessage blocked: sender === receiver");
+        return;
+      }
+
+      const msg = await Message.create({
+        room,
+        landId: landId ? new mongoose.Types.ObjectId(landId) : undefined,
+        senderId: new mongoose.Types.ObjectId(senderId),
+        senderName,
+        receiverId: new mongoose.Types.ObjectId(receiverId),
+        receiverName,
+        message: text,
+        timestamp: new Date(),
+      });
+
+      const converted = msg.toObject();
+
+      // Broadcast to users in room
+      io.to(room).emit("message", converted);
+
+=======
+      if (!chatId) return;
+
+      const msg = await Message.create({
         chatId,
         senderId,
         senderName,
         receiverId,
         receiverName,
         message,
-      } = data;
-
-      if (!chatId) {
-        console.log("❌ chatId missing");
-        return;
-      }
-
-      const msg = await Message.create({
-  chatId,
-  senderId,
-  senderName,
-  receiverId,
-  receiverName,
-  message,
-  isRead: false,
-  delivered: true, // ✅ ADD
-});
+        isRead: false,
+        delivered: true,
+      });
 
       await Chat.findByIdAndUpdate(chatId, {
         lastMessage: message,
         lastMessageAt: new Date(),
       });
 
-      // ✅ EMIT TO SAME ROOM
       io.to(chatId).emit("message", msg);
-
-      console.log("✅ EMITTED:", msg);
-
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
     } catch (err) {
       console.error("socket sendMessage error:", err);
     }
   });
 
   // -----------------------
-  // TYPING INDICATOR
+  // TYPING
   // -----------------------
-socket.on("typing", ({ room, senderName }) => {
- 
-
-  socket.to(room).emit("typing", { senderName });
-});
-
-socket.on("stopTyping", ({ room }) => {
-  socket.to(room).emit("stopTyping");
-});
-
-let onlineUsers = [];
-
-io.on("connection", (socket) => {
-  socket.on("join", (userId) => {
-    if (!onlineUsers.includes(userId)) onlineUsers.push(userId);
-    io.emit("onlineUsers", onlineUsers);
+  socket.on("typing", ({ room, senderName }) => {
+    socket.to(room).emit("typing", { senderName });
+<<<<<<< HEAD
   });
-
-  socket.on("disconnect", () => {
-    onlineUsers = onlineUsers.filter(id => id !== socket.userId);
-    io.emit("onlineUsers", onlineUsers);
-  });
-});
-
-  socket.on("markAsRead", async ({ chatId, userId }) => {
-  try {
-    await Message.updateMany(
-      {
-        chatId,
-        receiverId: userId,
-        isRead: false,
-      },
-      { $set: { isRead: true } }
-    );
-
-    io.to(chatId).emit("messagesRead", { chatId });
-  } catch (err) {
-    console.error(err);
-  }
-});
 
 
   // JOIN notification personal room
   socket.on("join", (userId) => {
     console.log(`📥 User joined NOTIFICATION room: ${userId}`);
+=======
+  });
+
+  socket.on("stopTyping", ({ room }) => {
+    socket.to(room).emit("stopTyping");
+  });
+
+  // -----------------------
+  // ONLINE USERS
+  // -----------------------
+  socket.on("join", (userId) => {
+    socket.userId = userId; // ✅ IMPORTANT
+
+    if (!onlineUsers.includes(userId)) {
+      onlineUsers.push(userId);
+    }
+
+    io.emit("onlineUsers", onlineUsers);
+  });
+
+  // -----------------------
+  // MARK AS READ
+  // -----------------------
+  socket.on("markAsRead", async ({ chatId, userId }) => {
+    try {
+      await Message.updateMany(
+        { chatId, receiverId: userId, isRead: false },
+        { $set: { isRead: true } }
+      );
+
+      io.to(chatId).emit("messagesRead", { chatId });
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  // -----------------------
+  // NOTIFICATIONS
+  // -----------------------
+  socket.on("join-notification", (userId) => {
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
     socket.join(userId);
   });
-// role rooms
-socket.on("join-role", (role) => {
-  socket.join(role);
-});
-  // SEND a notification to a specific user
-socket.on("send-notification", async (data) => {
-    const { receiverId, receiverRole, title, message, type = "system" } = data;
+
+  socket.on("join-role", (role) => {
+    socket.join(role);
+  });
+
+  socket.on("send-notification", async (data) => {
+    const { receiverId, receiverRole, title, message, type = "SYSTEM" } = data;
 
     try {
-      let notif = null;
-
-      // --- SEND TO SINGLE USER ---
       if (receiverId) {
-        notif = await Notification.create({
+        const notif = await Notification.create({
           userId: receiverId,
           title,
           message,
@@ -206,12 +260,10 @@ socket.on("send-notification", async (data) => {
         });
 
         io.to(receiverId).emit("receive-notification", notif);
-        console.log(`🔔 Sent notification to USER: ${receiverId}`);
       }
 
-      // --- SEND TO ROLE (broadcast to all of them) ---
       if (receiverRole) {
-        notif = await Notification.create({
+        const notif = await Notification.create({
           targetRole: receiverRole,
           title,
           message,
@@ -219,37 +271,28 @@ socket.on("send-notification", async (data) => {
         });
 
         io.to(receiverRole).emit("receive-notification", notif);
-        console.log(`🔔 Sent notification to ROLE: ${receiverRole}`);
       }
     } catch (err) {
       console.log("❌ Notification error:", err.message);
     }
   });
 
-  // 4️⃣ Disconnect log
+  // -----------------------
+  // DISCONNECT
+  // -----------------------
   socket.on("disconnect", () => {
     console.log("❌ User disconnected:", socket.id);
+
+    if (socket.userId) {
+      onlineUsers = onlineUsers.filter((id) => id !== socket.userId);
+      io.emit("onlineUsers", onlineUsers);
+    }
   });
 });
-export { io }; 
 
+export { io };
   
 
-// Serve static files for uploaded images
-// const uploadsPath = path.join(__dirname, '..', 'uploads');
-// app.use('/uploads', express.static(uploadsPath));
-
-// // Multer configuration for file uploads
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/');
-//   },
-//   filename: function (req, file, cb) {
-//     const uniqueSuffix = Date.now() + '-' + file.originalname;
-//     cb(null, uniqueSuffix);
-//   }
-// });
-// const upload = multer({ storage: storage });
 
 
 // Routes
@@ -261,6 +304,15 @@ app.use("/api/wishlist",wishlistRoutes)
 app.use('/api/messages', chatRoutes); 
 app.use("/api/chat", chatRoutes); // Chat routes integration
 app.use("/api/lawyer",lawyerRoutes);
+<<<<<<< HEAD
+app.use("/api/payment", paymentRoutes);
+
+=======
+app.use((req, res, next) => {
+  console.log("🌍 Incoming:", req.method, req.url);
+  next();
+});
+>>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
 //add user face data
 app.post('/api/add-face', async (req, res) => {
   const { email, faceDescriptor } = req.body;

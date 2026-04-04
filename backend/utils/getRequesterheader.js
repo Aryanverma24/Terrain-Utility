@@ -13,7 +13,7 @@ export const getRequesterFromHeader = (req) => {
       token = authHeader;
     }
 
-    // ✅ CLEAN TOKEN (VERY IMPORTANT)
+   
     token = token?.trim();
 
   

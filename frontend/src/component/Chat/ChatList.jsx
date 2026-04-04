@@ -12,7 +12,7 @@ const getId = (val) => {
 export default function ChatList({ type, onSelectChat }) {
   const { user } = useContext(AuthContext);
   const userId = getId(user?._id);
-
+const isLawyer = user?.role === "lawyer";
   const [chats, setChats] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -28,16 +28,26 @@ export default function ChatList({ type, onSelectChat }) {
 
     const res = await axios.get(`http://localhost:5000/api/chat/user/${userId}`);
     
-    setChats(res.data);
+   const sorted = res.data.sort(
+  (a, b) => new Date(b.updatedAt || b.lastMessageAt) - new Date(a.updatedAt || a.lastMessageAt)
+);
+
+setChats(sorted);
 
     const unreadRes = await axios.get(`http://localhost:5000/api/chat/unread/${userId}`);
    
-    setUnreadCounts(unreadRes.data);
-
+   const formatted = {};
+Object.entries(unreadRes.data).forEach(([chatId, count]) => {
+  formatted[getId(chatId)] = count;
+});
+setUnreadCounts(formatted);
   } catch (err) {
-    console.error("❌ ChatList | Error fetching chats:", err);
+    console.error(" ChatList | Error fetching chats:", err);
   }
 };
+
+
+
   useEffect(() => {
     if (!user?._id) return;
 
@@ -51,9 +61,12 @@ export default function ChatList({ type, onSelectChat }) {
     };
   }, [user?._id]);
 
-  useEffect(() => {
-    fetchChats();
-  }, [userId]);
+
+
+useEffect(() => {
+  fetchChats(); 
+}, [userId, type]);
+
 
  const openChat = async (chat) => {
   
@@ -67,21 +80,99 @@ export default function ChatList({ type, onSelectChat }) {
       onSelectChat(chat);
     }
   } catch (err) {
-    console.error("❌ ChatList | Error in openChat:", err);
+    console.error(" ChatList | Error in openChat:", err);
   }
 };
 
-  // 🔹 Filter chats based on section type
- const filteredChats = chats.filter((chat) => {
-  
+useEffect(() => {
+  if (!userId) return;
 
+  const handleMessage = (msg) => {
+  const chatId = getId(msg.chatId);
+
+  setChats((prev) => {
+    let updated = [...prev];
+
+    const index = updated.findIndex(
+      (c) => getId(c._id) === chatId
+    );
+
+    let chat;
+
+    if (index !== -1) {
+      chat = { ...updated[index] };
+
+      chat.lastMessage = msg.text;
+      chat.lastMessageAt = new Date().toISOString();
+
+      updated.splice(index, 1);
+    } else {
+     
+      axios
+        .get(`http://localhost:5000/api/chat/${chatId}`)
+        .then((res) => {
+          setChats((prevChats) => [res.data, ...prevChats]);
+        });
+
+      return prev;
+    }
+    const landOwnerId = getId(chat.land?.owner);
+    const isLegalChat = chat.chatType === "legal";
+    const isConsultationChat = chat.chatType === "consultation";
+
+    let shouldInclude = false;
+
+    if (type === "buyer")
+      shouldInclude =
+        landOwnerId !== userId && !isLegalChat && !isConsultationChat;
+
+    else if (type === "owner")
+      shouldInclude =
+        landOwnerId === userId && !isLegalChat && !isConsultationChat;
+
+    else if (type === "legal")
+      shouldInclude = isLegalChat || isConsultationChat;
+
+    else shouldInclude = true;
+
+    // ❌ DO NOT update UI if not part of this section
+    if (!shouldInclude) return prev;
+
+   
+    updated.unshift(chat);
+
+    return updated;
+  });
+};
+
+  socket.on("message", handleMessage);
+
+  return () => {
+    socket.off("message", handleMessage);
+  };
+}, [userId, type]);
+  // 🔹 Filter chats based on section type
+const filteredChats = chats.filter((chat) => {
   const landOwnerId = getId(chat.land?.owner);
   const isLegalChat = chat.chatType === "legal";
   const isConsultationChat = chat.chatType === "consultation";
 
-  if (type === "buyer") return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
-  if (type === "owner") return landOwnerId === userId && !isLegalChat && !isConsultationChat;
-  if (type === "legal") return isLegalChat || isConsultationChat;
+  //  LAWYER LOGIC
+  if (isLawyer) {
+    if (type === "owner") return landOwnerId === userId;
+    if (type === "buyer") return landOwnerId !== userId;
+    return true;
+  }
+
+  //  NORMAL USER LOGIC
+  if (type === "buyer")
+    return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
+
+  if (type === "owner")
+    return landOwnerId === userId && !isLegalChat && !isConsultationChat;
+
+  if (type === "legal")
+    return isLegalChat || isConsultationChat;
 
   return true;
 });
@@ -96,7 +187,7 @@ export default function ChatList({ type, onSelectChat }) {
       )}
 
       {filteredChats.map((c) => {
-        const unread = unreadCounts[c._id] || 0;
+       const unread = unreadCounts[getId(c._id)] || 0;
         const otherUser = c.participants.find((p) => getId(p._id || p) !== userId);
         const otherUserName = otherUser?.username || "User";
         const land = c.land;

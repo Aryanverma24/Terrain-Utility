@@ -12,77 +12,62 @@ const getId = (val) => {
   return typeof val === "object" ? val._id?.toString() : val.toString();
 };
 
-export default function ChatWindow({ chat: propChat }) {
-  const { chatId: paramChatId } = useParams();
-  const { state } = useLocation();
-  const { user } = useContext(AuthContext);
 
-  const initialChat = state?.chat || propChat;
+
+export default function ChatWindow({ chat: propChat }) {
+  const { user } = useContext(AuthContext);
   const userId = getId(user?._id);
 
   const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  const [chat, setChat] = useState(initialChat);
+  const [chat, setChat] = useState(propChat || null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [typingUser, setTypingUser] = useState("");
 
-  // Determine effective chatId
-  const effectiveChatId = paramChatId || initialChat?._id;
+  const effectiveChatId = chat?._id;
+useEffect(() => {
+  if (!chat?._id) return;
 
+  socket.emit("joinChat", chat._id);
 
+  return () => {
+    socket.emit("leaveChat", chat._id);
+  };
+}, [chat._id]);
 
-  // Fetch chat if not available
+  // Fetch chat if not passed as prop (optional, fallback)
   useEffect(() => {
-    if (!effectiveChatId || chat) return;
+    if (!effectiveChatId) return;
+    if (chat) return;
 
     const fetchChat = async () => {
       try {
-      
         const res = await axios.get(`http://localhost:5000/api/chat/${effectiveChatId}`);
-       
         setChat(res.data);
       } catch (err) {
-        
+        console.error("❌ ChatWindow | Error fetching chat:", err);
       }
     };
 
     fetchChat();
   }, [effectiveChatId, chat]);
 
-  // Socket setup
+  // Socket setup and message handling remains identical
   useEffect(() => {
     if (!effectiveChatId) return;
 
-  
     socket.emit("joinRoom", { room: effectiveChatId });
 
-    const handleHistory = (history) => {
-      
-      setMessages(history);
-    };
-
-    const handleMessage = (msg) => {
-      
+    const handleHistory = (history) => setMessages(history);
+    const handleMessage = (msg) =>
       setMessages((prev) => (prev.find((m) => m._id === msg._id) ? prev : [...prev, msg]));
-    };
-
-    const handleTyping = ({ senderName }) => {
-     
-      setTypingUser(senderName);
-    };
-
-    const handleStopTyping = () => {
-      
-      setTypingUser("");
-    };
-
-    const handleRead = () => {
-      
+    const handleTyping = ({ senderName }) => setTypingUser(senderName);
+    const handleStopTyping = () => setTypingUser("");
+    const handleRead = () =>
       setMessages((prev) => prev.map((m) => ({ ...m, isRead: true })));
-    };
 
     socket.on("messageHistory", handleHistory);
     socket.on("message", handleMessage);
@@ -91,7 +76,6 @@ export default function ChatWindow({ chat: propChat }) {
     socket.on("messagesRead", handleRead);
 
     return () => {
-     
       socket.off("messageHistory", handleHistory);
       socket.off("message", handleMessage);
       socket.off("typing", handleTyping);
@@ -103,8 +87,6 @@ export default function ChatWindow({ chat: propChat }) {
   // Mark messages as read
   useEffect(() => {
     if (!effectiveChatId || !userId) return;
-
-    
     socket.emit("markAsRead", { chatId: effectiveChatId, userId });
   }, [effectiveChatId, userId]);
 
@@ -112,15 +94,13 @@ export default function ChatWindow({ chat: propChat }) {
   useEffect(() => {
     if (!effectiveChatId) return;
 
-   
     axios
       .get(`http://localhost:5000/api/chat/${effectiveChatId}/messages`)
-      .then((res) => {
-       
-        setMessages(res.data);
-      })
+      .then((res) => setMessages(res.data))
       .catch((err) => console.error("❌ ChatWindow | Error fetching messages fallback:", err));
   }, [effectiveChatId]);
+
+  // sendMessage, typing, scroll logic remain the same
 
   // Send message
   const sendMessage = () => {
@@ -170,8 +150,8 @@ export default function ChatWindow({ chat: propChat }) {
   if (!chat) return <div>Loading chat...</div>;
 
   return (
-    <div className="flex justify-center items-start min-h-screen pt-24 pb-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
-      <div className="w-full max-w-3xl h-[88vh] flex flex-col rounded-3xl overflow-hidden bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
+    <div className="flex justify-center items-start h-full w-full bg-gradient-to-br from-[#f8fafc] to-[#eef2f7] px-4">
+      <div className="w-full max-w-3xl h-full flex flex-col rounded-3xl overflow-hidden bg-white/80 backdrop-blur-xl border border-gray-200 shadow-[0_20px_60px_rgba(0,0,0,0.08)]">
         <div className="text-center text-xs text-gray-500 py-2 bg-white/60 border-b">
           You are chatting with <span className="font-semibold text-gray-700">{otherUser?.username}</span>
         </div>
@@ -181,8 +161,7 @@ export default function ChatWindow({ chat: propChat }) {
             ⚖️ This is a consultation chat. Start legal process to proceed further.
           </div>
         )}
-
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-5 bg-gradient-to-b from-white/40 to-transparent">
+<div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-5 min-h-0 bg-gradient-to-b from-white/40 to-transparent">
           {messages.map((msg) => {
             const isMine = getId(msg.senderId) === userId;
             return (

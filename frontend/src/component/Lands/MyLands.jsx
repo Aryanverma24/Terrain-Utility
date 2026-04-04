@@ -1,16 +1,19 @@
 import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../../../contexts/authContext";
 import { toast } from "react-toastify";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 
 const MyLand = () => {
+  // ================= STATE =================
   const [lands, setLands] = useState([]);
+  const [approvedUsers, setApprovedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingLand, setEditingLand] = useState(null);
-
+  const [selectedDocs, setSelectedDocs] = useState(null);
+  const [showDocsModal, setShowDocsModal] = useState(false);
+const [consultationLands, setConsultationLands] = useState([]);
   const [formData, setFormData] = useState({
     landtype: "",
     city: "",
@@ -25,27 +28,11 @@ const MyLand = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  // ✅ Format Dimensions Safely
-  const formatDimensions = (dim) => {
-    if (!dim) return "N/A";
-    if (typeof dim === "object") {
-      return `${dim.length} × ${dim.breadth} ft`;
-    }
-    return dim;
-  };
-
-  // 🔐 Decode JWT
+  // ================= JWT =================
   const decodeJWT = (token) => {
     try {
       const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      return JSON.parse(jsonPayload);
+      return JSON.parse(atob(base64Url));
     } catch {
       return null;
     }
@@ -55,11 +42,13 @@ const MyLand = () => {
   const currentUserId = decoded?.userId || decoded?._id || decoded?.id;
   const role = decoded?.role;
 
-  // 🔄 Fetch Lands
+  // ================= FETCH =================
   useEffect(() => {
     if (user?.username) {
       fetchUserLands(user.username);
+      if (role === "lawyer") fetchApprovedUsers();
     }
+     fetchConsultationLands();
   }, []);
 
   const fetchUserLands = async (identifier) => {
@@ -79,14 +68,56 @@ const MyLand = () => {
       }
 
       setLands(Array.isArray(response.data) ? response.data : []);
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch lands");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✏️ Edit
+  const fetchApprovedUsers = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/users/approved-users",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setApprovedUsers(res.data || []);
+    } catch {
+      toast.error("Failed to fetch approved users");
+    }
+  };
+
+  // ================= VIEW DOCS =================
+  const handleViewDocuments = async (userId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/users/user-documents/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      setSelectedDocs(res.data);
+      setShowDocsModal(true);
+    } catch {
+      toast.error("Failed to fetch documents");
+    }
+  };
+
+  // ================= DEDUP USERS =================
+  const uniqueApprovedUsers = Object.values(
+    approvedUsers.reduce((acc, doc) => {
+      if (doc.user?._id) {
+        acc[doc.user._id] = doc;
+      }
+      return acc;
+    }, {})
+  );
+
+  // ================= EDIT =================
   const handleEditClick = (land) => {
     setEditingLand(land);
     setFormData({
@@ -129,123 +160,167 @@ const MyLand = () => {
       toast.error("Update failed");
     }
   };
+const fetchConsultationLands = async () => {
+  try {
+    const res = await axios.get(
+  "http://localhost:5000/api/chat/consultation",
+  {
+    headers: { Authorization: `Bearer ${token}` },
+  }
+);
 
-  const handleCheckMessagesAndNavigate = () => {
-    navigate("/owner-inbox");
+    // console.log("CONSULTATION API:", res.data); 
+    
+    if (Array.isArray(res.data)) {
+      setConsultationLands(res.data);
+    } else {
+      setConsultationLands([]);
+    }
+  } catch (err) {
+    console.error("Error fetching consultation lands", err);
+    setConsultationLands([]); // fallback
+  }
+};
+  const formatDimensions = (dim) => {
+    if (!dim) return "N/A";
+    if (typeof dim === "object") {
+      return `${dim.length} × ${dim.breadth} ft`;
+    }
+    return dim;
   };
 
-  // 🔥 LOADING SKELETON
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 p-10 grid md:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="animate-pulse bg-white/10 rounded-xl p-5"
-          >
-            <div className="h-40 bg-gray-600 rounded mb-4"></div>
-            <div className="h-5 bg-gray-600 rounded mb-2"></div>
-            <div className="h-4 bg-gray-600 rounded mb-2"></div>
-            <div className="h-4 bg-gray-600 rounded mb-4"></div>
-            <div className="flex gap-2">
-              <div className="h-10 bg-gray-600 rounded w-1/2"></div>
-              <div className="h-10 bg-gray-600 rounded w-1/2"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <div className="text-center mt-20">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-emerald-50  pt-16">
-      <h1 className="text-3xl text-black text-center mb-10">
-        My Land
-      </h1>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-emerald-50 pt-16 px-6">
+
+      {/* ================= LAND SECTION ================= */}
+      <h1 className="text-3xl text-center mb-8">My Lands</h1>
 
       {lands.length > 0 ? (
-        <div className="grid md:grid-cols-3 gap-6 px-6">
+        <div className="grid md:grid-cols-3 gap-6">
           {lands.map((land) => {
             const isApprovedByMe =
               String(land.approvedBy?._id || land.approvedBy) ===
               String(currentUserId);
 
-            const isAssignedToMe =
-              String(land.assignedLawyer?._id || land.assignedLawyer) ===
-              String(currentUserId);
-
             return (
               <div
                 key={land._id}
-                className="bg-[#ACE1AF] backdrop-blur-lg p-5 rounded-xl text-white"
+                onClick={() => navigate(`/land/${land._id}`)}
+                className="bg-[#ACE1AF] p-5 rounded-xl cursor-pointer hover:scale-105"
               >
-                {/* Image */}
                 {land.image && (
                   <img
                     src={getFileUrl(land.image)}
-                    alt="land"
-                    className="h-40 w-full object-cover rounded-lg mb-3"
+                    className="h-40 w-full object-cover rounded mb-2"
                   />
                 )}
 
-                {/* Details */}
-                <h2 className="text-xl text-gray-900 font-bold">
+                <h2 className="font-bold text-lg">
                   {land.city}, {land.state}
                 </h2>
 
-                <p className="text-gray-900 font-bold italic">₹ {land.price || "N/A"}</p>
+                <p>₹ {land.price}</p>
+                <p>{formatDimensions(land.dimensions)}</p>
 
-                <p className="text-gray-800 text-sm">
-                  {formatDimensions(land.dimensions)}
-                </p>
-
-                {/* Buttons */}
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={() => handleEditClick(land)}
-                    className="bg-green-500 px-3 py-2 rounded-md"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={handleCheckMessagesAndNavigate}
-                    className="bg-blue-500 px-3 py-2 rounded-md"
-                  >
-                    Messages
-                  </button>
-                </div>
-
-                {/* Lawyer UI */}
-                {role === "lawyer" && (
-                  <>
-                    {land.status === "approved" && isApprovedByMe && (
-                      <div className="mt-3 bg-green-600 py-2 rounded text-center">
-                        ✅ Approved by You
-                      </div>
-                    )}
-
-                    {land.status !== "approved" && isAssignedToMe && (
-                      <div className="mt-3 bg-yellow-500 py-2 rounded text-center">
-                        🔍 Reviewing
-                      </div>
-                    )}
-                  </>
+                {role === "lawyer" && isApprovedByMe && (
+                  <div className="mt-2 bg-green-600 text-white text-center py-1 rounded">
+                    Approved by You
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="text-center text-white">
-          <p className="mb-4">No lands found</p>
-          <Link to="/add-land" className="text-green-400 underline">
-            Add Land
-          </Link>
+        <p>No lands found</p>
+      )}
+
+      {/* ================= APPROVED USERS ================= */}
+      {role === "lawyer" && (
+        <>
+          <h1 className="text-3xl text-center mt-16 mb-6">
+            Users Documents Approved By You
+          </h1>
+
+          {uniqueApprovedUsers.length === 0 ? (
+            <p className="text-center">No approved users yet</p>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {uniqueApprovedUsers.map((doc) => (
+                <div
+                  key={doc._id}
+                  className="bg-white p-5 rounded-xl shadow-md"
+                >
+                  <h2 className="font-bold text-lg">
+                    {doc.user?.username}
+                  </h2>
+
+                  <p className="text-sm text-gray-600">
+                    {doc.user?.email}
+                  </p>
+
+                  <div className="mt-3 bg-green-500 text-white text-center py-1 rounded">
+                    Fully Verified ✅
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDocuments(doc.user._id);
+                    }}
+                    className="mt-3 bg-purple-600 text-white px-3 py-2 rounded-md w-full"
+                  >
+                    View Documents
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ================= DOCUMENT MODAL ================= */}
+      {showDocsModal && selectedDocs && (
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+          <div className="bg-white w-[600px] max-h-[80vh] overflow-y-auto p-6 rounded-xl">
+
+            <h2 className="text-xl font-bold mb-4">
+              {selectedDocs.user.username}'s Documents
+            </h2>
+
+            {selectedDocs.documents.map((doc) => (
+              <div key={doc._id} className="border p-3 mb-3 rounded-lg">
+                <p className="font-semibold">{doc.type}</p>
+
+                <img
+                  src={
+                    doc.file.cloudinary ||
+                    `http://localhost:5000/${doc.file.local}`
+                  }
+                  className="h-40 mt-2 rounded"
+                />
+
+                <p className="mt-2">
+                  Status: <b>{doc.status}</b>
+                </p>
+              </div>
+            ))}
+
+            <button
+              onClick={() => setShowDocsModal(false)}
+              className="mt-4 bg-red-500 px-4 py-2 text-white rounded"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 
-      {/* EDIT MODAL */}
+      {/* ================= EDIT MODAL ================= */}
       {editingLand && (
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
           <form
@@ -256,7 +331,6 @@ const MyLand = () => {
               name="city"
               value={formData.city}
               onChange={handleFormChange}
-              placeholder="City"
               className="w-full mb-3 p-2 border"
             />
 
@@ -264,7 +338,6 @@ const MyLand = () => {
               name="state"
               value={formData.state}
               onChange={handleFormChange}
-              placeholder="State"
               className="w-full mb-3 p-2 border"
             />
 
@@ -272,7 +345,6 @@ const MyLand = () => {
               name="price"
               value={formData.price}
               onChange={handleFormChange}
-              placeholder="Price"
               className="w-full mb-3 p-2 border"
             />
 
@@ -292,6 +364,54 @@ const MyLand = () => {
           </form>
         </div>
       )}
+
+      {/* Consultation Lands (Only for Lawyers) */}
+{role === "lawyer" && consultationLands.length > 0 && (
+  <div className="mt-10">
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">
+      🟣 Consultation Lands
+    </h2>
+
+    <div className="grid md:grid-cols-2 gap-4">
+      {consultationLands.map((land) => (
+        <div
+          key={land._id}
+          className="bg-white border border-purple-200 rounded-2xl shadow-sm p-4 hover:shadow-md transition"
+        >
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-gray-800">
+            {land.title}
+          </h3>
+
+          {/* City */}
+          <p className="text-sm text-gray-500">{land.city}</p>
+
+          {/* Tag */}
+          <span className="inline-block mt-2 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+            Consultation Access
+          </span>
+
+          {/* Actions */}
+          <div className="flex gap-3 mt-4">
+            <Link
+              to={`/land/${land._id}`}
+              className="text-sm px-3 py-1 bg-gray-800 text-white rounded-lg hover:bg-black transition"
+            >
+              View Land
+            </Link>
+
+            <Link
+  to={`/inbox?chatId=${land.chatId}`}
+              className="text-sm px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            >
+              Open Chat
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
     </div>
   );
 };

@@ -27,7 +27,7 @@ const ReviewSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const LandSchema = new mongoose.Schema(
@@ -44,7 +44,7 @@ const LandSchema = new mongoose.Schema(
     state: { type: String, required: true },
     pincode: { type: Number, required: true },
 
-    // 🔥 CURRENT OWNER
+    //  CURRENT OWNER
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ownerName: { type: String, required: true },
 
@@ -63,6 +63,17 @@ const LandSchema = new mongoose.Schema(
 
     rejectionReason: { type: String },
 
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+        default: undefined,
+      },
+    },
     dimensions: {
       length: { type: Number, required: true },
       breadth: { type: Number, required: true },
@@ -72,9 +83,44 @@ const LandSchema = new mongoose.Schema(
 
     reviews: [ReviewSchema],
     averageRating: { type: Number, default: 0 },
-
     // =========================
-    // 🔥 UPDATED INTEREST SYSTEM
+    // GEO VERIFICATION
+    // =========================
+    geoVerification: {
+      lawyerCoordinates: {
+        type: [Number], // [lng, lat]
+        default: null,
+      },
+
+      status: {
+        type: String,
+        enum: ["pending", "matched", "mismatched"],
+        default: "pending",
+      },
+
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+
+      verifiedAt: {
+        type: Date,
+        default: null,
+      },
+
+      distance: {
+        type: Number, // distance in KM
+        default: null,
+      },
+
+      note: {
+        type: String,
+        default: "",
+      },
+    },
+    // =========================
+    //  UPDATED INTEREST SYSTEM
     // =========================
     interestedUsers: [
       {
@@ -114,7 +160,7 @@ const LandSchema = new mongoose.Schema(
     documents: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
 
     // =========================
-    // 🔥 OWNERSHIP FEATURES
+    // OWNERSHIP FEATURES
     // =========================
     ownershipHistory: [
       {
@@ -128,17 +174,34 @@ const LandSchema = new mongoose.Schema(
       default: 0,
     },
 
+    paymentStatus: {
+      type: String,
+      enum: ["not_started", "partial", "completed"],
+      default: "not_started",
+    },
+
+    currentTransaction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      default: null,
+    },
+
+    isLocked: {
+      type: Boolean,
+      default: false, // prevents multiple buyers paying at same time
+    },
+
     lastTransferDate: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-// 🔥 PERFORMANCE INDEXES
+//  PERFORMANCE INDEXES
 LandSchema.index({ ownershipCount: -1 });
 LandSchema.index({ "interestedUsers.user": 1 });
-
+LandSchema.index({ location: "2dsphere" });
 export const Land = mongoose.model("Land", LandSchema);
 export default Land;

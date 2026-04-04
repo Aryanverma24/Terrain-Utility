@@ -17,7 +17,7 @@ const OwnerInbox = () => {
       </div>
 
       {/* 🔹 RIGHT: CHAT WINDOW */}
-      <div className="w-2/3 bg-gray-50">
+      <div className="w-2/3 bg-gray-50 flex flex-col">
         {selectedChat ? (
           <ChatWindow chat={selectedChat} />
         ) : (

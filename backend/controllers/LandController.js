@@ -29,7 +29,7 @@ const createLand = asyncHandler(async (req, res) => {
 
   const { landtype, city, state, pincode, price, length, breadth, description } = req.body;
   const { id, username } = req.user;
-
+const { latitude, longitude } = req.body;
   if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
     return res.status(400).send("All fields are required, including image!");
   }
@@ -57,6 +57,10 @@ const createLand = asyncHandler(async (req, res) => {
       ownerName: username,
       status: "pending",
       approvedBy: null,
+      location: {
+  type: "Point",
+  coordinates: [parseFloat(longitude), parseFloat(latitude)],
+},
     });
 
     await land.save();
@@ -1020,6 +1024,54 @@ const getInterestedUsers = asyncHandler(async (req, res) => {
     });
   }
 });
+//update the intrest sattus either approve or reject
+//  const updateInterestStatus = async (req, res) => {
+//   try {
+//     const { landId, userId, action } = req.body;
+
+//     const land = await Land.findById(landId);
+
+//     if (!land) {
+//       return res.status(404).json({ message: "Land not found" });
+//     }
+
+//     const entry = land.interestedUsers.find(
+//       (item) => item.user.toString() === userId
+//     );
+
+//     if (!entry) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     // ACCEPT
+//     if (action === "accepted") {
+//       land.selectedBuyer = userId;
+
+//       land.interestedUsers.forEach((item) => {
+//         if (item.user.toString() === userId) {
+//           item.status = "accepted";
+//         } else {
+//           item.status = "rejected";
+//         }
+//       });
+//     }
+
+//     // REJECT
+//     if (action === "rejected") {
+//       entry.status = "rejected";
+//     }
+
+//     await land.save();
+
+//     res.status(200).json({
+//       message: `User ${action} successfully`,
+//       interestedUsers: land.interestedUsers,
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
 //to get the ownership table 
 const getLandDashboard = async (req, res) => {
   const { id } = req.params;
@@ -1028,17 +1080,17 @@ const getLandDashboard = async (req, res) => {
   .populate("ownershipHistory")
   .populate({
     path: "interestedUsers.user",
-    select: "username  _id", // include both username and fullName
+    select: "username  _id", 
   });
 
   if (!land) {
     return res.status(404).json({ msg: "Land not found" });
   }
 
-  // 🔥 Current Owner
+  //  Current Owner
   const currentOwner = land.owner;
 
-  // 🔥 Last Transfer
+  //  Last Transfer
   const lastTransfer =
     land.ownershipHistory[land.ownershipHistory.length - 1];
 
@@ -1050,7 +1102,58 @@ const getLandDashboard = async (req, res) => {
     interests: land.interestedUsers,
   });
 };
+//geo verifiacation api
+const geoVerifyLand = async (req, res) => {
+  try {
+    const { lat, lng, note } = req.body;
+    const land = await Land.findById(req.params.id);
 
+    if (!land) {
+      return res.status(404).json({ message: "Land not found" });
+    }
+
+    const [ownerLng, ownerLat] = land.location.coordinates;
+
+    // Haversine Formula
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
+    const distance = getDistance(ownerLat, ownerLng, lat, lng);
+
+    // Threshold: 100 meters
+    const status = distance < 0.1 ? "matched" : "mismatched";
+
+    land.geoVerification = {
+      lawyerCoordinates: [lng, lat],
+      status,
+      verifiedBy: req.user._id,
+      verifiedAt: new Date(),
+      distance,
+      note,
+    };
+
+    await land.save();
+
+    res.json({
+      message: "Geo verification completed",
+      geoVerification: land.geoVerification,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Geo verification failed" });
+  }
+};
 
 
 // ----------------------------------------------
@@ -1074,5 +1177,7 @@ export {
   markInterested,
   unmarkInterested,
   getInterestedUsers,
-  getLandDashboard
+  getLandDashboard,
+  geoVerifyLand,
+  // updateInterestStatus,
 };

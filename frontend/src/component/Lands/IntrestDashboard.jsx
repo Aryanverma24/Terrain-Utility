@@ -3,6 +3,8 @@ import { useParams ,useNavigate} from "react-router-dom";
 import { API } from "../../../utils/API";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import PaymentModal from "../Payment/PaymentModal";
 
 const InterestDashboard = () => {
   const { landId } = useParams();
@@ -19,9 +21,15 @@ const [selectedLandId, setSelectedLandId] = useState(null);
 const [hasConsultation, setHasConsultation] = useState(false);
 const [showLawyerModal, setShowLawyerModal] = useState(false);
 const [hasLegalChat, setHasLegalChat] = useState(false);
-
+const [showGeoDialog, setShowGeoDialog] = useState(false);
 const [existingChatId, setExistingChatId] = useState(null);
 const navigate = useNavigate();
+
+
+//payment
+const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+
 //to check whether the leagl chats exists to sethasleagl chat and change button veiw to leagla process started
 const checkLegalChatExists = async () => {
   try {
@@ -34,7 +42,7 @@ const checkLegalChatExists = async () => {
     });
 
     setHasLegalChat(res.data.exists);
-    setExistingChatId(res.data.chatId); // 🔥 IMPORTANT
+    setExistingChatId(res.data.chatId); 
 
   } catch (err) {
     console.error(err);
@@ -57,7 +65,7 @@ const handleStartLegal = async () => {
 
     toast.success("Legal process started");
 
-    // 👉 Redirect to buyer-lawyer legal chat
+    //  Redirect to buyer-lawyer legal chat
     navigate(`/chat/${res.data.buyerLawyerChat}`);
 
   } catch (err) {
@@ -90,9 +98,25 @@ const startLawyerChat = async (landId, lawyerId = null) => {
   try {
     const token = localStorage.getItem("token");
 
+    // STEP 1: Check if consultation already exists
+    const check = await API.get(`/api/chat/consultation-exists/${landId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("CONSULTATION CHECK:", check.data);
+
+    // If exists → go directly
+    if (check.data.exists) {
+    navigate(`/inbox?chatId=${check.data.chatId}`);
+      return;
+    }
+
+    // STEP 2: Create chat
     const res = await API.post(
       "/api/chat/lawyer",
-      { landId, lawyerId }, // lawyerId can be null
+      { landId, lawyerId },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -100,25 +124,27 @@ const startLawyerChat = async (landId, lawyerId = null) => {
       }
     );
 
-    // ✅ If chat exists OR created → redirect
-    navigate(`/chat/${res.data._id}`);
+    // console.log("CHAT CREATED:", res.data);
 
-// ✅ ADD THIS
-setHasConsultation(true);
-setTimeout(() => {
-  checkConsultationExists(); // refresh from backend
-}, 500);
+    navigate(`/inbox?chatId=${check.data.chatId}`);
+
+    setHasConsultation(true);
+
+    setTimeout(() => {
+      checkConsultationExists();
+    }, 500);
+
   } catch (err) {
-    // 🔥 KEY LOGIC
+    // HANDLE LAWYER REQUIRED
     if (
-      err.response &&
-      err.response.data.message ===
-        "Please select a lawyer to start consultation"
+      err.response?.data?.message ===
+      "Please select a lawyer to start consultation"
     ) {
-      // 👉 Open lawyer modal ONLY if no chat exists
-      fetchLawyers(landId);
+      console.log("No lawyer selected → opening modal");
+
+      fetchLawyers(landId); // open modal
     } else {
-      console.error(err);
+      console.error("FULL ERROR:", err.response || err);
       toast.error("Failed to start lawyer chat");
     }
   }
@@ -136,7 +162,7 @@ const fetchLawyers = async (landId) => {
 
     setLawyers(res.data);
 
-    // 👉 store landId for later selection
+    //  store landId for later selection
     setSelectedLandId(landId);
 
     setShowLawyerModal(true);
@@ -169,6 +195,7 @@ const fetchLawyers = async (landId) => {
         });
 
         setLand(res.data.land);
+        console.log("Land Coordinates:", res.data.land.coordinates);
         setOwnershipHistory(res.data.ownershipHistory || []);
         setCurrentOwner(res.data.currentOwner);
       } catch (err) {
@@ -190,7 +217,7 @@ useEffect(() => {
     checkConsultationExists();
     checkLegalChatExists();
   }
-}, [landId]);// ✅ FIXED
+}, [landId]);
 
   if (loading)
     return (
@@ -251,13 +278,14 @@ useEffect(() => {
   // =========================
   const lastHash =
     ownershipHistory[ownershipHistory.length - 1]?.currentHash;
+
 return (
   <div className="min-h-screen pt-24 pb-10 px-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7]">
 
     <div className="max-w-5xl mx-auto space-y-8">
 
       {/* ========================= */}
-      {/* 🔥 HERO INFO */}
+      {/*  HERO INFO */}
       {/* ========================= */}
       <div className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">{welcomeMessage}</h2>
@@ -265,7 +293,7 @@ return (
       </div>
 
       {/* ========================= */}
-      {/* 🔥 INTEREST COUNT */}
+      {/*INTEREST COUNT */}
       {/* ========================= */}
       {totalInterested > 0 && (
         <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-4 text-center shadow-md">
@@ -275,13 +303,141 @@ return (
         </div>
       )}
 
+{/*  SELECTED LOCATION MAP */}
+<div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-4 text-center">
+  
+  {/* HEADER */}
+  <div className="flex items-center justify-between mb-2">
+    <h3 className="text-lg font-semibold text-gray-800">
+      📍 Selected Location
+    </h3>
+
+    {/*STATUS BADGE */}
+    {land?.geoVerification?.status !== "pending" && (
+      <span
+        className={`px-3 py-1 text-xs font-semibold rounded-full ${
+          land.geoVerification.status === "matched"
+            ? "bg-green-100 text-green-700"
+            : "bg-red-100 text-red-700"
+        }`}
+      >
+        {land.geoVerification.status === "matched"
+          ? "✔ Geo Verified Land"
+          : "⚠ Suspicious Land"}
+      </span>
+    )}
+  </div>
+
+  {/* OWNER COORDINATES */}
+  {land?.location?.coordinates && (
+    <p className="text-sm text-gray-600 mb-2">
+      Lat: {land.location.coordinates[1]} | Lng: {land.location.coordinates[0]}
+    </p>
+  )}
+
+  {land?.location?.coordinates ? (
+    <div className="h-64 w-full">
+      <MapContainer
+        center={[land.location.coordinates[1], land.location.coordinates[0]]}
+        zoom={13}
+        scrollWheelZoom={false}
+        doubleClickZoom={true}
+        dragging={true}
+        touchZoom={true}
+        className="h-full w-full"
+      >
+        <TileLayer
+          attribution="© OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <Marker position={[land.location.coordinates[1], land.location.coordinates[0]]} />
+      </MapContainer>
+    </div>
+  ) : (
+    <p className="text-gray-500 text-sm">
+      No location selected for this land.
+    </p>
+  )}
+
+  {/*  VIEW DETAILS BUTTON */}
+  {land?.geoVerification?.status !== "pending" && (
+    <button
+      onClick={() => setShowGeoDialog(true)}
+      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+    >
+      View Verification Details
+    </button>
+  )}
+</div>
+{/*dailog to showcase the deatils */}
+{showGeoDialog && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    
+    <div className="bg-white rounded-2xl p-6 w-[90%] max-w-lg shadow-xl relative">
+
+      {/* CLOSE */}
+      <button
+        onClick={() => setShowGeoDialog(false)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-black"
+      >
+        ✖
+      </button>
+
+      <h2 className="text-xl font-bold mb-4 text-gray-800">
+        Geo Verification Details
+      </h2>
+
+      <div className="space-y-2 text-sm text-gray-700">
+
+        <p>
+          <strong>Status:</strong>{" "}
+          <span className={`font-semibold ${
+            land.geoVerification.status === "matched"
+              ? "text-green-600"
+              : "text-red-600"
+          }`}>
+            {land.geoVerification.status}
+          </span>
+        </p>
+
+        <p>
+          <strong>Distance:</strong>{" "}
+          {land.geoVerification.distance?.toFixed(3)} km
+        </p>
+
+        <p>
+          <strong>Owner Coordinates:</strong>{" "}
+          Lat: {land.location?.coordinates?.[1]} | 
+          Lng: {land.location?.coordinates?.[0]}
+        </p>
+
+        <p>
+          <strong>Lawyer Coordinates:</strong>{" "}
+          Lat: {land.geoVerification.lawyerCoordinates?.[1]} | 
+          Lng: {land.geoVerification.lawyerCoordinates?.[0]}
+        </p>
+
+        <p>
+          <strong>Lawyer Note:</strong>{" "}
+          {land.geoVerification.note || "No note provided"}
+        </p>
+
+        <p className="text-xs text-gray-500 mt-2">
+          Verified at:{" "}
+          {new Date(land.geoVerification.verifiedAt).toLocaleString()}
+        </p>
+
+      </div>
+    </div>
+  </div>
+)}
       {/* ========================= */}
       {/* ⚖️ LEGAL SECTION */}
       {/* ========================= */}
       <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
         <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">⚖️ Legal Actions</h3>
 
-        {/* 🟦 Consultation Button */}
+        {/* Consultation Button */}
         <button
           onClick={() => startLawyerChat(land._id)}
           className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
@@ -290,7 +446,7 @@ return (
           <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{hasConsultation ? "You have consulted" : "Consultation Required"}</span>
         </button>
 
-        {/* 🟪 Start Legal Process */}
+        {/*  Start Legal Process */}
         {!hasConsultation && (
           <button
             disabled
@@ -311,7 +467,7 @@ return (
           </button>
         )}
 
-        {/* 🟩 Continue Legal Process */}
+        {/*  Continue Legal Process */}
         {hasLegalChat && (
           <button
             onClick={() => navigate(`/chat/${existingChatId}`)}
@@ -322,7 +478,7 @@ return (
           </button>
         )}
 
-        {/* 👨‍💼 Lawyer Modal */}
+        {/*  Lawyer Modal */}
         {showLawyerModal && (
           <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40">
             <div className="bg-white w-96 rounded-xl shadow-2xl p-6 space-y-4">
@@ -353,7 +509,7 @@ return (
       </div>
 
       {/* ========================= */}
-      {/* 📊 INTEREST LIST */}
+      {/*  INTEREST LIST */}
       {/* ========================= */}
       {sortedInterests.length > 0 && (
         <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
@@ -411,7 +567,7 @@ return (
       )}
 
       {/* ========================= */}
-      {/* 🧾 OWNERSHIP HISTORY */}
+      {/* OWNERSHIP HISTORY */}
       {/* ========================= */}
       <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
@@ -433,7 +589,7 @@ return (
     </div>
 
     {/* ========================= */}
-    {/* 📊 MODAL: Ownership Flow */}
+    {/*  MODAL: Ownership Flow */}
     {/* ========================= */}
     {showHistoryModal && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -491,6 +647,64 @@ return (
         </div>
       </div>
     )}
+
+
+
+    {/* ========================= */}
+{/* 💳 PAYMENT SECTION */}
+{/* ========================= */}
+<div className="bg-white/90 backdrop-blur-md max-w-5xl mx-auto border border-gray-200 rounded-2xl shadow-md p-6 space-y-4 mt-6">
+
+  <h3 className="text-lg font-semibold  text-gray-800 border-b pb-2">
+    💳 Payment
+  </h3>
+
+  {/* STATUS */}
+  <div className="flex justify-between items-center">
+    <span className="text-gray-600 text-sm">Payment Status:</span>
+
+    <span
+      className={`px-3 py-1 text-xs rounded-full font-semibold ${
+        land.paymentStatus === "completed"
+          ? "bg-green-100 text-green-700"
+          : land.isLocked
+          ? "bg-blue-100 text-blue-700"
+          : "bg-yellow-100 text-yellow-700"
+      }`}
+    >
+      {land.paymentStatus === "completed"
+        ? "Paid"
+        : land.isLocked
+        ? "Processing"
+        : "Not Paid"}
+    </span>
+  </div>
+
+  {/* BUTTON */}
+  <button
+    onClick={() => setShowPaymentModal(true)}
+    disabled={
+      land.paymentStatus === "completed" ||
+      land.isLocked ||
+      currentUserId === land.owner?._id
+    }
+    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+  >
+    {land.paymentStatus === "completed"
+      ? "Already Purchased"
+      : land.isLocked
+      ? "Payment in Progress"
+      : "Pay & Buy Land"}
+  </button>
+
+</div>
+
+<PaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  land={land}
+/>
+
   </div>
 );
 };

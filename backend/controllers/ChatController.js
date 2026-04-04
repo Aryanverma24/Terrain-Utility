@@ -21,6 +21,9 @@ const normalizeRole = (role) => {
 
   return "buyer"; // default fallback
 };
+
+
+
 export const getOrCreateChat = asyncHandler(async (req, res) => {
   const { participants, landId, chatType } = req.body;
 
@@ -32,8 +35,8 @@ export const getOrCreateChat = asyncHandler(async (req, res) => {
     .map(id => id.toString())
     .sort();
 
-  
-    sortedParticipants.join("_") + "_" + (landId || "global");
+  // 🔑 Generate chatKey
+  const chatKey = sortedParticipants.join("_") + "_" + (landId || "global");
 
   const chat = await Chat.findOneAndUpdate(
     { chatKey },
@@ -319,7 +322,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
     //  SOCKET EMIT
     if (io) {
       io.to(receiverId.toString()).emit("newNotification", notification);
-     io.to(chatId.toString()).emit("message", msg); // 🔥 MATCH SOCKET SERVER // 🔥 REALTIME CHAT
+     io.to(chatId.toString()).emit("message", msg); 
     }
   } catch (err) {
     console.error("Notification error:", err.message);
@@ -343,7 +346,25 @@ export const getOrCreateConsultationChat = async (req, res) => {
     let chat = await Chat.findOne({ chatKey }).populate("participants");
 
     if (chat) {
-      // Chat already exists → return directly
+      //  Ensure consultation access exists (for old data cases)
+      if (lawyerId) {
+        const land = await Land.findById(landId);
+
+        if (
+          land &&
+          land.approvedBy.toString() !== lawyerId.toString()
+        ) {
+          await User.findByIdAndUpdate(lawyerId, {
+            $addToSet: {
+              consultationLands: {
+                landId,
+                chatId: chat._id,
+              },
+            },
+          });
+        }
+      }
+
       return res.status(200).json(chat);
     }
 
@@ -354,6 +375,9 @@ export const getOrCreateConsultationChat = async (req, res) => {
       });
     }
 
+    //  Get land
+    const land = await Land.findById(landId);
+
     //  Create chat
     chat = await Chat.create({
       participants: [userId, lawyerId],
@@ -362,8 +386,24 @@ export const getOrCreateConsultationChat = async (req, res) => {
       chatKey,
     });
 
+    // Give access if lawyer is NOT approver
+    if (
+      land &&
+      land.approvedBy.toString() !== lawyerId.toString()
+    ) {
+      await User.findByIdAndUpdate(lawyerId, {
+        $addToSet: {
+          consultationLands: {
+            landId,
+            chatId: chat._id,
+          },
+        },
+      });
+    }
+
     res.status(200).json(chat);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Error creating consultation chat" });
   }
 };
@@ -516,5 +556,37 @@ export const checkConsultationExists = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+//route for ulawyers to get land details ifthey are slelcted and they havnt approved the land
+export const getConsultationLands = async (req, res) => {
+  try {
+    const lawyerId = req.user.id;
+
+    // Get user (lawyer)
+    const user = await User.findById(lawyerId).populate({
+      path: "consultationLands.landId",
+      populate: {
+        path: "owner",
+        select: "username",
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract lands
+    const lands = user.consultationLands
+      .filter(item => item.landId) // safety check
+      .map(item => ({
+        ...item.landId._doc,
+        chatId: item.chatId,
+      }));
+
+    res.status(200).json(lands);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching consultation lands" });
   }
 };
