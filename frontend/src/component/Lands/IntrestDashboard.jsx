@@ -45,6 +45,21 @@ const handleStartLegal = async () => {
   try {
     const token = localStorage.getItem("token");
 
+    
+    const check = await API.get(`/api/chat/exists/${landId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("LEGAL CHECK:", check.data);
+
+    if (check.data.exists) {
+      navigate(`/inbox?chatId=${check.data.chatId}`);
+      return;
+    }
+
+   
     const res = await API.post(
       "/api/chat/start-legal",
       { landId },
@@ -55,10 +70,11 @@ const handleStartLegal = async () => {
       }
     );
 
+    console.log("LEGAL CHAT CREATED:", res.data);
+
     toast.success("Legal process started");
 
-    //  Redirect to buyer-lawyer legal chat
-    navigate(`/chat/${res.data.buyerLawyerChat}`);
+    navigate(`/inbox?chatId=${res.data._id}`);
 
   } catch (err) {
     console.error(err);
@@ -76,7 +92,7 @@ const checkConsultationExists = async () => {
   headers: { Authorization: `Bearer ${token}` },
 });
 
-console.log("CONSULTATION CHECK:", res.data); // 👈 ADD THIS, {
+console.log("CONSULTATION CHECK:", res.data); 
      
 
     setHasConsultation(res.data.exists);
@@ -461,7 +477,7 @@ return (
         {/*  Continue Legal Process */}
         {hasLegalChat && (
           <button
-            onClick={() => navigate(`/chat/${existingChatId}`)}
+           onClick={() => navigate(`/inbox?chatId=${existingChatId}`)}
             className="w-full bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
           >
             <span>Continue Legal Process</span>
