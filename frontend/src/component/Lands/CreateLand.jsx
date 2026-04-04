@@ -81,6 +81,34 @@ function CreateLand() {
     setCurrentStep(currentStep - 1);
   };
   
+  const navigate = useNavigate();
+
+  // Form validation for each step
+  const validateStep = (step) => {
+    switch(step) {
+      case 1:
+        return landtype && city && state && pincode && price && length && breadth;
+      case 2:
+        return image;
+      case 3:
+        return true; // Documents are optional for validation
+      default:
+        return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      toast.error("Please fill in all required fields");
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+  
   //geo based states 
   const [selectedState, setSelectedState] = useState("");
 const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
@@ -308,25 +336,6 @@ if (!coordinates) {
               </div>
             </div>
           </div>
-          {/* ---------------- MAP PICKER ---------------- */}
-{selectedState && (
-  <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border">
-    <h3 className="text-xl font-semibold mb-4 text-gray-800">
-      Select Land Location on Map
-    </h3>
-
-    <MapPicker
-      center={mapCenter}
-      setCoordinates={setCoordinates}
-    />
-
-    {coordinates && (
-      <p className="mt-3 text-sm text-gray-600">
-        Selected: Lat {coordinates.lat}, Lng {coordinates.lng}
-      </p>
-    )}
-  </div>
-)}
 
           {/* Enhanced Progress Section */}
           <div className="max-w-5xl mx-auto px-8 mb-12">
