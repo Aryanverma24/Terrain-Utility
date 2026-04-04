@@ -1,0 +1,145 @@
+// Terrain-Utility Database Schema Diagram
+// Generated for MongoDB collections
+
+Table User {
+  _id ObjectId [PK]
+  username String [unique]
+  email String [unique]
+  contactNumber Number [unique]
+  password String
+  isAdmin Boolean [default: false]
+  role String [default: "buyerSeller", note: "buyerSeller, lawyer, admin"]
+  City String [default: "unknown"]
+  state String [default: "unknown"]
+  gender String [default: "unknown"]
+  age Number [default: 20]
+  faceDescriptor Array [note: "Array of Numbers for face recognition"]
+  bio String [default: ""]
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table Land {
+  _id ObjectId [PK]
+  landtype String
+  description String [default: ""]
+  image String [note: "filename/path"]
+  city String
+  state String
+  pincode Number
+  owner ObjectId
+  ownerName String
+  price Number
+  assignedLawyer ObjectId [note: "nullable"]
+  approvedBy ObjectId [note: "Admin who approved"]
+  rejectionReason String [note: "nullable"]
+  dimensions_length Number
+  dimensions_breadth Number
+  dimensionsString String
+  reviews Array [note: "Embedded review documents"]
+  averageRating Number [default: 0]
+  status String [default: "pending", note: "pending, approved, rejected"]
+  documents Array
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table Review {
+  _id ObjectId [PK]
+  user ObjectId
+  username String
+  rating Number [note: "min: 1, max: 5"]
+  review String
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table Chat {
+  _id ObjectId [PK]
+  landId ObjectId
+  ownerId ObjectId
+  buyerId ObjectId
+  buyerName String
+  ownerName String
+  lastMessageAt DateTime
+  lastMessage String [default: ""]
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table Message {
+  _id ObjectId [PK]
+  chatId ObjectId
+  senderId ObjectId
+  senderName String
+  receiverId ObjectId
+  receiverName String
+  message String
+  timestamp DateTime
+  isRead Boolean [default: false]
+}
+
+Table Notification {
+  _id ObjectId [PK]
+  userId ObjectId
+  title String
+  message String
+  time DateTime
+  isRead Boolean [default: false]
+  targetRole String [note: "buyer, owner, lawyer, admin"]
+  chatId ObjectId [note: "nullable"]
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table Document {
+  _id ObjectId [PK]
+  land ObjectId
+  owner ObjectId
+  status String [default: "pending", note: "pending, approved, rejected"]
+  documents Array [note: "Embedded document files"]
+  createdAt DateTime
+  updatedAt DateTime
+}
+
+Table DocumentFile {
+  type String [note: "Aadhaar, Pan, SaleDeed, LandRegistry, etc."]
+  file String [note: "filename/path"]
+  status String [default: "pending", note: "pending, approved, rejected"]
+  uploadedAt DateTime
+}
+
+// Relationships
+Ref: Land.owner > User._id
+Ref: Land.assignedLawyer > User._id 
+Ref: Land.approvedBy > User._id
+Ref: Chat.landId > Land._id
+Ref: Chat.ownerId > User._id
+Ref: Chat.buyerId > User._id
+Ref: Message.chatId > Chat._id
+Ref: Message.senderId > User._id
+Ref: Message.receiverId > User._id
+Ref: Notification.userId > User._id
+Ref: Notification.chatId > Chat._id
+Ref: Document.land > Land._id
+Ref: Document.owner > User._id
+
+// Notes
+Note FaceRecognition {
+  "User.faceDescriptor stores facial feature vectors for biometric authentication"
+}
+Note RoleAccess {
+  "User.role determines access levels: buyerSeller, lawyer, admin"
+}
+Note LandApproval {
+  "Land.status follows workflow: pending -> approved/rejected by admin"
+}
+Note ChatSystem {
+  "Chat connects land owners with buyers for specific properties"
+}
+Note DocumentManagement {
+  "Document.files stores multiple document types with individual approval status"
+}
+Note Notifications {
+  "Supports both user-specific and role-based notifications"
+}

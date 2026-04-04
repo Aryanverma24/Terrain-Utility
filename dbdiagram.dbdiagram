@@ -1,0 +1,255 @@
+{
+  "version": "1.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "detailLevel": "All",
+  "tablePositions": [
+    {
+      "name": "User",
+      "schemaName": "public",
+      "x": 0,
+      "y": 50
+    },
+    {
+      "name": "Land",
+      "schemaName": "public",
+      "x": 262.392578125,
+      "y": 50
+    },
+    {
+      "name": "Review",
+      "schemaName": "public",
+      "x": 553.48095703125,
+      "y": 50
+    },
+    {
+      "name": "Chat",
+      "schemaName": "public",
+      "x": 794.49267578125,
+      "y": 50
+    },
+    {
+      "name": "Message",
+      "schemaName": "public",
+      "x": 0,
+      "y": 612
+    },
+    {
+      "name": "Notification",
+      "schemaName": "public",
+      "x": 262.392578125,
+      "y": 836
+    },
+    {
+      "name": "Document",
+      "schemaName": "public",
+      "x": 553.48095703125,
+      "y": 356
+    },
+    {
+      "name": "DocumentFile",
+      "schemaName": "public",
+      "x": 794.49267578125,
+      "y": 452
+    }
+  ],
+  "tableGroupCollapseStates": [],
+  "stickyNoteLayouts": [],
+  "referencePaths": [
+    {
+      "firstFieldNames": [
+        "owner"
+      ],
+      "firstTableName": "Land",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "assignedLawyer"
+      ],
+      "firstTableName": "Land",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "approvedBy"
+      ],
+      "firstTableName": "Land",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "landId"
+      ],
+      "firstTableName": "Chat",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "Land",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "ownerId"
+      ],
+      "firstTableName": "Chat",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "buyerId"
+      ],
+      "firstTableName": "Chat",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "chatId"
+      ],
+      "firstTableName": "Message",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "Chat",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "senderId"
+      ],
+      "firstTableName": "Message",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "receiverId"
+      ],
+      "firstTableName": "Message",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "userId"
+      ],
+      "firstTableName": "Notification",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "chatId"
+      ],
+      "firstTableName": "Notification",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "Chat",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "land"
+      ],
+      "firstTableName": "Document",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "Land",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    },
+    {
+      "firstFieldNames": [
+        "owner"
+      ],
+      "firstTableName": "Document",
+      "firstSchemaName": "public",
+      "firstRelation": "*",
+      "secondFieldNames": [
+        "_id"
+      ],
+      "secondTableName": "User",
+      "secondSchemaName": "public",
+      "secondRelation": "1",
+      "checkPoints": []
+    }
+  ]
+}

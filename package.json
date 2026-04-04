@@ -1,5 +1,5 @@
 {
-  "name": "landutility",
+  "name": "bhu-parichiye",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -10,13 +10,13 @@
   },
   "author": "Ankur, Aryan  Simran",
   "license": "ISC",
-  "description": "",
+  "description": "Bhu-Parichiye - Land Management Platform",
   "dependencies": {
     "@tensorflow/tfjs": "^3.21.0",
     "axios": "^1.8.2",
     "bcryptjs": "^2.4.3",
     "chart.js": "^4.4.7",
-    "cloudinary": "^2.5.1",
+    "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -33,11 +33,12 @@
     "path": "^0.12.7",
     "react-chartjs-2": "^5.2.0",
     "react-webcam": "^7.2.0",
+    "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
+    "concurrently": "^9.2.1",
     "daisyui": "^5.0.40"
   },
   "overrides": {

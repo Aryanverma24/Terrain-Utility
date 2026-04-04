@@ -1,12 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHome, FaShopify, FaEnvelope, FaBars, FaTimes } from "react-icons/fa";
+import { FaHome, FaShopify, FaEnvelope, FaBars, FaTimes, FaUser, FaSignOutAlt, FaRegBell, FaInfoCircle } from "react-icons/fa";
 import { PiIslandBold } from "react-icons/pi";
 import { MdLandscape } from "react-icons/md";
 import { IoStorefrontOutline } from "react-icons/io5";
+import { HiMenuAlt3, HiX } from "react-icons/hi";
 import { API } from "../../utils/API";
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../contexts/authContext";
 import { toast } from "react-toastify";
 import NotificationPanel from "../component/NotificationPanel";
 const Navigation = () => {
@@ -71,10 +72,17 @@ useEffect(() => {
 
 
   const getIconColor = (path) => {
-    return location.pathname === path ? "text-[#C4A1A1]" : "text-[#C4A1A1]"; // Conditionally apply green or gray
+    return location.pathname === path ? "text-emerald-400" : "text-gray-300 hover:text-emerald-400";
+  };
+
+  const getLinkClass = (path) => {
+    const baseClass = "relative px-4 py-2 rounded-xl transition-all duration-300 flex items-center group";
+    const activeClass = location.pathname === path ? "bg-emerald-500/20 text-emerald-400" : "hover:bg-white/10 text-gray-300 hover:text-white";
+    return `${baseClass} ${activeClass}`;
   };
 
   return (
+
 
 
     <>
@@ -84,136 +92,220 @@ useEffect(() => {
         </>
       ) : (
       <>
-      <div className="nav-container fixed z-10 min-w-full flex bg-[#235347] justify-between">
-        <ul className="flex py-3 px-4 gap-[40px]">
-          <li className="flex mr-[2rem]">
-          <img
-               src="https://www.shutterstock.com/image-vector/abstract-farm-land-food-crop-260nw-1746992270.jpg"
-               alt="logo"
-               className="rounded-full h-[40px]"
-            />
-          <h2 className="texts font-semibold ml-2 mt-1 text-2xl text-[#C4A1A1]">LandStrider</h2>
-          </li>
-        </ul>
-      </div>
-        <div className="nav-container fixed z-10 min-w-full flex bg-slate-800 justify-between ">
-          <ul className="hidden md:flex py-3 px-4 gap-[40px]">
-          <li className="text-xl">  
-              <Link to="/" className="flex items-center py-2">
-              <FaHome className={`mr-3 icons ${getIconColor("/")}`} />
-              <span className={`texts ${getIconColor("/")}`}>Home</span>
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-gradient-to-r from-slate-900/90 via-emerald-900/90 to-slate-900/90 border-b border-white/10 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo Section */}
+            <div className="flex items-center space-x-2">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-cyan-600 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                <img
+                  src="https://www.shutterstock.com/image-vector/abstract-farm-land-food-crop-260nw-1746992270.jpg"
+                  alt="logo"
+                  className="relative rounded-full h-10 w-10 object-cover border-2 border-emerald-400/50"
+                />
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                  Bhu-Parichiye
+                </h1>
+                <span className="text-xs text-gray-400 tracking-wider">PREMIUM PROPERTIES</span>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-2">
+              <Link to="/" className={getLinkClass("/")}>
+                <FaHome className="mr-3 text-lg transition-transform group-hover:scale-110" />
+                <span className="font-medium">Home</span>
               </Link>
-          </li>
-          <li className="text-xl">  
-              <Link to="/lands" className="flex items-center py-2">
-              <MdLandscape className={`mr-3 icons ${getIconColor("/lands")}`} />
-              <span className={`texts ${getIconColor("/lands")}`}>Lands</span>
+              
+              <Link to="/lands" className={getLinkClass("/lands")}>
+                <MdLandscape className="mr-3 text-lg transition-transform group-hover:scale-110" />
+                <span className="font-medium">Lands</span>
               </Link>
-          </li>
-          <li className="text-xl">  
-              <Link to="/wishlist" className="flex items-center py-2">
-              <IoStorefrontOutline className={`mr-3 icons ${getIconColor("/wishlist")}`} />
-              <span className={`texts ${getIconColor("/wishlist")}`}>Wishlist</span>
+              
+              <Link to="/wishlist" className={getLinkClass("/wishlist")}>
+                <IoStorefrontOutline className="mr-3 text-lg transition-transform group-hover:scale-110" />
+                <span className="font-medium">Wishlist</span>
               </Link>
-          </li>
-          <li className="text-xl">  
-              <Link to="/MyLands" className="flex items-center py-2">
-              <PiIslandBold className={`mr-3 icons ${getIconColor("/MyLands")}`} />
-              <span className={`texts ${getIconColor("/MyLands")}`}>My Lands</span>
-              </Link></li>
-       <li className="flex items-center gap-6">
-
-  {/* ✅ INBOX BUTTON */}
-  <Link to="/inbox" className="relative flex items-center">
-    <FaEnvelope className="text-xl text-[#C4A1A1]" />
-
-    {/* 🔴 UNREAD BADGE */}
-    {unreadCount > 0 && (
-      <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 rounded-full">
-        {unreadCount}
-      </span>
-    )}
-  </Link>
-
-  {/* 🔔 EXISTING NOTIFICATION */}
-  {user && (
-    <NotificationPanel
-      currentUserId={user._id}
-      role={user.role}
-    />
-  )}
-
-</li>
-
-          </ul>
-          
+              
+              <Link to="/MyLands" className={getLinkClass("/MyLands")}>
+                <PiIslandBold className="mr-3 text-lg transition-transform group-hover:scale-110" />
+                <span className="font-medium">My Lands</span>
+              </Link>
+                            
+              <Link to="/about" className={getLinkClass("/about")}>
+                <FaInfoCircle className="mr-3 text-lg transition-transform group-hover:scale-110" />
+                <span className="font-medium">About Us</span>
+              </Link>
+            </div>
 
 
-          <ul className="text-white hidden md:flex gap-5 items-center justify-end mr-[2rem] text-xl">
-              {user?.username ? (
-                  <>
-                    <li>
-                    <Link to='/userProfile' className="font-semibold text-white hover:text-gold">
-                        Profile
-                    </Link>
-                    </li>
-                    <li>
-                    <button
-                      onClick={() => {
-                      logoutUser();
-                      }}
-                    className="font-semibold text-white hover:text-gold"
-                    >
-                      Logout {user?.username}
-                    </button>
-                  </li>
-                  </>
-              ) : (
-                  <>
-                      <li>
-                      <Link to='/login' className="font-semibold text-[#C4A1A1]">
-                      Login
-                      </Link>
-                      </li>
-                      <li>
-                      <Link to='/register' className="font-semibold text-[#C4A1A1]">
-                        Register
-                      </Link>
-                      </li>
-                  </>
+            {/* Right Section - Notifications & User */}
+            <div className="hidden lg:flex items-center space-x-4">
+              {/* Inbox */}
+              <Link to="/inbox" className="relative p-2 rounded-xl hover:bg-white/10 transition-all duration-300 group">
+                <FaEnvelope className="text-xl text-gray-300 group-hover:text-emerald-400 transition-colors" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+
+              {/* Notifications */}
+              {user && (
+                <div className="relative">
+                  <NotificationPanel
+                    currentUserId={user._id}
+                    role={user.role}
+                  />
+                </div>
               )}
-          </ul>
-          <div className="md:hidden text-white fixed top-5 right-5">
-            <button onClick={() => setMenubar(!menubar)}>
-              {menubar ? <FaTimes size={24} /> : <FaBars size={24} />}
-            </button>
-          </div>
- 
-          {menubar && (
-  <div className="absolute top-[70px] right-4 text-white bg-slate-900 p-4 rounded-lg shadow-lg w-60 z-50 flex flex-col gap-4 text-base md:hidden">
-    
-    <Link to="/" onClick={() => setMenubar(false)}>Home</Link>
-    <Link to="/lands" onClick={() => setMenubar(false)}>Lands</Link>
-    <Link to="/wishlist" onClick={() => setMenubar(false)}>Wishlist</Link>
-    <Link to="/MyLands" onClick={() => setMenubar(false)}>My Lands</Link>
 
-    {user?.username ? (
-      <>
-        <Link to="/userProfile" onClick={() => setMenubar(false)}>Profile</Link>
-        <button onClick={() => { logoutUser(); setMenubar(false); }}>
-          Logout {user?.username}
-        </button>
-      </>
-    ) : (
-      <>
-        <Link to="/login" onClick={() => setMenubar(false)}>Login</Link>
-        <Link to="/register" onClick={() => setMenubar(false)}>Register</Link>
-      </>
-    )}
-    
-  </div>
-)}
-    </div>
+              {/* User Actions */}
+              {user?.username ? (
+                <div className="flex items-center space-x-3 pl-4 border-l border-white/20">
+                  <Link 
+                    to="/userProfile" 
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 transition-all duration-300 group"
+                  >
+                    <FaUser className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-emerald-400">Profile</span>
+                  </Link>
+                  
+                  <button
+                    onClick={logoutUser}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500/20 to-pink-500/20 hover:from-red-500/30 hover:to-pink-500/30 transition-all duration-300 group"
+                  >
+                    <FaSignOutAlt className="text-red-400 group-hover:scale-110 transition-transform" />
+                    <span className="font-medium text-red-400">Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link 
+                    to="/login" 
+                    className="px-6 py-2 rounded-xl border border-emerald-400/50 text-emerald-400 hover:bg-emerald-400/10 transition-all duration-300 font-medium"
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 font-medium shadow-lg hover:shadow-emerald-500/25"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setMenubar(!menubar)}
+                className="p-2 rounded-xl text-white hover:bg-white/10 transition-all duration-300"
+              >
+                {menubar ? <HiX size={24} /> : <HiMenuAlt3 size={24} />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {menubar && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+            <div className="px-4 py-6 space-y-2">
+              <Link 
+                to="/" 
+                onClick={() => setMenubar(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
+              >
+                <FaHome className="text-lg" />
+                <span className="font-medium">Home</span>
+              </Link>
+              
+              <Link 
+                to="/lands" 
+                onClick={() => setMenubar(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
+              >
+                <MdLandscape className="text-lg" />
+                <span className="font-medium">Lands</span>
+              </Link>
+              
+              <Link 
+                to="/about" 
+                onClick={() => setMenubar(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
+              >
+                <FaInfoCircle className="text-lg" />
+                <span className="font-medium">About Us</span>
+              </Link>
+              
+              <Link 
+                to="/wishlist" 
+                onClick={() => setMenubar(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
+              >
+                <IoStorefrontOutline className="text-lg" />
+                <span className="font-medium">Wishlist</span>
+              </Link>
+              
+              <Link 
+                to="/mylands" 
+                onClick={() => setMenubar(false)}
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-300 text-gray-300 hover:text-white"
+              >
+                <PiIslandBold className="text-lg" />
+                <span className="font-medium">My Lands</span>
+              </Link>
+
+              <div className="border-t border-white/10 pt-4 mt-4">
+                {user?.username ? (
+                  <div className="space-y-2">
+                    <Link 
+                      to="/userProfile" 
+                      onClick={() => setMenubar(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 font-medium"
+                    >
+                      <FaUser className="text-lg" />
+                      <span>Profile</span>
+                    </Link>
+                    
+                    <button
+                      onClick={() => { logoutUser(); setMenubar(false); }}
+                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium"
+                    >
+                      <FaSignOutAlt className="text-lg" />
+                      <span>Logout {user?.username}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Link 
+                      to="/login" 
+                      onClick={() => setMenubar(false)}
+                      className="block w-full px-4 py-3 rounded-xl border border-emerald-400/50 text-emerald-400 text-center font-medium"
+                    >
+                      Login
+                    </Link>
+                    
+                    <Link 
+                      to="/register" 
+                      onClick={() => setMenubar(false)}
+                      className="block w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-center font-medium"
+                    >
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
       </>
     ) }  
     </>

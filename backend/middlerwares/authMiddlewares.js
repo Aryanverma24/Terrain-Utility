@@ -6,7 +6,6 @@ const authenticate = asyncHandler(async(req,res,next)=>{
    
     //  const token = req.cookies.jwt;
     const userToken = req.headers.authorization;
-    console.log(userToken);
     
     if(!userToken){
         res.status(401)
@@ -18,7 +17,6 @@ const authenticate = asyncHandler(async(req,res,next)=>{
         try {
             const decoded =  jwt.verify(token,process.env.JWT_SECRET)
             req.user = await User.findById(decoded.userId).select("-password");
-            console.log(req.user)
             next();
         } catch (error) {
             res.status(401).json({ message: "Not Authorized. token failed" })
@@ -28,8 +26,7 @@ const authenticate = asyncHandler(async(req,res,next)=>{
         res.status(401)
         throw new Error("Not Authorized. no token")
     }
-}
-)
+})
 
 const authorizeAdmin = asyncHandler ( async (req,res,next)=>{
     
