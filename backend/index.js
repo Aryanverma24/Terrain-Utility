@@ -30,6 +30,7 @@ import http from 'http';
 import Message from "./modals/messageModel.js";
 
 import dotenv from "dotenv";
+import { configureCloudinary } from "./config/cloudinary.js";
 dotenv.config();
 
 // Get __dirname for ES Module compatibility
@@ -66,45 +67,19 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Connect to MongoDB using the custom dbConnect
 dbConnect();
-<<<<<<< HEAD
-
-let rooms = {}; // In-memory store (optional)
-=======
 configureCloudinary();
 
 let onlineUsers = [];
 
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
   // -----------------------
-<<<<<<< HEAD
-  // JOIN ROOM
-=======
   // JOIN CHAT ROOM
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
   // -----------------------
   socket.on("joinRoom", async ({ room }) => {
     try {
       if (!room) return;
-<<<<<<< HEAD
-      socket.join(room);
-      console.log(`Socket ${socket.id} joined room ${room}`);
-
-      // Send last 100 messages
-      const history = await Message.find({ room })
-        .sort({ timestamp: 1 })
-        .limit(100)
-        .lean();
-
-      socket.emit("messageHistory", history);
-    } catch (err) {
-      console.error("joinRoom error:", err);
-    }
-  });
-
-=======
 
       socket.join(room);
 
@@ -118,7 +93,6 @@ io.on("connection", (socket) => {
     }
   });
 
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
   // -----------------------
   // SEND MESSAGE
   // -----------------------
@@ -134,34 +108,6 @@ io.on("connection", (socket) => {
         message: text
       } = data;
 
-<<<<<<< HEAD
-      if (!room || !senderId || !receiverId || !text) {
-        console.warn("sendMessage missing fields:", data);
-        return;
-      }
-
-      if (String(senderId) === String(receiverId)) {
-        console.warn("sendMessage blocked: sender === receiver");
-        return;
-      }
-
-      const msg = await Message.create({
-        room,
-        landId: landId ? new mongoose.Types.ObjectId(landId) : undefined,
-        senderId: new mongoose.Types.ObjectId(senderId),
-        senderName,
-        receiverId: new mongoose.Types.ObjectId(receiverId),
-        receiverName,
-        message: text,
-        timestamp: new Date(),
-      });
-
-      const converted = msg.toObject();
-
-      // Broadcast to users in room
-      io.to(room).emit("message", converted);
-
-=======
       if (!chatId) return;
 
       const msg = await Message.create({
@@ -181,7 +127,6 @@ io.on("connection", (socket) => {
       });
 
       io.to(chatId).emit("message", msg);
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
     } catch (err) {
       console.error("socket sendMessage error:", err);
     }
@@ -192,14 +137,6 @@ io.on("connection", (socket) => {
   // -----------------------
   socket.on("typing", ({ room, senderName }) => {
     socket.to(room).emit("typing", { senderName });
-<<<<<<< HEAD
-  });
-
-
-  // JOIN notification personal room
-  socket.on("join", (userId) => {
-    console.log(`📥 User joined NOTIFICATION room: ${userId}`);
-=======
   });
 
   socket.on("stopTyping", ({ room }) => {
@@ -239,7 +176,6 @@ io.on("connection", (socket) => {
   // NOTIFICATIONS
   // -----------------------
   socket.on("join-notification", (userId) => {
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
     socket.join(userId);
   });
 
@@ -304,15 +240,12 @@ app.use("/api/wishlist",wishlistRoutes)
 app.use('/api/messages', chatRoutes); 
 app.use("/api/chat", chatRoutes); // Chat routes integration
 app.use("/api/lawyer",lawyerRoutes);
-<<<<<<< HEAD
 app.use("/api/payment", paymentRoutes);
 
-=======
 app.use((req, res, next) => {
   console.log("🌍 Incoming:", req.method, req.url);
   next();
 });
->>>>>>> 83fe90cc30b0042290ec157977409c16d9df73a4
 //add user face data
 app.post('/api/add-face', async (req, res) => {
   const { email, faceDescriptor } = req.body;

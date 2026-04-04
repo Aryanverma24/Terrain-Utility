@@ -3,6 +3,8 @@ import Transaction from "../modals/TransactionModal.js";
 import Land from '../modals/LandModal.js'
 import Payment from "../modals/PaymentModal.js";
 import User from "../modals/UserModal.js";
+import dotenv from "dotenv"
+dotenv.config()
 
 
 const secretKey = process.env.STRIPE_SECRET_KEY
