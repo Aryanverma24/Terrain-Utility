@@ -1,6 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config({ path: "./.env" });
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import multer from "multer";
@@ -11,9 +9,7 @@ import bodyParser from "body-parser";
 
 import jwt from "jsonwebtoken";
 // Import utilities and routes
-import dbConnect from "./config/db.js"; 
-import { configureCloudinary } from "./config/cloudinary.js";
-
+import dbConnect from "./config/db.js";  // Custom DB connection
 import userRoutes from "./routes/userRoutes.js";
 import landRoutes from "./routes/landRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js"
@@ -22,23 +18,27 @@ import lawyerRoutes from "./routes/LawyerRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import upload from "./utils/multerConfig.js";
 import notificationRoutes from "./routes/NotificationRoutes.js";
+import paymentRoutes from './routes/PaymentRoutes.js'
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
-import Chat from "./modals/chatmodel.js";
-import Message from "./modals/messageModel.js";
+
 import { Server } from 'socket.io';
 import http from 'http';
+import Message from "./modals/messageModel.js";
 
+import dotenv from "dotenv";
+import { configureCloudinary } from "./config/cloudinary.js";
+dotenv.config();
 
 // Get __dirname for ES Module compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize app
-
+dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 const server = http.createServer(app);
@@ -49,7 +49,6 @@ const io = new Server(server, {
     credentials: true
   }
 });
-app.set("io", io);
 
 // CORS options
 const corsOption = {
@@ -100,12 +99,13 @@ io.on("connection", (socket) => {
   socket.on("sendMessage", async (data) => {
     try {
       const {
-        chatId,
+        room,
+        landId,
         senderId,
         senderName,
         receiverId,
         receiverName,
-        message,
+        message: text
       } = data;
 
       if (!chatId) return;
@@ -240,6 +240,8 @@ app.use("/api/wishlist",wishlistRoutes)
 app.use('/api/messages', chatRoutes); 
 app.use("/api/chat", chatRoutes); // Chat routes integration
 app.use("/api/lawyer",lawyerRoutes);
+app.use("/api/payment", paymentRoutes);
+
 app.use((req, res, next) => {
   console.log("🌍 Incoming:", req.method, req.url);
   next();

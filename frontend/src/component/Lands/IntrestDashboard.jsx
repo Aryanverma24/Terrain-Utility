@@ -4,6 +4,8 @@ import { API } from "../../../utils/API";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import PaymentModal from "../Payment/PaymentModal";
+
 const InterestDashboard = () => {
   const { landId } = useParams();
 
@@ -22,6 +24,12 @@ const [hasLegalChat, setHasLegalChat] = useState(false);
 const [showGeoDialog, setShowGeoDialog] = useState(false);
 const [existingChatId, setExistingChatId] = useState(null);
 const navigate = useNavigate();
+
+
+//payment
+const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+
 //to check whether the leagl chats exists to sethasleagl chat and change button veiw to leagla process started
 const checkLegalChatExists = async () => {
   try {
@@ -74,7 +82,8 @@ const handleStartLegal = async () => {
 
     toast.success("Legal process started");
 
-    navigate(`/inbox?chatId=${res.data._id}`);
+    //  Redirect to buyer-lawyer legal chat
+    navigate(`/chat/${res.data.buyerLawyerChat}`);
 
   } catch (err) {
     console.error(err);
@@ -286,6 +295,7 @@ useEffect(() => {
   // =========================
   const lastHash =
     ownershipHistory[ownershipHistory.length - 1]?.currentHash;
+
 return (
   <div className="min-h-screen pt-24 pb-10 px-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7]">
 
@@ -464,7 +474,7 @@ return (
           </button>
         )}
 
-        {hasConsultation && !hasLegalChat && (
+        {hasConsultation && !hasLegalChat && (git add .
           <button
             onClick={handleStartLegal}
             className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
@@ -654,6 +664,64 @@ return (
         </div>
       </div>
     )}
+
+
+
+    {/* ========================= */}
+{/* 💳 PAYMENT SECTION */}
+{/* ========================= */}
+<div className="bg-white/90 backdrop-blur-md max-w-5xl mx-auto border border-gray-200 rounded-2xl shadow-md p-6 space-y-4 mt-6">
+
+  <h3 className="text-lg font-semibold  text-gray-800 border-b pb-2">
+    💳 Payment
+  </h3>
+
+  {/* STATUS */}
+  <div className="flex justify-between items-center">
+    <span className="text-gray-600 text-sm">Payment Status:</span>
+
+    <span
+      className={`px-3 py-1 text-xs rounded-full font-semibold ${
+        land.paymentStatus === "completed"
+          ? "bg-green-100 text-green-700"
+          : land.isLocked
+          ? "bg-blue-100 text-blue-700"
+          : "bg-yellow-100 text-yellow-700"
+      }`}
+    >
+      {land.paymentStatus === "completed"
+        ? "Paid"
+        : land.isLocked
+        ? "Processing"
+        : "Not Paid"}
+    </span>
+  </div>
+
+  {/* BUTTON */}
+  <button
+    onClick={() => setShowPaymentModal(true)}
+    disabled={
+      land.paymentStatus === "completed" ||
+      land.isLocked ||
+      currentUserId === land.owner?._id
+    }
+    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+  >
+    {land.paymentStatus === "completed"
+      ? "Already Purchased"
+      : land.isLocked
+      ? "Payment in Progress"
+      : "Pay & Buy Land"}
+  </button>
+
+</div>
+
+<PaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  land={land}
+/>
+
   </div>
 );
 };

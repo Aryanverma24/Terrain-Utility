@@ -27,7 +27,7 @@ const ReviewSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const LandSchema = new mongoose.Schema(
@@ -44,7 +44,7 @@ const LandSchema = new mongoose.Schema(
     state: { type: String, required: true },
     pincode: { type: Number, required: true },
 
-    // 🔥 CURRENT OWNER
+    //  CURRENT OWNER
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ownerName: { type: String, required: true },
 
@@ -62,19 +62,18 @@ const LandSchema = new mongoose.Schema(
     },
 
     rejectionReason: { type: String },
-    
-location: {
-  type: {
-    type: String,
-    enum: ["Point"],
-    default: "Point",
-  },
-  coordinates: {
-    type: [Number], // [lng, lat]
-    default: undefined,
-  },
-  
-},
+
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+        default: undefined,
+      },
+    },
     dimensions: {
       length: { type: Number, required: true },
       breadth: { type: Number, required: true },
@@ -84,42 +83,42 @@ location: {
 
     reviews: [ReviewSchema],
     averageRating: { type: Number, default: 0 },
-// =========================
-// GEO VERIFICATION
-// =========================
-geoVerification: {
-  lawyerCoordinates: {
-    type: [Number], // [lng, lat]
-    default: null,
-  },
+    // =========================
+    // GEO VERIFICATION
+    // =========================
+    geoVerification: {
+      lawyerCoordinates: {
+        type: [Number], // [lng, lat]
+        default: null,
+      },
 
-  status: {
-    type: String,
-    enum: ["pending", "matched", "mismatched"],
-    default: "pending",
-  },
+      status: {
+        type: String,
+        enum: ["pending", "matched", "mismatched"],
+        default: "pending",
+      },
 
-  verifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
 
-  verifiedAt: {
-    type: Date,
-    default: null,
-  },
+      verifiedAt: {
+        type: Date,
+        default: null,
+      },
 
-  distance: {
-    type: Number, // distance in KM
-    default: null,
-  },
+      distance: {
+        type: Number, // distance in KM
+        default: null,
+      },
 
-  note: {
-    type: String,
-    default: "",
-  },
-},
+      note: {
+        type: String,
+        default: "",
+      },
+    },
     // =========================
     //  UPDATED INTEREST SYSTEM
     // =========================
@@ -175,12 +174,29 @@ geoVerification: {
       default: 0,
     },
 
+    paymentStatus: {
+      type: String,
+      enum: ["not_started", "partial", "completed"],
+      default: "not_started",
+    },
+
+    currentTransaction: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Transaction",
+      default: null,
+    },
+
+    isLocked: {
+      type: Boolean,
+      default: false, // prevents multiple buyers paying at same time
+    },
+
     lastTransferDate: {
       type: Date,
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 //  PERFORMANCE INDEXES

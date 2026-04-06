@@ -34,6 +34,7 @@ import About from './component/AboutUs/About.jsx';
 import OwnerDocuments from './component/Lands/ownerDocuments.jsx';
 import LawyerDocuments from './component/lawyer/lawyerDocuments.jsx';
 import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
+import CongratulationsPage from './component/Payment/CongratulationsPage.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
@@ -107,6 +108,8 @@ const router = createBrowserRouter(
 <Route path="/owner-inbox" element={<OwnerInbox />} />
      {/* interset dadshboard Route */}
  <Route path="/interest-dashboard/:landId" element={<InterestDashboard />} />   
+ {/* Congratulations Page */}
+ <Route path="/congratulations" element={<CongratulationsPage />} />   
     </Route>
     
   )
