@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
+import MapPicker from "../GeoComponents/mapPicker";
+import { stateCoordinates } from "../../../../backend/utils/stateCoordinates";
+import { locationData } from "../../data/indiancities";
+import StateCitySelector from "../GeoComponents/stateCitySelector";
 import { 
   FaSpinner, 
   FaUpload, 
@@ -28,8 +32,8 @@ import {
 function CreateLand() {
   const [currentStep, setCurrentStep] = useState(1);
   const [landtype, setLandtype] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
+const [state,setState]=useState("");
+const [city,setCity]=useState("");
   const [pincode, setPincode] = useState("");
   const [image, setImage] = useState(null);
   const [owner, setOwner] = useState(null);
@@ -51,10 +55,12 @@ function CreateLand() {
     Bills: [],
     LandPhotos: [],
   });
-
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100%
-
+  //geo based states 
+const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
+const [coordinates, setCoordinates] = useState(null);
+  const navigate = useNavigate();
   // Form validation for each step
   const validateStep = (step) => {
     switch(step) {
@@ -81,57 +87,12 @@ function CreateLand() {
     setCurrentStep(currentStep - 1);
   };
   
-  //geo based states 
-  const [selectedState, setSelectedState] = useState("");
-const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
-const [coordinates, setCoordinates] = useState(null);
-  const navigate = useNavigate();
-//function to handle the cooridinate based on selected state
-  const handleStateChange = (e) => {
-  const state = e.target.value;
-  setSelectedState(state);
 
-  // Form validation for each step
-  const validateStep = (step) => {
-    switch(step) {
-      case 1:
-        return landtype && city && state && pincode && price && length && breadth;
-      case 2:
-        return image;
-      case 3:
-        return true; // Documents are optional for validation
-      default:
-        return false;
-    }
-  };
 
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      toast.error("Please fill in all required fields");
-    }
-  };
-
-  const prevStep = () => {
-    setCurrentStep(currentStep - 1);
-  };
   
-  //geo based states 
-  const [selectedState, setSelectedState] = useState("");
-const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
-const [coordinates, setCoordinates] = useState(null);
-  const navigate = useNavigate();
+ 
 //function to handle the cooridinate based on selected state
-  const handleStateChange = (e) => {
-  const state = e.target.value;
-  setSelectedState(state);
 
-  const coords =
-    stateCoordinates[state] || { lat: 20.5937, lng: 78.9629 };
-
-  setMapCenter(coords);
-};
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -344,25 +305,7 @@ if (!coordinates) {
               </div>
             </div>
           </div>
-          {/* ---------------- MAP PICKER ---------------- */}
-{selectedState && (
-  <div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border">
-    <h3 className="text-xl font-semibold mb-4 text-gray-800">
-      Select Land Location on Map
-    </h3>
-
-    <MapPicker
-      center={mapCenter}
-      setCoordinates={setCoordinates}
-    />
-
-    {coordinates && (
-      <p className="mt-3 text-sm text-gray-600">
-        Selected: Lat {coordinates.lat}, Lng {coordinates.lng}
-      </p>
-    )}
-  </div>
-)}
+       
 
           {/* Enhanced Progress Section */}
           <div className="max-w-5xl mx-auto px-8 mb-12">
@@ -418,40 +361,24 @@ if (!coordinates) {
 
                 {/* Location Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-center mb-4">
-                      <FaCity className="w-5 h-5 text-emerald-400 mr-3" />
-                      <h3 className="text-lg font-bold text-white">City</h3>
-                    </div>
-                    <input 
-                      type="text" 
-                      placeholder="Enter city name" 
-                      value={city} 
-                      onChange={(e) => setCity(e.target.value)} 
-                      className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg"
-                    />
-                  </div>
-                  
-                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                    <div className="flex items-center mb-4">
-                      <FaMapMarkerAlt className="w-5 h-5 text-emerald-400 mr-3" />
-                      <h3 className="text-lg font-bold text-white">State</h3>
-                    </div>
-                    <select 
-                      value={state} 
-                      onChange={(e) => setState(e.target.value)} 
-                      className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg"
-                    >
-                      <option value="" disabled className="bg-slate-800">Select State</option>
-                      {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana","Himachal Pradesh",
-                        "Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland",
-                        "Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand",
-                        "West Bengal","Delhi","Jammu and Kashmir","Ladakh","Puducherry","Andaman and Nicobar Islands","Chandigarh",
-                        "Dadra and Nagar Haveli and Daman and Diu","Lakshadweep"].map((st) => (
-                          <option key={st} value={st} className="bg-slate-800">{st}</option>
-                        ))}
-                    </select>
-                  </div>
+           <StateCitySelector
+    onChange={({ state, city }) => {
+      setState(state);
+      setCity(city);
+
+      // Find city coordinates from locationData
+      const cityObj = locationData.find(
+        (c) => c.State === state && c.Location === city
+      );
+
+      if (cityObj?.Latitude && cityObj?.Longitude) {
+        setMapCenter({ lat: cityObj.Latitude, lng: cityObj.Longitude });
+      } else if (state) {
+        // fallback: rough center of India
+        setMapCenter({ lat: 20.5937, lng: 78.9629 });
+      }
+    }}
+  />
                 </div>
 
                 {/* Property Details Section */}
@@ -522,7 +449,21 @@ if (!coordinates) {
                     className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg resize-none"
                   />
                 </div>
+                   {/* ---------------- MAP PICKER ---------------- */}
+<div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border">
+  <h3 className="text-xl font-semibold mb-4 text-gray-800">
+    Select Land Location on Map
+  </h3>
+
+   <MapPicker center={mapCenter} setCoordinates={setCoordinates} />
+  {coordinates && (
+    <p>
+      Selected: Lat {coordinates.lat}, Lng {coordinates.lng}
+    </p>
+  )}
+</div>
               </div>
+              
 
               {/* Professional Navigation */}
               <div className="flex justify-between items-center mt-12 pt-8 border-t border-white/10">
@@ -829,6 +770,6 @@ if (!coordinates) {
       )}
     </div>
   );
-}}
+}
 
 export default CreateLand;

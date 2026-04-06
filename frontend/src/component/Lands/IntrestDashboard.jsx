@@ -53,7 +53,6 @@ const handleStartLegal = async () => {
   try {
     const token = localStorage.getItem("token");
 
-    
     const check = await API.get(`/api/chat/exists/${landId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -62,12 +61,20 @@ const handleStartLegal = async () => {
 
     console.log("LEGAL CHECK:", check.data);
 
+    // ✅ If already exists → use check response
     if (check.data.exists) {
-      navigate(`/inbox?chatId=${check.data.chatId}`);
+      const chatId = check.data.chatId;
+
+      if (!chatId) {
+        console.error("❌ Existing chatId missing:", check.data);
+        return;
+      }
+
+      navigate(`/inbox?chatId=${chatId}`);
       return;
     }
 
-   
+    // ✅ Create new legal chat
     const res = await API.post(
       "/api/chat/start-legal",
       { landId },
@@ -80,10 +87,17 @@ const handleStartLegal = async () => {
 
     console.log("LEGAL CHAT CREATED:", res.data);
 
+    const chatId = res.data.buyerLawyerChat;
+
+    if (!chatId) {
+      console.error("❌ ChatId missing from backend:", res.data);
+      toast.error("Chat creation failed");
+      return;
+    }
+
     toast.success("Legal process started");
 
-    //  Redirect to buyer-lawyer legal chat
-    navigate(`/chat/${res.data.buyerLawyerChat}`);
+    navigate(`/inbox?chatId=${chatId}`);
 
   } catch (err) {
     console.error(err);
@@ -115,7 +129,7 @@ const startLawyerChat = async (landId, lawyerId = null) => {
   try {
     const token = localStorage.getItem("token");
 
-    // STEP 1: Check if consultation already exists
+    // STEP 1: Check existing
     const check = await API.get(`/api/chat/consultation-exists/${landId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -124,13 +138,19 @@ const startLawyerChat = async (landId, lawyerId = null) => {
 
     console.log("CONSULTATION CHECK:", check.data);
 
-    // If exists → go directly
     if (check.data.exists) {
-    navigate(`/inbox?chatId=${check.data.chatId}`);
+      const chatId = check.data.chatId;
+
+      if (!chatId) {
+        console.error("❌ Existing consultation chatId missing:", check.data);
+        return;
+      }
+
+      navigate(`/inbox?chatId=${chatId}`);
       return;
     }
 
-    // STEP 2: Create chat
+    // STEP 2: Create new chat
     const res = await API.post(
       "/api/chat/lawyer",
       { landId, lawyerId },
@@ -141,9 +161,23 @@ const startLawyerChat = async (landId, lawyerId = null) => {
       }
     );
 
-    // console.log("CHAT CREATED:", res.data);
+    console.log("CHAT CREATED:", res.data);
 
-    navigate(`/inbox?chatId=${check.data.chatId}`);
+    const chatId =
+  res.data?.chatId ||
+  res.data?._id;
+
+if (!chatId) {
+  console.error("❌ ChatId missing after creation:", res.data);
+  return;
+}
+
+    if (!chatId) {
+      console.error("❌ ChatId missing after creation:", res.data);
+      return;
+    }
+
+    navigate(`/inbox?chatId=${chatId}`);
 
     setHasConsultation(true);
 
@@ -152,14 +186,12 @@ const startLawyerChat = async (landId, lawyerId = null) => {
     }, 500);
 
   } catch (err) {
-    // HANDLE LAWYER REQUIRED
     if (
       err.response?.data?.message ===
       "Please select a lawyer to start consultation"
     ) {
       console.log("No lawyer selected → opening modal");
-
-      fetchLawyers(landId); // open modal
+      fetchLawyers(landId);
     } else {
       console.error("FULL ERROR:", err.response || err);
       toast.error("Failed to start lawyer chat");
@@ -190,39 +222,48 @@ const fetchLawyers = async (landId) => {
 };
 //for rendering 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+  const fetchData = async () => {
+  setLoading(true);
+  const token = localStorage.getItem("token");
 
-      const token = localStorage.getItem("token");
+  try {
+    let userPromise = null;
 
-      try {
-        // 🔹 Get logged in user
-        if (token) {
-          const userRes = await axios.get("/api/users/profile", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setCurrentUserId(userRes.data.id || userRes.data._id);
-          console.log( "user results here " ,userRes.data);
-          console.log(currentUserId);
-        }
+    if (token) {
+      userPromise = API.get("/api/users/profile");
+    }
 
-        // 🔹 Dashboard API
-        const res = await API.get(`/api/lands/dashboard/${landId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+    const landPromise = API.get(`/api/lands/dashboard/${landId}`);
 
-        setLand(res.data.land);
-        console.log("Land Coordinates:", res.data.land.coordinates);
-        setOwnershipHistory(res.data.ownershipHistory || []);
-        setCurrentOwner(res.data.currentOwner);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to load dashboard");
-      } finally {
-        setLoading(false);
-      }
-    };
+    const [userRes, landRes] = await Promise.all([
+      userPromise,
+      landPromise,
+    ]);
 
+    // ✅ USER
+    if (userRes) {
+      const userData =
+        userRes.data?.data ||
+        userRes.data?.user ||
+        userRes.data;
+
+      const userId = userData?._id || userData?.id;
+
+      setCurrentUserId(userId);
+    }
+
+    // ✅ LAND
+    setLand(landRes.data.land);
+    setOwnershipHistory(landRes.data.ownershipHistory || []);
+    setCurrentOwner(landRes.data.currentOwner);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to load dashboard");
+  } finally {
+    setLoading(false);
+  }
+};
     if (landId) {
   fetchData();
   
@@ -474,7 +515,7 @@ return (
           </button>
         )}
 
-        {hasConsultation && !hasLegalChat && (git add .
+        {hasConsultation && !hasLegalChat && (
           <button
             onClick={handleStartLegal}
             className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
@@ -670,11 +711,21 @@ return (
     {/* ========================= */}
 {/* 💳 PAYMENT SECTION */}
 {/* ========================= */}
+{/* 💳 PAYMENT SECTION */}
 <div className="bg-white/90 backdrop-blur-md max-w-5xl mx-auto border border-gray-200 rounded-2xl shadow-md p-6 space-y-4 mt-6">
 
-  <h3 className="text-lg font-semibold  text-gray-800 border-b pb-2">
+  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
     💳 Payment
   </h3>
+
+  {/* 🔍 DEBUG LOG */}
+  {console.log("PAYMENT DEBUG =>", {
+    paymentStatus: land.paymentStatus,
+    isLocked: land.isLocked,
+    currentUserId,
+    ownerId: land.owner,
+    isOwner: currentUserId === land.owner
+  })}
 
   {/* STATUS */}
   <div className="flex justify-between items-center">
@@ -699,11 +750,21 @@ return (
 
   {/* BUTTON */}
   <button
-    onClick={() => setShowPaymentModal(true)}
+    onClick={() => {
+      console.log("BUTTON CLICKED", {
+        disabledReason: {
+          isCompleted: land.paymentStatus === "completed",
+          isLocked: land.isLocked,
+          isOwner: currentUserId === land.owner
+        }
+      });
+
+      setShowPaymentModal(true);
+    }}
     disabled={
       land.paymentStatus === "completed" ||
       land.isLocked ||
-      currentUserId === land.owner?._id
+      currentUserId === land.owner
     }
     className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
   >
@@ -718,7 +779,10 @@ return (
 
 <PaymentModal
   isOpen={showPaymentModal}
-  onClose={() => setShowPaymentModal(false)}
+  onClose={() => {
+    console.log("MODAL CLOSED");
+    setShowPaymentModal(false);
+  }}
   land={land}
 />
 
