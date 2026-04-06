@@ -358,10 +358,13 @@ if (!coordinates) {
                     <option value="agricultural" className="bg-slate-800">🌳 Agricultural</option>
                   </select>
                 </div>
+{/* Location Section */}
+<div className="bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/20">
+  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+    <span>📍</span> Select State & City
+  </h3>
 
-                {/* Location Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           <StateCitySelector
+  <StateCitySelector
     onChange={({ state, city }) => {
       setState(state);
       setCity(city);
@@ -379,7 +382,7 @@ if (!coordinates) {
       }
     }}
   />
-                </div>
+</div>
 
                 {/* Property Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
