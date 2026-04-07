@@ -25,21 +25,26 @@ import OwnershipHistory from "../modals/ownershipHistroyModal.js";
 // CREATE LAND (Pending lawyer approval)
 // ----------------------------------------------
 const createLand = asyncHandler(async (req, res) => {
- 
-
-  const { landtype, city, state, pincode, price, length, breadth, description } = req.body;
+  
+  const { landtype, city, state, pincode, price, length, breadth, description, latitude, longitude } = req.body;
   const { id, username } = req.user;
-const { latitude, longitude } = req.body;
+
+  // Validation
   if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
+    console.log("❌ Validation failed:", {
+      landtype, city, state, pincode, price, length, breadth, description,
+      fileExists: !!req.file
+    });
     return res.status(400).send("All fields are required, including image!");
   }
 
   const dimensionsString = `${length}*${breadth}`;
+  const localPath = req.file.path;
+
+  
 
   try {
-    const localPath = req.file.path;
-
-    // ✅ CREATE LAND FIRST
+    //  CREATE LAND
     const land = new Land({
       landtype,
       city,
@@ -58,101 +63,113 @@ const { latitude, longitude } = req.body;
       status: "pending",
       approvedBy: null,
       location: {
-  type: "Point",
-  coordinates: [parseFloat(longitude), parseFloat(latitude)],
-},
+        type: "Point",
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+      },
     });
 
     await land.save();
-// ==============================
-// 🔐 CREATE GENESIS OWNERSHIP BLOCK
-// ==============================
+    
 
-const genesisData = {
-  landId: land._id.toString(),
-  owner: id.toString(),
-  time: Date.now(),
-};
+    const landId = land._id;
 
-const currentHash = generateHash(genesisData);
+    // ==============================
+    //  GENESIS BLOCK
+    // ==============================
+    const genesisData = {
+      landId: land._id.toString(),
+      owner: id.toString(),
+      time: Date.now(),
+    };
 
-const ownershipRecord = await OwnershipHistory.create({
-  landId: land._id,
+    const currentHash = generateHash(genesisData);
 
-  fromOwner: id,
-  fromOwnerName: username,
+    const ownershipRecord = await OwnershipHistory.create({
+      landId: land._id,
+      fromOwner: id,
+      fromOwnerName: username,
+      toOwner: id,
+      toOwnerName: username,
+      transferType: "sale",
+      price,
+      previousHash: "0",
+      currentHash,
+      blockNumber: 0,
+      verified: true,
+    });
 
-  toOwner: id,
-  toOwnerName: username,
+    land.ownershipHistory.push(ownershipRecord._id);
+    land.ownershipCount = 1;
+    land.lastTransferDate = ownershipRecord.dateOfTransfer;
+    await land.save();
 
-  transferType: "sale",
-  price: price,
-
-  previousHash: "0", // genesis
-  currentHash,
-  blockNumber: 0,
-
-  verified: true,
-});
-
-// 🔗 LINK TO LAND
-land.ownershipHistory.push(ownershipRecord._id);
-land.ownershipCount = 1;
-land.lastTransferDate = ownershipRecord.dateOfTransfer;
-
-await land.save();
-    const landId = land._id; // 🔥 NOW USED
-
+    // ==============================
+    // CLOUDINARY UPLOAD
+    // ==============================
     let cloudUrl = null;
 
     try {
-      const compressedPath = await compressImage(localPath);
+     
 
-      // 🔥 ONLY CHANGE HERE
+      const compressedPath = await compressImage(localPath);
+     
       const uploadedUrl = await uploadToCloudinary(
         compressedPath,
         `lands/${id}/${landId}`
       );
 
+     
       if (uploadedUrl) {
         cloudUrl = uploadedUrl.replace("/upload/", "/upload/f_auto,q_auto/");
+       
+      } else {
+        console.log("⚠️ Upload returned null");
       }
 
+      // Cleanup compressed file
       if (compressedPath && fs.existsSync(compressedPath)) {
         fs.unlinkSync(compressedPath);
+      
       }
 
-      // ✅ UPDATE LAND (no logic removed)
+      // 💾 Save cloud URL
       land.image.cloudinary = cloudUrl;
       await land.save();
+     
 
     } catch (cloudErr) {
-      console.log("Cloudinary process failed, using local image:", cloudErr.message);
+      console.log("❌ Cloudinary upload failed:");
+      console.log("Message:", cloudErr.message);
+      console.log("Full error:", cloudErr);
     }
 
-    // ✅ NOTIFICATIONS (UNCHANGED)
-    const assignedLawyers = await User.find({ role: "lawyer" });
+    // ==============================
+    // NOTIFICATIONS
+    // ==============================
+    const io = req.app.get("io");
+    const lawyers = await User.find({ role: "lawyer" });
 
-    assignedLawyers.forEach(async (lawyer) => {
+    for (const lawyer of lawyers) {
       const notif = new Notification({
         userId: lawyer._id,
         title: "Land requires review",
         message: "A land document needs your review",
-        targetRole: "lawyer"
+        targetRole: "lawyer",
       });
+
       await notif.save();
-      io.to(lawyer._id.toString()).emit("receive-notification", notif);
-    });
+      if (io) io.to(lawyer._id.toString()).emit("receive-notification", notif);
+    }
 
     return res.status(201).json({
-      message: "Land submitted successfully! Waiting for lawyer approval.",
+      message: "Land submitted successfully!",
       land,
       uploadSource: cloudUrl ? "cloudinary" : "local"
     });
 
   } catch (error) {
-    console.error("Error in createLand:", error);
-    return res.status(500).send("Unable to save in database");
+    console.error("❌ Error in createLand:", error);
+    return res.status(500).send("Server error");
   }
 });
 
@@ -161,6 +178,8 @@ await land.save();
 
 const uploadDocuments = async (req, res) => {
   try {
+    
+
     const { landId } = req.params;
 
     const land = await Land.findById(landId);
@@ -172,47 +191,51 @@ const uploadDocuments = async (req, res) => {
 
     const documentsArray = [];
 
-   for (let file of req.files) {
-  let cloudUrl = null;
+    for (let file of req.files) {
+      
 
-  try {
-    let uploadPath = file.path;
+      let cloudUrl = null;
 
-    // 🔥 ONLY COMPRESS LAND PHOTOS
-    if (file.fieldname === "LandPhotos") {
-      const compressedPath = await compressImage(file.path);
-      uploadPath = compressedPath;
-    }
+      try {
+        let uploadPath = file.path;
 
-    // 🔥 Upload (same logic)
-    if (file.size < 5 * 1024 * 1024) { // you can increase limit
-      const uploaded = await uploadToCloudinary(
-        uploadPath,
-        `lands/${req.user.id}/${landId}/documents`
-      );
+        // Compress only land photos
+        if (file.fieldname === "LandPhotos") {
+          uploadPath = await compressImage(file.path);
+          
+        }
 
-      if (uploaded) {
-        cloudUrl = uploaded.replace("/upload/", "/upload/f_auto,q_auto/");
+        
+        const uploaded = await uploadToCloudinary(
+          uploadPath,
+          `lands/${req.user.id}/${landId}/documents`
+        );
+
+        
+
+        if (uploaded) {
+          cloudUrl = uploaded.replace("/upload/", "/upload/f_auto,q_auto/");
+        }
+
+        //  Cleanup
+        if (uploadPath !== file.path && fs.existsSync(uploadPath)) {
+          fs.unlinkSync(uploadPath);
+         
+        }
+
+      } catch (err) {
+        console.log("❌ Cloudinary doc upload failed:");
+        console.log("Message:", err.message);
       }
+
+      documentsArray.push({
+        type: file.fieldname,
+        file: {
+          local: file.path,
+          cloudinary: cloudUrl,
+        },
+      });
     }
-
-    // 🔥 DELETE COMPRESSED FILE (important)
-    if (uploadPath !== file.path && fs.existsSync(uploadPath)) {
-      fs.unlinkSync(uploadPath);
-    }
-
-  } catch (err) {
-    console.log("Cloudinary doc upload failed:", err.message);
-  }
-
-  documentsArray.push({
-    type: file.fieldname,
-    file: {
-      local: file.path,
-      cloudinary: cloudUrl,
-    },
-  });
-}
 
     const newDocument = new Document({
       land: land._id,
@@ -222,11 +245,11 @@ const uploadDocuments = async (req, res) => {
 
     await newDocument.save();
 
-    // 🔗 Link to land (unchanged)
     land.documents.push(newDocument._id);
     await land.save();
 
-    // 🔔 Notify lawyers (unchanged)
+    //  Notifications
+    const io = req.app.get("io");
     const lawyers = await User.find({ role: "lawyer" });
 
     for (const lawyer of lawyers) {
@@ -238,18 +261,17 @@ const uploadDocuments = async (req, res) => {
       });
 
       await notif.save();
-      io.to(lawyer._id.toString()).emit("receive-notification", notif);
+      if (io) io.to(lawyer._id.toString()).emit("receive-notification", notif);
     }
 
     res.status(200).json({
       message: "Documents uploaded successfully!",
       documentId: newDocument._id,
-      landDocuments: land.documents,
       uploadMode: "hybrid",
     });
 
   } catch (error) {
-    console.error("Error uploading documents:", error);
+    console.error("❌ Error uploading documents:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -1105,7 +1127,7 @@ const getLandDashboard = async (req, res) => {
 //geo verifiacation api
 const geoVerifyLand = async (req, res) => {
   try {
-    const { lat, lng, note } = req.body;
+    const { lat, lng, note, statusOverride } = req.body; // <-- include override
     const land = await Land.findById(req.params.id);
 
     if (!land) {
@@ -1116,14 +1138,14 @@ const geoVerifyLand = async (req, res) => {
 
     // Haversine Formula
     const getDistance = (lat1, lon1, lat2, lon2) => {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const R = 6371; // Earth radius in km
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
 
       const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) *
-        Math.cos(lat2 * Math.PI / 180) *
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
         Math.sin(dLon / 2) ** 2;
 
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
@@ -1131,8 +1153,10 @@ const geoVerifyLand = async (req, res) => {
 
     const distance = getDistance(ownerLat, ownerLng, lat, lng);
 
-    // Threshold: 100 meters
-    const status = distance < 0.1 ? "matched" : "mismatched";
+    // If lawyer overrides, use it; otherwise use system-calculated status
+    const status = statusOverride && ["matched", "mismatched"].includes(statusOverride)
+      ? statusOverride
+      : distance < 0.1 ? "matched" : "mismatched"; // 0.1 km = 100m threshold
 
     land.geoVerification = {
       lawyerCoordinates: [lng, lat],
@@ -1140,7 +1164,7 @@ const geoVerifyLand = async (req, res) => {
       verifiedBy: req.user._id,
       verifiedAt: new Date(),
       distance,
-      note,
+      note: note || "",
     };
 
     await land.save();

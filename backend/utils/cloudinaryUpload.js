@@ -1,26 +1,53 @@
 import cloudinary from "../config/cloudinary.js";
  const uploadToCloudinary = async (filePath, folder, publicId = null) => {
   try {
-    // ✅ Define options object
+   
+
+    // Safety check
+    if (!filePath) {
+      console.log("❌ No file path provided");
+      return null;
+    }
+
+    //  Check file exists
+    const fs = await import("fs");
+    if (!fs.existsSync(filePath)) {
+      console.log("❌ File does NOT exist at path:", filePath);
+      return null;
+    }
+
+    // Options
     const options = {
-      folder: folder, // the folder path in Cloudinary
+      folder: folder,
+      resource_type: "auto", // important for pdf/images/videos
     };
 
-    // 🔥 If publicId is provided (re-upload), overwrite the same file
+    // Overwrite logic
     if (publicId) {
       options.public_id = publicId;
       options.overwrite = true;
+      
     }
 
-   
+
+
     const result = await cloudinary.uploader.upload(filePath, options);
 
-    
+
+
+    if (!result || !result.secure_url) {
+      console.log("⚠️ Upload succeeded but no secure_url returned");
+      return null;
+    }
+
+
 
     return result.secure_url;
 
   } catch (error) {
-    console.error("Cloudinary overwrite failed:", error.message);
+    console.error("❌ Cloudinary upload failed:");
+    console.error("Message:", error.message);
+    console.error("Full error:", error);
     return null;
   }
 };

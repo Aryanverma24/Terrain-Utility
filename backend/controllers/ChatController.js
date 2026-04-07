@@ -333,7 +333,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
 });
 export const getOrCreateConsultationChat = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const { landId, lawyerId } = req.body;
 
     if (!landId) {
@@ -401,7 +401,9 @@ export const getOrCreateConsultationChat = async (req, res) => {
       });
     }
 
-    res.status(200).json(chat);
+   res.status(200).json({
+  chatId: chat._id
+});
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error creating consultation chat" });

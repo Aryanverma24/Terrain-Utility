@@ -44,7 +44,7 @@ const port = process.env.PORT || 5000;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,  // Update with your frontend URL
+    origin: "http://localhost:5173",  
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -147,7 +147,7 @@ io.on("connection", (socket) => {
   // ONLINE USERS
   // -----------------------
   socket.on("join", (userId) => {
-    socket.userId = userId; // ✅ IMPORTANT
+    socket.userId = userId; 
 
     if (!onlineUsers.includes(userId)) {
       onlineUsers.push(userId);
