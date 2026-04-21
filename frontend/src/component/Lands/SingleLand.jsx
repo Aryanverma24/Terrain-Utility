@@ -451,31 +451,47 @@ const handleInterestToggle = async () => {
 
 
   // Approve handler
-  const handleApprove = async () => {
-    if (!token) return toast.error("Login required.");
-    if (!land) return;
-    try {
-      setProcessingAction(true);
-      await API.put(
-        `/api/lawyer/${land._id}/action`,
-        { action: "approve" },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success("Land approved!");
-      setLand((prev) => ({
-        ...prev,
-        status: "approved",
-        approvedBy: { _id: currentUserId, username: currentUsername },
-        rejectionReason: null,
-      }));
-    } catch (err) {
-      console.error("Approve error:", err?.response?.data || err.message || err);
-      toast.error(err?.response?.data?.message || "Failed to approve land.");
-    } finally {
-      setProcessingAction(false);
-    }
-  };
+const handleApprove = async () => {
+  if (!token) return toast.error("Login required.");
+  if (!land) return;
 
+  const isGeoDone =
+    land.geoVerification?.status !== "pending";
+
+  const isLawyerDeclared =
+    land.geoVerification?.lawyerDeclaration?.accepted === true;
+
+  if (!allDocsApproved || hasRejectedDocs || !isGeoDone || !isLawyerDeclared) {
+    return toast.error(
+      "⚠️ Complete all steps: Documents, Geo Verification & Declaration"
+    );
+  }
+
+  try {
+    setProcessingAction(true);
+
+    await API.put(
+      `/api/lawyer/${land._id}/action`,
+      { action: "approve" },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast.success("Land approved!");
+
+    setLand((prev) => ({
+      ...prev,
+      status: "approved",
+      approvedBy: { _id: currentUserId, username: currentUsername },
+      rejectionReason: null,
+    }));
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to approve land.");
+  } finally {
+    setProcessingAction(false);
+  }
+};
   // Reject handler (submit)
   const handleRejectSubmit = async () => {
     if (!token) return toast.error("Login required.");
@@ -691,6 +707,21 @@ const allDocsApproved =
   Array.isArray(fullDocs) &&
   fullDocs.length > 0 &&
   fullDocs.every(doc => doc.status === "approved");
+  //variables needed for approving 
+const isGeoDone =
+  land?.geoVerification?.status !== "pending";
+
+const isLawyerDeclared =
+  land?.geoVerification?.lawyerDeclaration?.accepted === true;
+
+const canApprove =
+  land &&
+  !processingAction &&
+  !["approved", "rejected"].includes(land.status) &&
+  !hasRejectedDocs &&
+  allDocsApproved &&
+  isGeoDone &&
+  isLawyerDeclared;
 
   return (
     <>
@@ -1288,54 +1319,70 @@ const allDocsApproved =
       {/* Lawyer Controls */}
       {role === "lawyer" && String(land.assignedLawyer) === String(currentUserId) && (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              disabled={
-                processingAction ||
-                land.status === "approved" ||
-                land.status === "rejected" ||
-                hasRejectedDocs ||
-                !allDocsApproved
-              }
-              onClick={handleApprove}
-              className="group relative bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-green-500/30 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100 flex items-center justify-center gap-2"
-            >
-              <FaCheckCircle className="w-4 h-4" />
-              Approve
-            </button>
-            
-            <button
-              disabled={
-                processingAction ||
-                land.status === "approved" ||
-                land.status === "rejected"
-              }
-              onClick={() => setShowRejectModal(true)}
-              className="group relative bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-red-500/30 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100 flex items-center justify-center gap-2"
-            >
-              <FaTimesCircle className="w-4 h-4" />
-              Reject
-            </button>
-          </div>
 
-          {hasRejectedDocs && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-red-700 text-sm font-semibold flex items-center">
-                <FaTimesCircle className="mr-2" />
-                Cannot approve: Some documents need review
-              </p>
-            </div>
-          )}
+  <div className="grid grid-cols-2 gap-3">
+    <button
+      disabled={!canApprove}
+      onClick={handleApprove}
+      className="group relative bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-green-500/30 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100 flex items-center justify-center gap-2"
+    >
+      <FaCheckCircle className="w-4 h-4" />
+      Approve
+    </button>
+    
+    <button
+      disabled={
+        processingAction ||
+        land.status === "approved" ||
+        land.status === "rejected"
+      }
+      onClick={() => setShowRejectModal(true)}
+      className="group relative bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-red-500/30 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] disabled:scale-100 flex items-center justify-center gap-2"
+    >
+      <FaTimesCircle className="w-4 h-4" />
+      Reject
+    </button>
+  </div>
 
-          {!allDocsApproved && !hasRejectedDocs && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-              <p className="text-yellow-700 text-sm font-semibold flex items-center">
-                <FaClock className="mr-2" />
-                Waiting for document approvals
-              </p>
-            </div>
-          )}
-        </div>
+  {/* ❌ Rejected Docs */}
+  {hasRejectedDocs && (
+    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+      <p className="text-red-700 text-sm font-semibold flex items-center">
+        <FaTimesCircle className="mr-2" />
+        Cannot approve: Some documents are rejected
+      </p>
+    </div>
+  )}
+
+  {/* ⏳ Pending Docs */}
+  {!allDocsApproved && !hasRejectedDocs && (
+    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+      <p className="text-yellow-700 text-sm font-semibold flex items-center">
+        <FaClock className="mr-2" />
+        Waiting for document approvals in Review documents
+      </p>
+    </div>
+  )}
+
+  {/* 📍 Geo Not Done */}
+  {allDocsApproved && !hasRejectedDocs && !isGeoDone && (
+    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+      <p className="text-blue-700 text-sm font-semibold flex items-center">
+        📍 Complete geo verification in Review documents
+      </p>
+    </div>
+  )}
+
+  {/* 🧾 Declaration Missing */}
+  {allDocsApproved && isGeoDone && !isLawyerDeclared && (
+    <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+      <p className="text-purple-700 text-sm font-semibold flex items-center">
+        🧾 Accept lawyer declaration in Review documents
+      </p>
+    </div>
+  )}
+
+</div>
       )}
     </div>
   </div>

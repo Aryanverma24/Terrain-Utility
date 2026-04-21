@@ -44,7 +44,6 @@ const LandSchema = new mongoose.Schema(
     state: { type: String, required: true },
     pincode: { type: Number, required: true },
 
-    //  CURRENT OWNER
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     ownerName: { type: String, required: true },
 
@@ -74,6 +73,7 @@ const LandSchema = new mongoose.Schema(
         default: undefined,
       },
     },
+
     dimensions: {
       length: { type: Number, required: true },
       breadth: { type: Number, required: true },
@@ -83,12 +83,13 @@ const LandSchema = new mongoose.Schema(
 
     reviews: [ReviewSchema],
     averageRating: { type: Number, default: 0 },
+
     // =========================
-    // GEO VERIFICATION
+    // GEO VERIFICATION (UPDATED)
     // =========================
     geoVerification: {
       lawyerCoordinates: {
-        type: [Number], // [lng, lat]
+        type: [Number],
         default: null,
       },
 
@@ -110,7 +111,7 @@ const LandSchema = new mongoose.Schema(
       },
 
       distance: {
-        type: Number, // distance in KM
+        type: Number,
         default: null,
       },
 
@@ -118,9 +119,44 @@ const LandSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+
+      //  NEW → LAWYER DECLARATION
+      lawyerDeclaration: {
+        accepted: {
+          type: Boolean,
+          default: false,
+        },
+
+        acceptedAt: {
+          type: Date,
+          default: null,
+        },
+
+        lawyerId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null,
+        },
+      },
     },
+
     // =========================
-    //  UPDATED INTEREST SYSTEM
+    // NEW → VERIFICATION SUMMARY (OPTIONAL BUT POWERFUL)
+    // =========================
+    verification: {
+      documentsVerified: {
+        type: Boolean,
+        default: false,
+      },
+
+      readyForApproval: {
+        type: Boolean,
+        default: false,
+      },
+    },
+
+    // =========================
+    // INTEREST SYSTEM
     // =========================
     interestedUsers: [
       {
@@ -146,6 +182,37 @@ const LandSchema = new mongoose.Schema(
     interestedUsersCount: {
       type: Number,
       default: 0,
+    },
+
+    // =========================
+    // OWNER DECLARATION
+    // =========================
+    declaration: {
+      accepted: {
+        type: Boolean,
+        required: true,
+        default: false,
+      },
+
+      acceptedAt: {
+        type: Date,
+        default: null,
+      },
+
+      ipAddress: {
+        type: String,
+        default: null,
+      },
+
+      userAgent: {
+        type: String,
+        default: null,
+      },
+
+      version: {
+        type: String,
+        default: "v1.0",
+      },
     },
 
     // =========================
@@ -188,7 +255,7 @@ const LandSchema = new mongoose.Schema(
 
     isLocked: {
       type: Boolean,
-      default: false, // prevents multiple buyers paying at same time
+      default: false,
     },
 
     lastTransferDate: {
@@ -196,7 +263,7 @@ const LandSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 //  PERFORMANCE INDEXES

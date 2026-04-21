@@ -285,41 +285,94 @@ const fetchConsultationLands = async () => {
 
       {/* ================= DOCUMENT MODAL ================= */}
       {showDocsModal && selectedDocs && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
-          <div className="bg-white w-[600px] max-h-[80vh] overflow-y-auto p-6 rounded-xl">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex justify-center items-center z-50 px-4">
 
-            <h2 className="text-xl font-bold mb-4">
-              {selectedDocs.user.username}'s Documents
-            </h2>
+    <div className="w-full max-w-4xl bg-mintGreen rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-6 md:p-8 max-h-[85vh] overflow-y-auto animate-fadeInUp">
 
-            {selectedDocs.documents.map((doc) => (
-              <div key={doc._id} className="border p-3 mb-3 rounded-lg">
-                <p className="font-semibold">{doc.type}</p>
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-darkWalnut">
+          {selectedDocs.user.username}'s Documents
+        </h2>
 
-                <img
-                  src={
-                    doc.file.cloudinary ||
-                    `http://localhost:5000/${doc.file.local}`
-                  }
-                  className="h-40 mt-2 rounded"
-                />
+        <button
+          onClick={() => setShowDocsModal(false)}
+          className="text-gray-400 hover:text-black text-xl"
+        >
+          ✖
+        </button>
+      </div>
 
-                <p className="mt-2">
-                  Status: <b>{doc.status}</b>
-                </p>
-              </div>
-            ))}
+      {/* DOCUMENT GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
 
-            <button
-              onClick={() => setShowDocsModal(false)}
-              className="mt-4 bg-red-500 px-4 py-2 text-white rounded"
-            >
-              Close
-            </button>
+        {selectedDocs.documents.map((doc) => (
+          <div
+            key={doc._id}
+            className="bg-white/80 backdrop-blur-md border border-sand500 rounded-2xl p-4 shadow-sm hover:shadow-lg transition-all duration-300"
+          >
+
+            {/* IMAGE */}
+            <img
+              src={
+                doc.file.cloudinary ||
+                `http://localhost:5000/${doc.file.local}`
+              }
+              alt={doc.type}
+              className="w-full h-40 object-cover rounded-xl mb-3 cursor-pointer hover:opacity-90"
+              onClick={() =>
+                window.open(
+                  doc.file.cloudinary ||
+                  `http://localhost:5000/${doc.file.local}`,
+                  "_blank"
+                )
+              }
+            />
+
+            {/* TYPE */}
+            <p className="text-sm font-semibold text-darkWalnut text-center">
+              {doc.type}
+            </p>
+
+            {/* STATUS BADGE */}
+            <div className="flex justify-center mt-2">
+              <span
+                className={`px-3 py-1 text-xs rounded-full font-semibold
+                  ${
+                    doc.status === "approved"
+                      ? "bg-green-100 text-green-700"
+                      : doc.status === "rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+              >
+                {doc.status}
+              </span>
+            </div>
+
+            {/* TIMESTAMP */}
+            <p className="text-xs text-gray-500 text-center mt-2">
+              {new Date(doc.uploadedAt).toLocaleDateString()}
+            </p>
+
           </div>
-        </div>
-      )}
+        ))}
 
+      </div>
+
+      {/* FOOTER */}
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={() => setShowDocsModal(false)}
+          className="px-6 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white font-medium shadow-md transition"
+        >
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
       {/* ================= EDIT MODAL ================= */}
       {editingLand && (
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center">

@@ -19,6 +19,7 @@ import {
   getInterestedUsers,
   getLandDashboard,
   geoVerifyLand,
+  saveLawyerDeclaration,
   // updateInterestStatus
 } from "../controllers/LandController.js";
 
@@ -26,6 +27,7 @@ import { authenticate } from "../middlerwares/landauthenticate.js";
 import upload from "../utils/multerConfig.js";
 import multer from "multer";
 import { uploadDocuments, resubmitLand } from "../controllers/LandController.js";
+
 
 
 const router = express.Router();
@@ -66,6 +68,8 @@ router.route("/:id/reviews").get(getLandReviews).post(authenticate, createReview
 );
 //route for geo cooridnate verification
 router.put("/geo-verify/:id", authenticate, geoVerifyLand);
+
+router.put("/lawyer-declaration/:id", authenticate, saveLawyerDeclaration);
 // the roytes for intrest users 
 router.route("/:landId/interested").post(authenticate,markInterested);
 router.route("/:landId/uninterested").post(authenticate,unmarkInterested);

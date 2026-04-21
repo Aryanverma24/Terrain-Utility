@@ -23,10 +23,19 @@ const [userDocs, setUserDocs] = useState([]);
 const [docLoading, setDocLoading] = useState(true);
 const [selectedUserDocs, setSelectedUserDocs] = useState(null);
 const [isModalOpen, setIsModalOpen] = useState(false);
-
+//lawyerdeclaration
+const [lawyerDeclarationAccepted, setLawyerDeclarationAccepted] = useState(false);
+const [lawyerDeclarationError, setLawyerDeclarationError] = useState(false);
 const openUserDocs = (docGroup) => {
   setSelectedUserDocs(docGroup);
   setIsModalOpen(true);
+
+  // preload declaration status
+  if (docGroup.lawyerDeclaration?.accepted) {
+    setLawyerDeclarationAccepted(true);
+  } else {
+    setLawyerDeclarationAccepted(false);
+  }
 };
   // Fetch all lands for lawyers
   useEffect(() => {
@@ -324,82 +333,173 @@ const userDocGroups = userDocs;
 
     {/* Modal for documents */}
     {isModalOpen && selectedUserDocs && (
-      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-        <div className="bg-white rounded-2xl shadow-xl w-[95%] max-w-5xl max-h-[85vh] overflow-y-auto p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {selectedUserDocs.user?.username}'s Documents
-          </h2>
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+    
+    <div className="bg-mintGreen border border-sand500 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] w-[95%] max-w-5xl max-h-[85vh] overflow-y-auto p-6 relative">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {selectedUserDocs.documents.map((doc) => {
-              const fileUrl = getFileUrl(doc.file);
-              return (
-                <div key={doc._id} className="border border-gray-200 rounded-xl p-3 bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <img
-                    src={fileUrl}
-                    alt={doc.type}
-                    className="w-full h-40 object-cover rounded-lg mb-2"
-                  />
-                  <p className="text-center text-sm font-medium text-gray-700">{doc.type}</p>
+      {/* CLOSE */}
+      <button
+        onClick={() => setIsModalOpen(false)}
+        className="absolute top-4 right-4 text-richBrown/60 hover:text-darkWalnut"
+      >
+        ✖
+      </button>
 
-                  <div className="flex justify-center mt-2">
-                    <span className={`px-2 py-1 text-xs rounded-full
-                      ${doc.status === "approved" ? "bg-green-100 text-green-700" :
-                        doc.status === "rejected" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"}`}
-                    >
-                      {doc.status || "pending"}
-                    </span>
-                  </div>
+      {/* HEADER */}
+      <h2 className="text-2xl font-bold text-darkWalnut mb-2">
+        {selectedUserDocs.user?.username}'s Documents
+      </h2>
+      <p className="text-sm text-richBrown/70 mb-6">
+        Verify user KYC documents carefully
+      </p>
 
-                  <div className="flex gap-2 mt-3">
-                    <button
-                      onClick={() => updateUserDocStatus(selectedUserDocs._id, "approved", doc._id)}
-                      disabled={doc.status !== "pending"}
-                      className="flex-1 bg-green-600 text-white py-1 rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => updateUserDocStatus(selectedUserDocs._id, "rejected", doc._id)}
-                      disabled={doc.status !== "pending"}
-                      className="flex-1 bg-red-600 text-white py-1 rounded hover:bg-red-700 disabled:bg-gray-400 transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* DOCUMENT GRID */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {selectedUserDocs.documents.map((doc) => {
+          const fileUrl = getFileUrl(doc.file);
 
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={() => updateUserDocStatus(selectedUserDocs._id, "approved")}
-              disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
-              className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+          return (
+            <div
+              key={doc._id}
+              className="border border-sand500 bg-lightTan rounded-xl p-3 hover:shadow-lg hover:shadow-sand500/30 transition"
             >
-              Approve All
-            </button>
+              <img
+                src={fileUrl}
+                alt={doc.type}
+                className="w-full h-40 object-cover rounded-lg mb-2"
+              />
 
-            <button
-              onClick={() => updateUserDocStatus(selectedUserDocs._id, "rejected")}
-              disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
-              className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:bg-gray-400 transition-colors"
-            >
-              Reject All
-            </button>
-          </div>
+              <p className="text-center text-sm font-semibold text-darkWalnut">
+                {doc.type}
+              </p>
 
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="mt-6 w-full bg-gray-300 py-2 rounded hover:bg-gray-400 transition-colors"
-          >
-            Close
-          </button>
-        </div>
+              <div className="flex justify-center mt-2">
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    doc.status === "approved"
+                      ? "bg-green-100 text-green-700"
+                      : doc.status === "rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {doc.status || "pending"}
+                </span>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    if (!lawyerDeclarationAccepted) {
+                      setLawyerDeclarationError(true);
+                      return toast.error("Accept declaration first");
+                    }
+                    updateUserDocStatus(selectedUserDocs._id, "approved", doc._id);
+                  }}
+                  disabled={doc.status !== "pending"}
+                  className="flex-1 bg-cardGreen text-darkWalnut py-1 rounded hover:bg-richBrown disabled:bg-gray-400 transition"
+                >
+                  Approve
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!lawyerDeclarationAccepted) {
+                      setLawyerDeclarationError(true);
+                      return toast.error("Accept declaration first");
+                    }
+                    updateUserDocStatus(selectedUserDocs._id, "rejected", doc._id);
+                  }}
+                  disabled={doc.status !== "pending"}
+                  className="flex-1 bg-red-600 text-white py-1 rounded hover:bg-red-700 disabled:bg-gray-400 transition"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
-    )}
+
+      {/* 🔥 LAWYER DECLARATION */}
+      <div
+        className={`mt-6 p-5 rounded-2xl border ${
+          lawyerDeclarationError
+            ? "border-red-500 animate-pulse"
+            : "border-sand500 bg-lightTan"
+        }`}
+      >
+        <p className="text-sm text-darkWalnut leading-relaxed">
+          I confirm that I have verified all user documents and they are genuine to the best of my knowledge.
+          I understand that approving incorrect or fraudulent documents may lead to legal consequences.
+        </p>
+
+        <div className="flex items-center mt-4 gap-2">
+          <input
+            type="checkbox"
+            checked={lawyerDeclarationAccepted}
+            onChange={(e) => {
+              setLawyerDeclarationAccepted(e.target.checked);
+              setLawyerDeclarationError(false);
+            }}
+            disabled={selectedUserDocs.lawyerDeclaration?.accepted}
+            className="w-5 h-5 accent-cardGreen"
+          />
+          <label className="text-sm font-medium text-darkWalnut">
+            I accept responsibility for verification
+          </label>
+        </div>
+
+        {selectedUserDocs.lawyerDeclaration?.accepted && (
+          <p className="text-green-600 text-sm mt-2">
+            ✅ Declaration already submitted
+          </p>
+        )}
+      </div>
+
+      {/* APPROVE ALL */}
+      <div className="flex gap-3 mt-6">
+        <button
+          onClick={() => {
+            if (!lawyerDeclarationAccepted) {
+              setLawyerDeclarationError(true);
+              return toast.error("Accept declaration first");
+            }
+            updateUserDocStatus(selectedUserDocs._id, "approved");
+          }}
+          disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
+          className="flex-1 bg-cardGreen text-darkWalnut py-2 rounded hover:bg-richBrown disabled:bg-gray-400"
+        >
+          Approve All
+        </button>
+
+        <button
+          onClick={() => {
+            if (!lawyerDeclarationAccepted) {
+              setLawyerDeclarationError(true);
+              return toast.error("Accept declaration first");
+            }
+            updateUserDocStatus(selectedUserDocs._id, "rejected");
+          }}
+          disabled={selectedUserDocs.documents.every(doc => doc.status !== "pending")}
+          className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+        >
+          Reject All
+        </button>
+      </div>
+
+      {/* CLOSE */}
+      <button
+        onClick={() => setIsModalOpen(false)}
+        className="mt-6 w-full bg-sand500 text-white py-2 rounded hover:bg-richBrown"
+      >
+        Close
+      </button>
+
+    </div>
+  </div>
+)}
   </div>
 </section>
       <HowItWorks />

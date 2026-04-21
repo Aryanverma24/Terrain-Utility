@@ -34,7 +34,10 @@ const token = user?.token;
   const [state,setState] = useState('')
   const [contactNumber,setContactNumber] = useState('')
   const [bio,setBio]  = useState("")
-
+  //user declaration
+const [userDeclarationAccepted, setUserDeclarationAccepted] = useState(false);
+const [userDeclarationError, setUserDeclarationError] = useState(false);
+const [hasUploadedDocs, setHasUploadedDocs] = useState(false);
   const [wishlist,setWishlist] = useState([]);
   //userdocument states 
   const [showDocModal, setShowDocModal] = useState(false);
@@ -128,6 +131,29 @@ console.log("Prev state:", documents);
     fetchLands();
   }, [user]);
   
+  useEffect(() => {
+  const fetchUserDocsStatus = async () => {
+    try {
+      const res = await API.get("/api/users/my-documents");
+
+      if (res.data) {
+        setDocuments(res.data);
+
+        if (res.data.documents?.length > 0) {
+          setHasUploadedDocs(true);
+        }
+
+        if (res.data.userDeclaration?.accepted) {
+          setUserDeclarationAccepted(true);
+        }
+      }
+    } catch (err) {
+      console.log("No documents yet");
+    }
+  };
+
+  fetchUserDocsStatus();
+}, []);
     console.log(lands)
 
     
@@ -187,6 +213,11 @@ console.log("Prev state:", documents);
 
 //to upload documents 
 const handleDocUpload = async () => {
+  if (!userDeclarationAccepted) {
+    setUserDeclarationError(true);
+    return toast.error("Please accept declaration before uploading");
+  }
+
   if (!docs.Aadhaar || !docs.PAN || !docs.ProfilePhoto || !docs.AddressProof) {
     return toast.error("Please upload all mandatory documents");
   }
@@ -195,6 +226,7 @@ const handleDocUpload = async () => {
     setLoadingDocsUpload(true);
 
     const formData = new FormData();
+
     formData.append("Aadhaar", docs.Aadhaar);
     formData.append("PAN", docs.PAN);
     formData.append("ProfilePhoto", docs.ProfilePhoto);
@@ -205,59 +237,22 @@ const handleDocUpload = async () => {
       formData.append("optionalDocType", docs.optionalDocType);
     }
 
+    // 🔥 ADD DECLARATION FLAG
+    formData.append("userDeclarationAccepted", true);
+
     await API.post("/api/users/upload-user-docs", formData);
 
     toast.success("Documents uploaded successfully!");
+
+    setHasUploadedDocs(true); // 🔥 lock upload
     setShowDocModal(false);
-    // Reset docs after upload
-    setDocs({
-      Aadhaar: null,
-      PAN: null,
-      ProfilePhoto: null,
-      AddressProof: null,
-      optionalDocType: "",
-      optionalDocFile: null,
-    });
+
   } catch (error) {
-    console.error(error);
     toast.error(error.response?.data?.message || "Upload failed");
   } finally {
     setLoadingDocsUpload(false);
   }
 };
-//function to fetch uploaded document 
-// const fetchDocuments = async () => {
-//   try {
-//     const token = localStorage.getItem("token"); // 🔥 use this if unsure
-
-//     console.log("TOKEN:", token);
-
-//     if (!token) {
-//       alert("No token found. Please login again.");
-//       return;
-//     }
-
-//     setLoadingDocs(true);
-
-//     const res = await axios.get(
-//       "http://localhost:5000/api/users/my-documents",
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     setDocuments(res.data);
-//     setShowDocs(true);
-
-//   } catch (err) {
-//     console.log("ERROR:", err.response?.data || err.message);
-//     alert("Unauthorized. Please login again.");
-//   } finally {
-//     setLoadingDocs(false);
-//   }
-// };
 const fetchDocuments = async () => {
   try {
     const token = localStorage.getItem("token"); 
@@ -332,104 +327,172 @@ const fetchDocuments = async () => {
                           <h2 className='text-3xl text-center py-2 font-bold'>{userdata.data.username}</h2>
                           <h3 className='px-2 py-1 text-md line-clamp-4'>{userdata.data.bio}</h3>
                         </div>
+{/* UPLOAD BUTTON */}
 <button
   onClick={() => setShowDocModal(true)}
-  className="mt-4 px-3 py-2 bg-cardGreen text-darkWalnut rounded-xl font-semibold"
+  disabled={hasUploadedDocs}
+  className="mt-4 px-3 py-2 bg-cardGreen text-darkWalnut rounded-xl font-semibold disabled:bg-gray-400"
 >
   Upload KYC Documents
 </button>
-                         
-    {showDocModal && (
-  <div className="bg-black bg-opacity-50 fixed inset-0 flex justify-center items-center z-50">
-    <div className="bg-white p-6 rounded-xl w-[30rem] max-h-[90vh] overflow-y-auto">
 
-      <h2 className="text-xl font-bold mb-4 text-center">Upload KYC Documents</h2>
+ {showDocModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+    
+    <div className="w-full max-w-2xl bg-mintGreen border border-sand500 rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-8 relative">
 
-      {/* Aadhaar */}
-      <label className="block mb-2">Aadhaar (Required)</label>
-      <input type="file" name="Aadhaar" onChange={handleDocChange} className="mb-4" />
+      {/* CLOSE BUTTON */}
+      <button
+        onClick={() => setShowDocModal(false)}
+        className="absolute top-4 right-4 text-richBrown/60 hover:text-darkWalnut text-xl"
+      >
+        ✖
+      </button>
 
-      {/* PAN */}
-      <label className="block mb-2">PAN (Required)</label>
-      <input type="file" name="PAN" onChange={handleDocChange} className="mb-4" />
-
-      {/* Profile Photo */}
-      <label className="block mb-2">Profile Photo (Required)</label>
-      <input type="file" name="ProfilePhoto" onChange={handleDocChange} className="mb-4" />
-
-      {/* Address Proof */}
-      <label className="block mb-2">Address Proof (Required)</label>
-      <input type="file" name="AddressProof" onChange={handleDocChange} className="mb-4" />
-
-      {/* Optional Document */}
-      <label className="block mb-2">Optional Document</label>
-      <div className="flex gap-2 mb-4">
-        <select
-          name="optionalDocType"
-          value={docs.optionalDocType || ""}
-          onChange={(e) => setDocs(prev => ({ ...prev, optionalDocType: e.target.value }))}
-          className="py-1 px-2 outline-2 outline-cardGreen rounded-md flex-1 text-black"
-        >
-          <option value="">Select Document</option>
-          <option value="Passport">Passport</option>
-          <option value="DrivingLicense">Driving License</option>
-          <option value="VoterID">Voter ID</option>
-        </select>
-        <input
-          type="file"
-          name="optionalDocFile"
-          onChange={(e) => setDocs(prev => ({ ...prev, optionalDocFile: e.target.files[0] }))}
-          className="flex-1"
-        />
+      {/* HEADER */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-darkWalnut">
+          Upload KYC Documents
+        </h2>
+        <p className="text-sm text-richBrown/70 mt-1">
+          Submit your identity documents for verification
+        </p>
       </div>
 
-      {/* Buttons */}
-      <div className="flex justify-between mt-4">
+      {/* DOCUMENT GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        {[
+          { label: "Aadhaar", name: "Aadhaar", required: true },
+          { label: "PAN", name: "PAN", required: true },
+          { label: "Profile Photo", name: "ProfilePhoto", required: true },
+          { label: "Address Proof", name: "AddressProof", required: true },
+        ].map((doc) => (
+          <div
+            key={doc.name}
+            className="border border-sand500 bg-lightTan rounded-xl p-4 hover:shadow-lg hover:shadow-sand500/30 transition"
+          >
+            <label className="block text-sm font-semibold text-darkWalnut mb-2">
+              {doc.label} {doc.required && <span className="text-red-500">*</span>}
+            </label>
+
+            <input
+              type="file"
+              name={doc.name}
+              onChange={handleDocChange}
+              className="w-full text-sm border border-sand500 rounded-lg p-2 file:bg-cardGreen file:text-darkWalnut file:px-3 file:py-1 file:rounded-md file:border-none cursor-pointer"
+            />
+
+            {docs[doc.name] && (
+              <p className="text-xs text-green-600 mt-2">
+                ✅ {docs[doc.name].name}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* OPTIONAL DOC */}
+      <div className="mt-6 border border-dashed border-sand500 rounded-xl p-4 bg-lightTan">
+        <label className="block text-sm font-semibold text-darkWalnut mb-2">
+          Optional Document
+        </label>
+
+        <div className="flex gap-3">
+          <select
+            value={docs.optionalDocType || ""}
+            onChange={(e) =>
+              setDocs((prev) => ({
+                ...prev,
+                optionalDocType: e.target.value,
+              }))
+            }
+            className="flex-1 border border-sand500 rounded-lg px-3 py-2 text-sm bg-mintGreen text-darkWalnut"
+          >
+            <option value="">Select Document</option>
+            <option value="Passport">Passport</option>
+            <option value="DrivingLicense">Driving License</option>
+            <option value="VoterID">Voter ID</option>
+          </select>
+
+          <input
+            type="file"
+            onChange={(e) =>
+              setDocs((prev) => ({
+                ...prev,
+                optionalDocFile: e.target.files[0],
+              }))
+            }
+            className="flex-1 text-sm border border-sand500 rounded-lg p-2 file:bg-richBrown file:text-white file:px-3 file:py-1 file:rounded-md file:border-none"
+          />
+        </div>
+      </div>
+
+      {/* DECLARATION SECTION */}
+      <div
+        className={`mt-6 p-5 rounded-2xl border transition ${
+          userDeclarationError
+            ? "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse"
+            : "border-sand500 bg-lightTan"
+        }`}
+      >
+        <p className="text-sm text-darkWalnut leading-relaxed">
+          I confirm that all submitted documents are authentic and belong to me.
+          I understand that submitting false documents may result in legal action.
+        </p>
+
+        <div className="flex items-center mt-4 gap-2">
+          <input
+            type="checkbox"
+            checked={userDeclarationAccepted}
+            onChange={(e) => {
+              setUserDeclarationAccepted(e.target.checked);
+              setUserDeclarationError(false);
+            }}
+            disabled={hasUploadedDocs}
+            className="w-5 h-5 accent-cardGreen"
+          />
+          <label className="text-sm font-medium text-darkWalnut">
+            I agree and accept responsibility
+          </label>
+        </div>
+
+        {hasUploadedDocs && (
+          <p className="text-green-600 text-sm mt-2">
+            ✅ Declaration already submitted
+          </p>
+        )}
+      </div>
+
+      {/* ACTION BUTTONS */}
+      <div className="flex justify-between mt-8">
+
         <button
           onClick={() => setShowDocModal(false)}
-          className="px-4 py-2 bg-gray-400 rounded-lg"
-          disabled={loadingDocsUpload}
+          className="px-5 py-2 rounded-lg bg-sand500 text-white hover:bg-richBrown transition"
         >
           Cancel
         </button>
 
         <button
           onClick={handleDocUpload}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg flex items-center gap-2"
-          disabled={loadingDocsUpload}
+          disabled={hasUploadedDocs || loadingDocsUpload}
+          className="bg-cardGreen hover:bg-richBrown text-darkWalnut px-6 py-3 rounded-xl font-semibold shadow-lg disabled:opacity-50 flex items-center gap-2 transition"
         >
-          {loadingDocsUpload && (
-            <svg
-              className="animate-spin h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              ></path>
-            </svg>
-          )}
-          {loadingDocsUpload ? "Uploading..." : "Upload"}
+          {loadingDocsUpload ? "Uploading..." : "Upload Documents"}
         </button>
+
       </div>
+
     </div>
   </div>
 )}
 
+{/* VIEW BUTTON */}
 <button
   onClick={fetchDocuments}
-  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+  disabled={!hasUploadedDocs}
+  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400"
 >
   📄 View Uploaded Documents
 </button>

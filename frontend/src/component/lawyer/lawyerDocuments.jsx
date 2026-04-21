@@ -29,7 +29,9 @@ const [showGeoResult, setShowGeoResult] = useState(false);
 const [calculatedDistance, setCalculatedDistance] = useState(null);
 const [autoStatus, setAutoStatus] = useState("");
 const [finalStatus, setFinalStatus] = useState("");
-
+//lawyer self declaration state
+const [lawyerAgreed, setLawyerAgreed] = useState(false);
+const [lawyerDeclarationError, setLawyerDeclarationError] = useState(false);
 // final saved result
 const [geoResult, setGeoResult] = useState(null);
 const [geoNote, setGeoNote] = useState("");
@@ -37,6 +39,52 @@ const [geoNote, setGeoNote] = useState("");
 const isAlreadyVerified =
   land?.geoVerification &&
   land.geoVerification.status !== "pending";
+
+//--------the self decaralartion segemnt----------
+const isDeclarationDone =
+  land?.geoVerification?.lawyerDeclaration?.accepted === true;
+const handleLawyerAgree = () => {
+  setLawyerAgreed(!lawyerAgreed);
+
+  if (lawyerDeclarationError) {
+    setLawyerDeclarationError(false);
+  }
+};
+const handleLawyerDeclarationSubmit = async () => {
+  if (!lawyerAgreed) {
+    setLawyerDeclarationError(true);
+
+    document.getElementById("lawyerDeclarationBox")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    // remove glow after 2 sec
+    setTimeout(() => setLawyerDeclarationError(false), 2000);
+
+    return;
+  }
+
+  try {
+    await API.put(
+      `/api/lands/lawyer-declaration/${id}`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    toast.success("Declaration submitted ✅");
+
+    // 🔥 REDIRECT BACK TO SINGLE LAND
+    navigate(`/land/${id}`);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to save declaration");
+  }
+};
+  //--------the cooridnates verification segement----------
 //for the first time 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
@@ -51,6 +99,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
+
 const handlePreVerify = () => {
   if (!lawyerLat || !lawyerLng) {
     return toast.error("Enter coordinates first");
@@ -103,6 +152,7 @@ const handleFinalSubmit = async () => {
     setGeoLoading(false);
   }
 };
+//------documents verficiation section----------
 //showcasing each document to lawyer
   const updateDocStatus = async (docId, status) => {
     if (!token) return toast.error("Login required.");
@@ -509,6 +559,87 @@ return (
       Verified at: {new Date(land.geoVerification.verifiedAt).toLocaleString()}
     </p>
 
+  </div>
+)}
+
+{/* ================= LAWYER DECLARATION ================= */}
+{/* ================= LAWYER DECLARATION ================= */}
+
+{!isDeclarationDone ? (
+  // ===================== FORM =====================
+  <div
+    id="lawyerDeclarationBox"
+    className={`mt-12 p-6 rounded-2xl border transition-all duration-300
+    ${
+      lawyerDeclarationError
+        ? "border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse"
+        : "border-gray-200 bg-white"
+    }`}
+  >
+    <h3 className="text-xl font-bold text-gray-900 mb-4">
+      Lawyer Declaration & Responsibility
+    </h3>
+
+    <div className="text-gray-600 text-sm space-y-3 leading-relaxed">
+      <p>
+        I hereby confirm that I have carefully reviewed all submitted property documents
+        and verified their authenticity to the best of my knowledge.
+      </p>
+
+      <p>
+        I have also verified the geographical location of the property and ensured
+        that it matches the provided coordinates.
+      </p>
+
+      <p>
+        I understand that approving incorrect or fraudulent documents may lead to
+        legal consequences and professional liability.
+      </p>
+
+      <p className="text-red-500 font-semibold">
+        ⚠️ I take full responsibility for my verification decision.
+      </p>
+    </div>
+
+    {/* CHECKBOX */}
+    <div className="flex items-center mt-5 gap-3">
+      <input
+        type="checkbox"
+        checked={lawyerAgreed}
+        onChange={handleLawyerAgree}
+        className="w-5 h-5 accent-emerald-500"
+      />
+      <label className="text-gray-800 text-sm">
+        I agree and accept responsibility for this verification
+      </label>
+    </div>
+
+    {/* SUBMIT */}
+    <button
+      onClick={handleLawyerDeclarationSubmit}
+      className="mt-6 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg"
+    >
+      Save Declaration & Return
+    </button>
+  </div>
+
+) : (
+  // ===================== SUCCESS BLOCK =====================
+  <div className="mt-12 p-6 rounded-2xl border border-green-200 bg-green-50">
+    <h3 className="text-xl font-bold text-green-700 mb-3">
+      ✅ Declaration Completed
+    </h3>
+
+    <p className="text-gray-700">
+      You have already submitted your declaration.
+    </p>
+
+    <p className="text-sm text-gray-600 mt-2">
+      Submitted at:{" "}
+      {new Date(
+        land.geoVerification.lawyerDeclaration.acceptedAt
+      ).toLocaleString()}
+    </p>
   </div>
 )}
 

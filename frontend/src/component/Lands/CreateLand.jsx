@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
@@ -57,41 +58,326 @@ const [city,setCity]=useState("");
   });
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100%
+  const [docErrors, setDocErrors] = useState({});
   //geo based states 
 const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 });
 const [coordinates, setCoordinates] = useState(null);
+//declaration state
+const [agreed, setAgreed] = useState(false);
+const [declarationError, setDeclarationError] = useState(false);
+//for setting ai generated description
+const [aiDescriptions, setAiDescriptions] = useState([]);
+const [showAIModal, setShowAIModal] = useState(false);
+const [showPromptModal, setShowPromptModal] = useState(false);
+
+//-------this is for genrating auto description--------
+//function for generating prompt for auto description
+const generatePrompt = () => {
+  return `You are a professional real estate copywriter.
+
+Write 3 different property descriptions for the following land:
+
+Type: ${landtype}
+Location: ${city}, ${state}
+Price: ₹${price}
+Dimensions: ${length} x ${breadth} ft
+
+Instructions:
+- Description 1 should be premium and luxurious in tone
+- Description 2 should be investment-focused
+- Description 3 should be simple and informative
+
+IMPORTANT RULES:
+- DO NOT mention or label the tone or type
+- DO NOT write "premium", "investment", or "simple"
+- Each description should be 80–120 words
+- Each must feel clearly different in style
+- Output everything in ONE block
+- Use ONLY the following format:
+
+[DESC_1]
+<description>
+
+[DESC_2]
+<description>
+
+[DESC_3]
+<description>
+
+Do not add any extra text before or after.`;
+};
+
+//for autofill chatgpt open attempt 
+const openChatGPT = () => {
+  const prompt = generatePrompt();
+
+  const url = `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`;
+
+  window.open(url, "_blank");
+};
+//copying prompt by button
+const copyPrompt = async () => {
+  try {
+    const prompt = generatePrompt();
+    await navigator.clipboard.writeText(prompt);
+    toast.success("Prompt copied! Paste in ChatGPT.");
+  } catch {
+    toast.error("Failed to copy prompt");
+  }
+};
+//validating clipboard repsonse 
+const isValidAIResponse = (text) => {
+  if (!text || typeof text !== "string") return false;
+
+  const trimmed = text.trim();
+
+  return (
+    trimmed.includes("[DESC_1]") &&
+    trimmed.includes("[DESC_2]") &&
+    trimmed.includes("[DESC_3]")
+  );
+};
+//getting copied clipboard text 
+const pasteFromClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+
+    // 1. empty clipboard
+    if (!text || text.trim().length === 0) {
+      toast.error("Clipboard is empty. Copy AI response first.");
+      return;
+    }
+
+    //  2. invalid format
+    if (!isValidAIResponse(text)) {
+      toast.error("Invalid format. Please copy AI-generated response only.");
+      return;
+    }
+
+    //  3. valid flow
+    const parsed = parseDescriptions(text);
+
+    setAiDescriptions(parsed);
+    setShowAIModal(true);
+
+    toast.success("AI response loaded successfully!");
+  } catch (err) {
+    toast.error("Clipboard access failed. Please paste manually.");
+  }
+};
+
+//handling the ai response 
+const handleAIResponse = (text) => {
+  if (
+    !text.includes("[DESC_1]") ||
+    !text.includes("[DESC_2]") ||
+    !text.includes("[DESC_3]")
+  ) {
+    toast.error("Invalid AI format. Please regenerate.");
+    return;
+  }
+
+  const parsed = parseDescriptions(text);
+  setAiDescriptions(parsed); // store array of 3 descriptions
+  setShowAIModal(true); // open selection modal
+};
+//for spliting the description
+const parseDescriptions = (text) => {
+  const d1 = text.split("[DESC_1]")[1]?.split("[DESC_2]")[0]?.trim();
+  const d2 = text.split("[DESC_2]")[1]?.split("[DESC_3]")[0]?.trim();
+  const d3 = text.split("[DESC_3]")[1]?.trim();
+
+  return [d1, d2, d3].filter(Boolean);
+};
+//to get the selected description
+const handleSelectDescription = (desc) => {
+  setDescription(desc);
+  setShowAIModal(false);
+  toast.success("Description selected!");
+};
+//----------------these are for the auto glow of required fields error seprately ---------
+//for dynamiic toastify errors 
+const requiredFields = [
+  { key: "landtype", label: "Property Type", value: landtype },
+  { key: "state", label: "State", value: state },
+  { key: "city", label: "City", value: city },
+  { key: "pincode", label: "Pincode", value: pincode },
+  { key: "price", label: "Price", value: price },
+  { key: "length", label: "Length", value: length },
+  { key: "breadth", label: "Breadth", value: breadth },
+  { key: "description", label: "Description", value: description },
+  {
+    key: "coordinates",
+    label: "Map Location",
+    value: coordinates && coordinates.lat && coordinates.lng,
+  },
+];
+
+const missingFields = requiredFields.filter(f => !f.value);
+//for individual glow
+const fieldRefs = {
+  landtype: useRef(null),
+  state: useRef(null),
+  city: useRef(null),
+  pincode: useRef(null),
+  price: useRef(null),
+  length: useRef(null),
+  breadth: useRef(null),
+  description: useRef(null),
+  coordinates: useRef(null),
+};
+const [fieldErrors, setFieldErrors] = useState({});
+const getErrorClass = (key) => {
+  if (fieldErrors[key]) {
+    return `
+      border-red-500 
+      ring-2 ring-red-500 
+      shadow-[0_0_20px_rgba(239,68,68,0.7)] 
+      animate-pulse
+      transition-all duration-300
+    `;
+  }
+
+  return "border-white/10";
+};
+//for documents glow
+const getDocErrorClass = (doc) =>
+  docErrors[doc]
+    ? "border-red-500 ring-2 ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse"
+    : "border-white/10";
   const navigate = useNavigate();
+//for declaration
+  const handleAgreedChange = () => {
+  setAgreed(!agreed);
+
+  // remove error instantly when user fixes it
+  if (declarationError) {
+    setDeclarationError(false);
+  }
+};
+  //------------------this is for step based architecture of form filling---------------------
   // Form validation for each step
-  const validateStep = (step) => {
-    switch(step) {
-      case 1:
-        return landtype && city && state && pincode && price && length && breadth;
-      case 2:
-        return image;
-      case 3:
-        return true; // Documents are optional for validation
-      default:
-        return false;
-    }
-  };
+const validateStep = (step) => {
+  const errors = {};
 
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      toast.error("Please fill in all required fields");
-    }
-  };
+  if (step === 1) {
+    if (!landtype) errors.landtype = true;
+    if (!state) errors.state = true;
+    if (!city) errors.city = true;
+    if (!pincode) errors.pincode = true;
+    if (!price) errors.price = true;
+    if (!length) errors.length = true;
+    if (!breadth) errors.breadth = true;
+    if (!description) errors.description = true;
+    if (!coordinates?.lat || !coordinates?.lng) errors.coordinates = true;
+  }
 
+  if (step === 2) {
+    if (!image || !(image instanceof File)) {
+      errors.mainImage = true;
+    }
+  }
+
+  if (step === 3) {
+  const newDocErrors = {};
+
+  const requiredDocs = [
+    "Aadhaar",
+    "Pan",
+    "SaleDeed",
+    "LandRegistry",
+    "EncumbranceCertificate",
+    "Khata",
+    "PropertyTax",
+    "SurveyMap",
+    "Noc",
+    "OwnerPhoto",
+  ];
+
+  requiredDocs.forEach((doc) => {
+    if (!documents[doc]) {
+      newDocErrors[doc] = true;
+    }
+  });
+
+  setDocErrors(newDocErrors);
+
+  // optional: declaration validation
+  if (!agreed) {
+    setDeclarationError(true);
+  }
+}
+ if (Object.keys(errors).length > 0) {
+    setTimeout(() => setFieldErrors({}), 2000);}
+  setFieldErrors(errors);
+  return errors;
+};
+const nextStep = () => {
+  const errors = validateStep(currentStep);
+
+  if (Object.keys(errors).length > 0) {
+    const firstKey = Object.keys(errors)[0];
+
+    fieldRefs[firstKey]?.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+    return;
+  }
+
+  setCurrentStep((prev) => prev + 1);
+};
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
   };
   
+//fucntions to handle the steps 
+const getStep1Progress = () => {
+  let total = 9; // updated
+  let filled = 0;
 
+  if (landtype) filled++;
+  if (state) filled++;
+  if (city) filled++;
+  if (pincode) filled++;
+  if (price) filled++;
+  if (length) filled++;
+  if (breadth) filled++;
+  if (description) filled++; // NEW
+  if (coordinates && coordinates.lat && coordinates.lng) filled++; // NEW
 
-  
- 
-//function to handle the cooridinate based on selected state
+  return Math.round((filled / total) * 100);
+};
+const getStep2Progress = () => {
+  return image ? 100 : 0;
+};
+ const getStep3Progress = () => {
+  let progress = 0;
+
+  // Declaration = 50%
+  if (agreed) progress += 50;
+
+  // Optional docs uploaded = 50%
+  const hasDocs = Object.values(documents).some(
+    (val) => val && (Array.isArray(val) ? val.length > 0 : true)
+  );
+
+  if (hasDocs) progress += 50;
+
+  return progress;
+};
+ const step1Progress = getStep1Progress();
+ const step2Progress = getStep2Progress();
+ const step3Progress = getStep3Progress();
+ const overallProgress = Math.round(
+  (step1Progress / 100) * 33 +
+  (step2Progress / 100) * 33 +
+  (step3Progress / 100) * 34
+);
+
+//------------------this is for the document upload and final land creation section ----------
+//function tto handle document uploads 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -103,23 +389,86 @@ const [coordinates, setCoordinates] = useState(null);
     setOwner(decodedToken.userId);
   }, []);
 
-  const handleDocChange = (e) => {
-    const { name, files } = e.target;
-    if (files.length > 1) {
-      setDocuments({ ...documents, [name]: Array.from(files) });
-    } else {
-      setDocuments({ ...documents, [name]: files[0] });
-    }
-  };
+ const handleDocChange = (e) => {
+  const { name, files } = e.target;
+
+  if (files.length > 1) {
+    setDocuments({ ...documents, [name]: Array.from(files) });
+  } else {
+    setDocuments({ ...documents, [name]: files[0] });
+  }
+
+  // ✅ REMOVE GLOW instantly when user uploads
+  if (docErrors[name]) {
+    setDocErrors((prev) => ({
+      ...prev,
+      [name]: false,
+    }));
+  }
+};
 
   const uploadData = async (e) => {
     e.preventDefault();
-    toast.success("inside upload")
+   
     if (!image) {
       toast.error("Please upload the main land image.");
       return;
     }
+   if (!agreed) {
+    toast.error("⚠️ Please accept the declaration before proceeding.");
 
+    setDeclarationError(true);
+
+    // Auto scroll
+    document.getElementById("declarationBox")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    // Remove glow after 2 sec
+    setTimeout(() => setDeclarationError(false), 2000);
+
+    return;
+  }
+// ------------------ DOCUMENT VALIDATION (GLOW ONLY) ------------------
+const requiredDocs = [
+  "Aadhaar",
+  "Pan",
+  "SaleDeed",
+  "LandRegistry",
+  "EncumbranceCertificate",
+  "Khata",
+  "PropertyTax",
+  "SurveyMap",
+  "Noc",
+  "OwnerPhoto",
+];
+
+let newDocErrors = {};
+
+requiredDocs.forEach((doc) => {
+  if (!documents[doc]) {
+    newDocErrors[doc] = true;
+  }
+});
+
+if (Object.keys(newDocErrors).length > 0) {
+  setDocErrors(newDocErrors);
+
+  toast.error("⚠️ Please upload required documents");
+
+  // scroll to first missing doc
+  const firstKey = Object.keys(newDocErrors)[0];
+  document.getElementsByName(firstKey)[0]?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+
+  // remove glow after 2 sec
+  setTimeout(() => setDocErrors({}), 2000);
+
+  return; // 🚫 STOP upload
+}
     setLoading(true);
     setProgress(0);
 
@@ -140,6 +489,7 @@ const [coordinates, setCoordinates] = useState(null);
       formData.append("description", description);
       formData.append("latitude", coordinates.lat);
 formData.append("longitude", coordinates.lng);
+formData.append("declarationAccepted", agreed);
 if (!coordinates) {
   toast.error("Please select land location on map.");
   setLoading(false);
@@ -321,16 +671,18 @@ if (!coordinates) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-emerald-400 font-bold text-2xl">33%</div>
+                <div className="text-emerald-400 font-bold text-2xl">
+  {overallProgress}%
+</div>
                   <div className="text-gray-400 text-sm">Complete</div>
                 </div>
               </div>
               <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: '33%' }} />
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: `${overallProgress}%` }} />
               </div>
             </div>
           </div>
-
+        
           {/* Professional Form Content */}
           <div className="flex-1 max-w-5xl mx-auto px-8 pb-16">
             <div className="bg-white/8 backdrop-blur-xl border border-white/15 rounded-3xl shadow-2xl p-10 md:p-14">
@@ -349,8 +701,9 @@ if (!coordinates) {
                   </div>
                   <select 
                     value={landtype} 
+                    ref={fieldRefs.landtype}
                     onChange={(e) => setLandtype(e.target.value)} 
-                    className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg"
+                    className={`w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg${getErrorClass("landtype")} `}
                   >
                     <option value="" disabled className="bg-slate-800">Select Property Type</option>
                     <option value="residential" className="bg-slate-800">🏠 Residential</option>
@@ -359,29 +712,44 @@ if (!coordinates) {
                   </select>
                 </div>
 {/* Location Section */}
-<div className="bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/20">
+<div 
+  ref={fieldRefs.state}
+  className={`bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/20 ${
+    fieldErrors.state || fieldErrors.city
+      ? "ring-2 ring-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)]"
+      : ""
+  }`}
+>
   <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
     <span>📍</span> Select State & City
   </h3>
 
-  <StateCitySelector
-    onChange={({ state, city }) => {
-      setState(state);
-      setCity(city);
+ <StateCitySelector
+  state={state}
+  city={city}
+  onChange={({ state, city }) => {
+    setState(state);
+    setCity(city);
 
-      // Find city coordinates from locationData
-      const cityObj = locationData.find(
-        (c) => c.State === state && c.Location === city
-      );
+    if (fieldErrors.state || fieldErrors.city) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        state: false,
+        city: false,
+      }));
+    }
 
-      if (cityObj?.Latitude && cityObj?.Longitude) {
-        setMapCenter({ lat: cityObj.Latitude, lng: cityObj.Longitude });
-      } else if (state) {
-        // fallback: rough center of India
-        setMapCenter({ lat: 20.5937, lng: 78.9629 });
-      }
-    }}
-  />
+    const cityObj = locationData.find(
+      (c) => c.State === state && c.Location === city
+    );
+
+    if (cityObj?.Latitude && cityObj?.Longitude) {
+      setMapCenter({ lat: cityObj.Latitude, lng: cityObj.Longitude });
+    } else if (state) {
+      setMapCenter({ lat: 20.5937, lng: 78.9629 });
+    }
+  }}
+/>
 </div>
 
                 {/* Property Details Section */}
@@ -391,13 +759,14 @@ if (!coordinates) {
                       <FaEnvelope className="w-5 h-5 text-emerald-400 mr-3" />
                       <h3 className="text-lg font-bold text-white">Pincode</h3>
                     </div>
-                    <input 
-                      type="text" 
-                      placeholder="Enter pincode" 
-                      value={pincode} 
-                      onChange={(e) => setPincode(e.target.value)} 
-                      className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg"
-                    />
+                   <input 
+  type="text" 
+  placeholder="Enter pincode" 
+  value={pincode} 
+  ref={fieldRefs.pincode}
+  onChange={(e) => setPincode(e.target.value)} 
+  className={`w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg ${getErrorClass("pincode")}`}
+/>
                   </div>
                   
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -406,12 +775,13 @@ if (!coordinates) {
                       <h3 className="text-lg font-bold text-white">Price (₹)</h3>
                     </div>
                     <input 
-                      type="number" 
-                      placeholder="Enter price" 
-                      value={price} 
-                      onChange={(e) => setPrice(e.target.value)} 
-                      className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg"
-                    />
+  type="number" 
+  placeholder="Enter price" 
+  value={price} 
+  ref={fieldRefs.price}
+  onChange={(e) => setPrice(e.target.value)} 
+  className={`w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg ${getErrorClass("price")}`}
+/>
                   </div>
                   
                   <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
@@ -421,44 +791,216 @@ if (!coordinates) {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <input 
-                        type="number" 
-                        placeholder="Length" 
-                        value={length} 
-                        onChange={(e) => setLength(e.target.value)} 
-                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300"
-                      />
+  type="number" 
+  placeholder="Length" 
+  value={length} 
+  ref={fieldRefs.length}
+  onChange={(e) => setLength(e.target.value)} 
+  className={`w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 ${getErrorClass("length")}`}
+/>
                       <input 
-                        type="number" 
-                        placeholder="Breadth" 
-                        value={breadth} 
-                        onChange={(e) => setBreadth(e.target.value)} 
-                        className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300"
-                      />
+  type="number" 
+  placeholder="Breadth" 
+  value={breadth} 
+  ref={fieldRefs.breadth}
+  onChange={(e) => setBreadth(e.target.value)} 
+  className={`w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 ${getErrorClass("breadth")}`}
+/>
                     </div>
                   </div>
                 </div>
                 
                 {/* Description Section */}
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center mb-4">
-                    <FaFileAlt className="w-5 h-5 text-emerald-400 mr-3" />
-                    <h3 className="text-lg font-bold text-white">Property Description</h3>
-                  </div>
-                  <textarea 
-                    placeholder="Describe your property in detail to attract potential buyers..." 
-                    value={description} 
-                    onChange={(e) => setDescription(e.target.value)} 
-                    rows="5"
-                    className="w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg resize-none"
-                  />
-                </div>
-                   {/* ---------------- MAP PICKER ---------------- */}
-<div className="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border">
+  
+  {/* Header */}
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <FaFileAlt className="w-5 h-5 text-emerald-400 mr-3" />
+      <h3 className="text-lg font-bold text-white">Property Description</h3>
+    </div>
+
+    {/* AI Generate Button */}
+    <button
+      onClick={() => setShowPromptModal(true)}
+      className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg shadow hover:scale-105 transition"
+    >
+      ✨ AI Generate
+    </button>
+  </div>
+
+  {/* TEXTAREA */}
+  <textarea 
+    placeholder="Describe your property in detail to attract potential buyers..." 
+    value={description} 
+    ref={fieldRefs.description}
+    onChange={(e) => setDescription(e.target.value)} 
+    rows="5"
+    className={`w-full px-5 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300 text-lg resize-none ${getErrorClass("description")}`}
+  />
+</div>
+{/* description  Preview */}
+{showPromptModal && (
+  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
+    <div className="bg-slate-900 p-6 md:p-8 rounded-2xl w-full max-w-2xl border border-white/10 shadow-2xl">
+
+      {/* Header */}
+      <h2 className="text-2xl font-bold text-white mb-6">
+        ✨ AI Description Generator
+      </h2>
+
+      {/* LAND DETAILS (Compact Grid View) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-white/5 p-4 rounded-xl border border-white/10 mb-6 text-sm">
+        <div>
+          <p className="text-gray-400">Type</p>
+          <p className="text-white font-medium">{landtype || "-"}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-400">Location</p>
+          <p className="text-white font-medium">{city || "-"}, {state || "-"}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-400">Price</p>
+          <p className="text-white font-medium">₹{price || "-"}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-400">Length</p>
+          <p className="text-white font-medium">{length || "-"}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-400">Breadth</p>
+          <p className="text-white font-medium">{breadth || "-"}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-400">Status</p>
+          <p className="text-emerald-400 font-medium">Ready</p>
+        </div>
+      </div>
+
+      {/* STEP INSTRUCTIONS (CLEAR FLOW) */}
+      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
+        <h3 className="text-white font-semibold mb-3">How it works</h3>
+
+        <ol className="text-gray-300 text-sm space-y-2 list-decimal ml-5">
+          <li>Click <span className="text-emerald-400 font-medium">Open ChatGPT</span></li>
+          <li>If prompt is not auto-filled → click <span className="text-blue-400 font-medium">Copy Prompt</span></li>
+          <li>Paste prompt in ChatGPT and generate response</li>
+          <li>Copy full response from ChatGPT</li>
+          <li>Come back and click <span className="text-purple-400 font-medium">Paste AI Response</span></li>
+        </ol>
+      </div>
+
+      {/* ACTION BUTTONS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button
+          onClick={openChatGPT}
+          className="py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-semibold transition-all"
+        >
+          🚀 Open ChatGPT
+        </button>
+
+        <button
+          onClick={copyPrompt}
+          className="py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-all"
+        >
+          📋 Copy Prompt
+        </button>
+      </div>
+
+      {/* FINAL ACTION */}
+      <button
+        onClick={pasteFromClipboard}
+        className="w-full mt-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-all"
+      >
+        📥 Paste AI Response (Auto Fill Description)
+      </button>
+
+      {/* CANCEL */}
+      <button
+        onClick={() => setShowPromptModal(false)}
+        className="w-full mt-4 text-gray-400 text-sm hover:text-white transition"
+      >
+        Cancel
+      </button>
+
+    </div>
+  </div>
+)}
+{/* final description Preview */}
+{showAIModal && (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+    
+    {/* Reduced overall height so everything fits in one screen */}
+    <div className="bg-slate-900/95 p-8 rounded-3xl w-full max-w-7xl border border-white/10 shadow-2xl max-h-[90vh] flex flex-col">
+
+      <h2 className="text-2xl font-bold text-white mb-6 text-center shrink-0">
+        Choose a Description
+      </h2>
+
+      {/* Grid grows but doesn't overflow whole modal */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 flex-1 overflow-hidden">
+        {aiDescriptions.map((desc, index) => {
+
+          const titles = ["✨ Premium Style", "📈 Investment Focus", "📄 Simple Overview"];
+
+          return (
+            <div
+              key={index}
+              className="bg-white/5 backdrop-blur-md p-6 rounded-2xl border border-white/10 hover:border-emerald-400/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all duration-300 flex flex-col"
+            >
+              <h4 className="text-emerald-400 font-semibold mb-3 text-lg shrink-0">
+                {titles[index]}
+              </h4>
+
+              {/* SCROLL AREA (fixed height ~250px) */}
+              <div className="flex-1 max-h-[250px] overflow-y-auto pr-2">
+                <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">
+                  {desc}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  handleSelectDescription(desc);
+                  setShowAIModal(false);
+                  setShowPromptModal(false);
+                }}
+                className="mt-4 w-full py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-emerald-500/30 shrink-0"
+              >
+                Use This
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Always visible (no scroll needed) */}
+      <button
+        onClick={() => setShowAIModal(false)}
+        className="mt-6 text-gray-400 text-sm hover:text-white transition self-center shrink-0"
+      >
+        Cancel
+      </button>
+
+    </div>
+  </div>
+)}
+                 {/* ---------------- MAP PICKER ---------------- */}
+<div 
+  ref={fieldRefs.coordinates}
+  className={`bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-md border ${getErrorClass("coordinates")}`}
+>
   <h3 className="text-xl font-semibold mb-4 text-gray-800">
     Select Land Location on Map
   </h3>
 
-   <MapPicker center={mapCenter} setCoordinates={setCoordinates} />
+  <MapPicker center={mapCenter} setCoordinates={setCoordinates} />
+
   {coordinates && (
     <p>
       Selected: Lat {coordinates.lat}, Lng {coordinates.lng}
@@ -531,12 +1073,14 @@ if (!coordinates) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-emerald-400 font-bold text-2xl">66%</div>
+                <div className="text-emerald-400 font-bold text-2xl">
+  {overallProgress}%
+</div>
                   <div className="text-gray-400 text-sm">Complete</div>
                 </div>
               </div>
               <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: '66%' }} />
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: `${overallProgress}%` }} />
               </div>
             </div>
           </div>
@@ -554,20 +1098,29 @@ if (!coordinates) {
                   High-quality photos increase property visibility by 85%
                 </p>
                 
-                <div className="flex flex-col items-center gap-4">
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    onChange={(e) => setImage(e.target.files[0])} 
-                    className="hidden" 
-                    id="mainImage"
-                  />
-                  <label htmlFor="mainImage" className="cursor-pointer px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 inline-flex items-center gap-3 text-lg">
-                    <FaUpload />
-                    Choose Main Image
-                  </label>
-                  <p className="text-gray-400 text-sm">or drag and drop your files here</p>
-                </div>
+               <div className={`flex flex-col items-center gap-4 p-4 rounded-2xl border transition-all duration-300 ${getErrorClass("mainImage")}`}>
+
+  <input 
+    type="file" 
+    accept="image/*" 
+    onChange={(e) => setImage(e.target.files[0])} 
+    className="hidden" 
+    id="mainImage"
+  />
+
+  <label
+    htmlFor="mainImage"
+    className="cursor-pointer px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 inline-flex items-center gap-3 text-lg"
+  >
+    <FaUpload />
+    Choose Main Image
+  </label>
+
+  <p className="text-gray-400 text-sm">
+    or drag and drop your files here
+  </p>
+
+</div>
                 
                 {image && (
                   <div className="mt-8 p-6 bg-emerald-500/10 border border-emerald-400/30 rounded-2xl">
@@ -672,12 +1225,14 @@ if (!coordinates) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-emerald-400 font-bold text-2xl">100%</div>
+<div className="text-emerald-400 font-bold text-2xl">
+  {overallProgress}%
+</div>
                   <div className="text-gray-400 text-sm">Complete</div>
                 </div>
               </div>
               <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: '100%' }} />
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-700 shadow-lg" style={{ width: `${overallProgress}%` }} />
               </div>
             </div>
           </div>
@@ -693,7 +1248,10 @@ if (!coordinates) {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {["Aadhaar","Pan","SaleDeed","LandRegistry","EncumbranceCertificate","Khata","PropertyTax","SurveyMap","Noc","OwnerPhoto"].map(doc => (
-                    <div key={doc} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-emerald-400/30 transition-all duration-300">
+                    <div
+  key={doc}
+  className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border transition-all duration-300 hover:border-emerald-400/30 ${getDocErrorClass(doc)}`}
+>
                       <label className="block text-emerald-400 font-bold mb-3 text-lg">
                         {doc.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}
                       </label>
@@ -738,7 +1296,73 @@ if (!coordinates) {
                   </div>
                 </div>
               </div>
+     {/* SELF DECLARATION */}
+<div
+  id="declarationBox"
+  className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border mt-8 transition-all duration-300
+  ${
+    declarationError
+      ? "border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-shake"
+      : "border-white/10"
+  }`}
+>
+  <h3 className="text-xl font-bold text-white mb-4">
+    Declaration & Disclaimer
+  </h3>
 
+  <div className="text-gray-300 text-sm space-y-3 leading-relaxed">
+
+    <p>
+      I hereby declare that I am the lawful owner or legally authorized representative
+      of this property and that all information provided by me is true, complete, and accurate
+      to the best of my knowledge.
+    </p>
+
+    <p>
+      I confirm that all documents uploaded are genuine, valid, and belong to the stated property.
+      I further declare that there are no undisclosed disputes, claims, encumbrances, or legal
+      proceedings associated with this property.
+    </p>
+
+    <p>
+      By submitting this form, I accept full responsibility
+      for the correctness of the data submitted.
+    </p>
+
+    <p>
+      I agree that in case any information is found to be false, misleading, or fraudulent,
+      my account may be suspended or permanently terminated, and the matter may be reported
+      to the appropriate legal authorities.
+    </p>
+
+    <p className="text-red-400 font-semibold">
+      ⚠️ <strong>Legal Warning:</strong> Submission of false information or forged documents is a criminal offense under applicable Indian laws, including:
+      <br />
+      • <strong>IPC Section 420</strong> – Cheating (up to 7 years imprisonment + fine)
+      <br />
+      • <strong>IPC Section 465</strong> – Forgery (up to 2 years imprisonment + fine)
+      <br />
+      • <strong>IPC Section 468</strong> – Forgery for purpose of cheating (up to 7 years imprisonment + fine)
+      <br />
+      • <strong>IPC Section 471</strong> – Using forged documents as genuine
+    </p>
+
+  </div>
+
+  <div className="flex items-center mt-5 gap-3">
+   <input
+  type="checkbox"
+  checked={agreed}
+  onChange={handleAgreedChange}
+  className={`w-5 h-5 accent-emerald-500 transition-all duration-300
+    ${declarationError ? "ring-2 ring-red-500" : ""}
+  `}
+/>
+    <label className="text-white text-sm">
+      I have read, understood, and agree to the above declaration and disclaimer
+    </label>
+  </div>
+</div>
               {/* Professional Navigation */}
               <div className="flex justify-between items-center mt-12 pt-8 border-t border-white/10">
                 <button
@@ -750,9 +1374,10 @@ if (!coordinates) {
                   Back to Images
                 </button>
                 <button
-                  type="submit"
+                  type="submit" 
                   className="group px-12 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30 transform hover:scale-105 flex items-center gap-3 text-lg"
-                  disabled={loading}
+                  disabled={loading }
+                  
                 >
                   {loading ? (
                     <>

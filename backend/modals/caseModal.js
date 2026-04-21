@@ -41,6 +41,27 @@ const caseSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Chat",
     },
+    closedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
+
+closedAt: {
+  type: Date,
+  default: null,
+},
+
+closureReasonType: {
+  type: String,
+  enum: ["deal_completed", "cancelled", "dispute", "expired", "other"],
+  default: null,
+},
+
+closureReasonText: {
+  type: String,
+  default: "",
+},
   },
   { timestamps: true }
 );

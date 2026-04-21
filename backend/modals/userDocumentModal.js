@@ -8,27 +8,70 @@ const UserDocumentSchema = new mongoose.Schema(
       required: true,
     },
 
-    //  Overall status of all documents
+    // =========================
+    // USER DECLARATION (KYC)
+    // =========================
+    userDeclaration: {
+      accepted: {
+        type: Boolean,
+        default: false,
+      },
+      acceptedAt: {
+        type: Date,
+        default: null,
+      },
+      ipAddress: {
+        type: String,
+        default: null,
+      },
+      userAgent: {
+        type: String,
+        default: null,
+      },
+    },
+
+    // =========================
+    // LAWYER DECLARATION (KYC)
+    // =========================
+    lawyerDeclaration: {
+      accepted: {
+        type: Boolean,
+        default: false,
+      },
+      acceptedAt: {
+        type: Date,
+        default: null,
+      },
+      lawyerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+      },
+    },
+
+    // =========================
+    // OVERALL STATUS
+    // =========================
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
 
-    //  WHO approved all documents (LAWYER)
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
     },
 
-    //  Whether full KYC is approved
     isFullyApproved: {
       type: Boolean,
       default: false,
     },
 
-    //  Individual Documents
+    // =========================
+    // DOCUMENTS
+    // =========================
     documents: [
       {
         type: {
@@ -56,14 +99,12 @@ const UserDocumentSchema = new mongoose.Schema(
           },
         },
 
-        // Individual doc status
         status: {
           type: String,
           enum: ["pending", "approved", "rejected"],
           default: "pending",
         },
 
-        //  WHO reviewed this doc
         reviewedBy: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
@@ -73,6 +114,12 @@ const UserDocumentSchema = new mongoose.Schema(
         reviewedAt: {
           type: Date,
           default: null,
+        },
+
+        // 🔥 (NEW - optional but powerful)
+        reviewNote: {
+          type: String,
+          default: "",
         },
 
         uploadedAt: {

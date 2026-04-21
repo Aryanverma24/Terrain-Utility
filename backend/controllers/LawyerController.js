@@ -76,7 +76,7 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Land not found" });
   }
 
-  // ✅ Prepare update object (NO overwrite)
+  // Prepare update object (NO overwrite)
   let updateFields = {};
 
   if (action === "approve") {
@@ -95,13 +95,13 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid action" });
   }
 
-  // 🔥 SAFE UPDATE (no validation crash)
+  //  SAFE UPDATE (no validation crash)
   await Land.updateOne(
     { _id: landId },
     { $set: updateFields }
   );
 
-  // ✅ Fetch updated land (for response + notification)
+  //  Fetch updated land (for response + notification)
   const updatedLand = await Land.findById(landId);
 
   // Create notification

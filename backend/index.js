@@ -49,7 +49,7 @@ const io = new Server(server, {
     credentials: true
   }
 });
-
+app.set("trust proxy", true);
 // CORS options
 const corsOption = {
   origin: "http://localhost:5173",

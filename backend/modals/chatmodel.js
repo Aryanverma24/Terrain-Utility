@@ -26,6 +26,33 @@ const chatSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    status: {
+  type: String,
+  enum: ["active", "terminated"],
+  default: "active",
+},
+
+terminatedBy: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User",
+  default: null,
+},
+
+terminatedAt: {
+  type: Date,
+  default: null,
+},
+
+terminationReasonType: {
+  type: String,
+  enum: ["deal_completed", "not_interested", "no_response", "spam", "other"],
+  default: null,
+},
+
+terminationReasonText: {
+  type: String,
+  default: "",
+},
 
     lastMessageAt: { type: Date, default: Date.now },
     lastMessage: { type: String, default: "" },

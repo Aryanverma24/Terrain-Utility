@@ -28,7 +28,7 @@ const createLand = asyncHandler(async (req, res) => {
   
   const { landtype, city, state, pincode, price, length, breadth, description, latitude, longitude } = req.body;
   const { id, username } = req.user;
-
+const { declarationAccepted } = req.body;
   // Validation
   if (!landtype || !city || !state || !pincode || !price || !length || !breadth || !description || !req.file) {
     console.log("❌ Validation failed:", {
@@ -37,11 +37,21 @@ const createLand = asyncHandler(async (req, res) => {
     });
     return res.status(400).send("All fields are required, including image!");
   }
+  if (!declarationAccepted || declarationAccepted !== "true") {
+  return res.status(400).json({
+    message: "You must accept the declaration before submitting."
+  });
+}
 
   const dimensionsString = `${length}*${breadth}`;
   const localPath = req.file.path;
 
-  
+  const ip =
+  req.headers["x-forwarded-for"]?.split(",")[0] ||
+  req.socket?.remoteAddress ||
+  req.ip;
+
+const userAgent = req.headers["user-agent"] || "unknown";
 
   try {
     //  CREATE LAND
@@ -66,6 +76,13 @@ const createLand = asyncHandler(async (req, res) => {
         type: "Point",
         coordinates: [parseFloat(longitude), parseFloat(latitude)],
       },
+      declaration: {
+  accepted: true,
+  acceptedAt: new Date(),
+  ipAddress: ip,
+  userAgent: userAgent,
+  version: "v1.0",
+},
     });
 
     await land.save();
@@ -1178,7 +1195,44 @@ const geoVerifyLand = async (req, res) => {
     res.status(500).json({ message: "Geo verification failed" });
   }
 };
+//lawyer declaration
+const saveLawyerDeclaration = async (req, res) => {
+  try {
+    const land = await Land.findById(req.params.id);
 
+    if (!land) {
+      return res.status(404).json({ message: "Land not found" });
+    }
+    if (land.geoVerification?.lawyerDeclaration?.accepted) {
+  return res.status(400).json({
+    message: "Declaration already submitted",
+  });
+}
+
+    // ✅ Ensure geoVerification exists
+    if (!land.geoVerification) {
+      land.geoVerification = {};
+    }
+
+    // ✅ UPDATE CORRECT FIELD
+    land.geoVerification.lawyerDeclaration = {
+      accepted: true,
+      acceptedAt: new Date(),
+      lawyerId: req.user._id,
+    };
+
+    await land.save();
+
+    res.json({
+      message: "Declaration saved",
+      lawyerDeclaration: land.geoVerification.lawyerDeclaration,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to save declaration" });
+  }
+};
 
 // ----------------------------------------------
 export {
@@ -1203,5 +1257,6 @@ export {
   getInterestedUsers,
   getLandDashboard,
   geoVerifyLand,
+  saveLawyerDeclaration
   // updateInterestStatus,
 };
