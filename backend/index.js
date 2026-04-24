@@ -19,6 +19,7 @@ import documentRoutes from "./routes/documentRoutes.js";
 import upload from "./utils/multerConfig.js";
 import notificationRoutes from "./routes/NotificationRoutes.js";
 import paymentRoutes from './routes/PaymentRoutes.js'
+import registrarRoutes from './routes/registrarRoutes.js'
 
 import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
@@ -28,7 +29,7 @@ import Chat from "./modals/chatmodel.js";
 import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
-
+import Registrar from "./modals/registrarModal.js";
 import dotenv from "dotenv";
 import { configureCloudinary } from "./config/cloudinary.js";
 dotenv.config();
@@ -270,11 +271,13 @@ app.use('/api/messages', chatRoutes);
 app.use("/api/chat", chatRoutes); // Chat routes integration
 app.use("/api/lawyer",lawyerRoutes);
 app.use("/api/payment", paymentRoutes);
-
+app.use("/api/registrar",registrarRoutes);
 app.use((req, res, next) => {
   console.log("🌍 Incoming:", req.method, req.url);
   next();
 });
+
+
 //add user face data
 app.post('/api/add-face', async (req, res) => {
   const { email, faceDescriptor } = req.body;

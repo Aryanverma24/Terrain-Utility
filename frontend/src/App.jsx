@@ -25,7 +25,7 @@ function App() {
   const location = useLocation();
 
   // Hide footer on specific routes (no need for useEffect)
-  const hideFooter = ["/login", "/register", "/chat", "/adminDashboard", "/uploads", "/congratulations"].includes(location.pathname);
+  const hideFooter = ["/login", "/register", "/chat", "/adminDashboard", "/uploads", "/registrar-activate","/registrar-login","/congratulations"].includes(location.pathname);
 
   return (
     <>

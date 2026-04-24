@@ -8,6 +8,8 @@ import { createRef } from "react";
 import Login from './component/Auth/Login.jsx';
 import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
+import RegistrarActivate from './component/Auth/registrarActivation.jsx';
+import RegistrarLogin from './component/Auth/registrarLogin.jsx';
 import AuthState from '../contexts/authContext.jsx';
 import Home from './component/LandingPage/Home.jsx';
 import CreateLand from './component/Lands/CreateLand.jsx';
@@ -35,6 +37,8 @@ import OwnerDocuments from './component/Lands/ownerDocuments.jsx';
 import LawyerDocuments from './component/lawyer/lawyerDocuments.jsx';
 import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
 import CongratulationsPage from './component/Payment/CongratulationsPage.jsx';
+import RegistrarDashboard from './component/RegistrarDashboard/registrarDashboard.jsx';
+
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
@@ -61,8 +65,8 @@ const router = createBrowserRouter(
 
       <Route path="/notifications" element={<NotificationPanelPage />} />
       <Route path="/admin-login" element={<AdminLogin />} />
-
-
+      <Route path="/registrar-activate" element={<RegistrarActivate />}/>
+      <Route path="/registrar-login" element={<RegistrarLogin />}/>
       {/* Land Details Route */}
       <Route path="/land/:id" element={<SingleLand />} />
 
@@ -92,6 +96,8 @@ const router = createBrowserRouter(
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}
       {/* <Route path='/add-face' element={<FaceSetup />} /> */}
    
+    {/* registrar routes */}
+    <Route path="/registrar-dashboard" element={<RegistrarDashboard/>}/>
   {/* admin routes */}
       <Route path='/adminDashboard' element={<AdminDashboard />} />
       <Route path="/admin/users" element={<UserManagement />} />

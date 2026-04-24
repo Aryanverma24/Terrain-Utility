@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
    contactNumber: { type: Number, required: true, unique: true },
    password: { type: String, required: true, minLength: 8 },
    isAdmin: { type: Boolean, default: false },
-   role: { type: String, enum: ["buyerSeller", "lawyer", "admin"], default: "buyerSeller" },  
+   role: { type: String, enum: ["buyerSeller", "lawyer", "admin","registrar"], default: "buyerSeller" },  
    City: { type: String, default: "unknown" },
    state: { type: String, default: "unknown" },
    gender: { type: String, default: "unknown" },
