@@ -1,56 +1,54 @@
-import axios from "axios";
-import { createContext, useState } from "react";
+import axios from 'axios';
+import { createContext, useState } from 'react';
 export const AuthContext = createContext();
-import React from 'react'
-import { API } from "../utils/API";
+import React from 'react';
+import { API } from '../utils/API';
 
-const AuthState = ({children}) => {
+const AuthState = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated]  = useState(false)
-
-
-    const getUser = async () => {
-        try {
-            const { data } = await API.get("/api/users/profile");
-            console.log(data);  // Log response to check if user data is returned
-            if (data?.data) {
-                setUser(data.data);  // Set user data in state
-                setIsAuthenticated(true);  // Set authenticated flag
-                localStorage.setItem("user", JSON.stringify(data.data));  // Ensure localStorage is updated
-            } else {
-                localStorage.removeItem("user");
-                localStorage.removeItem("token");
-                setUser(null);
-                setIsAuthenticated(false);
-            }
-        } catch (error) {
-            localStorage.removeItem("user");
-            localStorage.removeItem("token");
-            setUser(null);
-            setIsAuthenticated(false);
-            console.log(error);  // Log any errors
-        }
-    };
-    
-
-    const logout = ()=>{
-        localStorage.removeItem("token");
+  const getUser = async () => {
+    try {
+      const { data } = await API.get('/api/users/profile');
+      console.log(data); // Log response to check if user data is returned
+      if (data?.data) {
+        setUser(data.data); // Set user data in state
+        setIsAuthenticated(true); // Set authenticated flag
+        localStorage.setItem('user', JSON.stringify(data.data)); // Ensure localStorage is updated
+      } else {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         setUser(null);
         setIsAuthenticated(false);
+      }
+    } catch (error) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      setUser(null);
+      setIsAuthenticated(false);
+      console.log(error); // Log any errors
     }
+  };
 
-  
+  const logout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   return (
     <AuthContext.Provider
-    value={{
-        user, isAuthenticated,getUser,logout,
-    }}
+      value={{
+        user,
+        isAuthenticated,
+        getUser,
+        logout,
+      }}
     >
-        {children}
+      {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export default AuthState; 
+export default AuthState;

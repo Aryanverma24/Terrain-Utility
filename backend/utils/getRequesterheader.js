@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken';
 
 export const getRequesterFromHeader = (req) => {
   try {
@@ -7,30 +7,24 @@ export const getRequesterFromHeader = (req) => {
 
     let token;
 
-    if (authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     } else {
       token = authHeader;
     }
 
-   
     token = token?.trim();
 
-  
-
-    if (!token || token === "undefined") return null;
+    if (!token || token === 'undefined') return null;
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  
-
     return {
-      id: (decoded.userId || decoded.id || decoded._id || "").toString(),
+      id: (decoded.userId || decoded.id || decoded._id || '').toString(),
       role: decoded.role || null,
     };
-
   } catch (err) {
-    console.error("⚠️ JWT verification failed:", err.message);
+    console.error('⚠️ JWT verification failed:', err.message);
     return null;
   }
 };

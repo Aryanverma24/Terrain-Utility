@@ -1,4 +1,4 @@
-import { FaBullseye, FaEye, FaLightbulb, FaHandshake } from "react-icons/fa";
+import { FaBullseye, FaEye, FaLightbulb, FaHandshake } from 'react-icons/fa';
 
 export const MissionVision = () => {
   return (
@@ -17,7 +17,8 @@ export const MissionVision = () => {
             </span>
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Guided by our commitment to excellence and innovation in land management solutions
+            Guided by our commitment to excellence and innovation in land management
+            solutions
           </p>
         </div>
 
@@ -35,13 +36,14 @@ export const MissionVision = () => {
                   <div className="w-12 h-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"></div>
                 </div>
               </div>
-              
+
               <p className="text-gray-700 leading-relaxed mb-6">
-                To revolutionize land management through innovative technology solutions that empower 
-                individuals and organizations to make informed decisions about land assets. We strive to 
-                simplify complex processes and provide accessible tools for everyone.
+                To revolutionize land management through innovative technology solutions
+                that empower individuals and organizations to make informed decisions
+                about land assets. We strive to simplify complex processes and provide
+                accessible tools for everyone.
               </p>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3"></div>
@@ -57,7 +59,7 @@ export const MissionVision = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Glow Effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
           </div>
@@ -74,13 +76,14 @@ export const MissionVision = () => {
                   <div className="w-12 h-1 bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full"></div>
                 </div>
               </div>
-              
+
               <p className="text-gray-700 leading-relaxed mb-6">
-                To become the global leader in land management technology, creating a world where 
-                land-related decisions are data-driven, transparent, and efficient. We envision a future 
-                where land management is seamless and accessible to all.
+                To become the global leader in land management technology, creating a
+                world where land-related decisions are data-driven, transparent, and
+                efficient. We envision a future where land management is seamless and
+                accessible to all.
               </p>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-cyan-500 rounded-full mr-3"></div>
@@ -92,11 +95,13 @@ export const MissionVision = () => {
                 </div>
                 <div className="flex items-center">
                   <div className="w-2 h-2 bg-cyan-500 rounded-full mr-3"></div>
-                  <span className="text-gray-700">Transparent and efficient processes</span>
+                  <span className="text-gray-700">
+                    Transparent and efficient processes
+                  </span>
                 </div>
               </div>
             </div>
-            
+
             {/* Glow Effect */}
             <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700"></div>
           </div>

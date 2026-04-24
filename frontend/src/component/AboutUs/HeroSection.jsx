@@ -1,13 +1,16 @@
-import { FaShieldAlt, FaUsers, FaRocket, FaCheckCircle } from "react-icons/fa";
+import { FaShieldAlt, FaUsers, FaRocket, FaCheckCircle } from 'react-icons/fa';
 
 export const HeroSection = () => {
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        ></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,8 +31,9 @@ export const HeroSection = () => {
 
           {/* Subheading */}
           <p className="text-xl sm:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
-            We are a team of passionate innovators dedicated to solving real-world land management challenges 
-            through cutting-edge technology and user-centric design solutions.
+            We are a team of passionate innovators dedicated to solving real-world land
+            management challenges through cutting-edge technology and user-centric design
+            solutions.
           </p>
 
           {/* Key Features */}
@@ -39,7 +43,9 @@ export const HeroSection = () => {
                 <FaUsers className="text-white text-xl" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Expert Team</h3>
-              <p className="text-gray-600">Founded by passionate innovators with diverse expertise</p>
+              <p className="text-gray-600">
+                Founded by passionate innovators with diverse expertise
+              </p>
             </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/20">
@@ -47,7 +53,9 @@ export const HeroSection = () => {
                 <FaRocket className="text-white text-xl" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Innovation Driven</h3>
-              <p className="text-gray-600">Cutting-edge technology solutions for land management</p>
+              <p className="text-gray-600">
+                Cutting-edge technology solutions for land management
+              </p>
             </div>
 
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/20">
@@ -55,7 +63,9 @@ export const HeroSection = () => {
                 <FaCheckCircle className="text-white text-xl" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Quality Focused</h3>
-              <p className="text-gray-600">User-centric design and reliable implementation</p>
+              <p className="text-gray-600">
+                User-centric design and reliable implementation
+              </p>
             </div>
           </div>
         </div>

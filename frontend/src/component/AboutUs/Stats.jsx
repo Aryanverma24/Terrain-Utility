@@ -1,19 +1,26 @@
-import { FaUsers, FaMapMarkerAlt, FaRocket, FaShieldAlt, FaClock, FaStar } from "react-icons/fa";
-import { useState, useEffect } from "react";
+import {
+  FaUsers,
+  FaMapMarkerAlt,
+  FaRocket,
+  FaShieldAlt,
+  FaClock,
+  FaStar,
+} from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 
 export const Stats = () => {
   const [counters, setCounters] = useState({
     users: 0,
     properties: 0,
     satisfaction: 0,
-    years: 0
+    years: 0,
   });
 
   const targetStats = {
     users: 10000,
     properties: 5000,
     satisfaction: 98,
-    years: 5
+    years: 5,
   };
 
   useEffect(() => {
@@ -22,14 +29,16 @@ export const Stats = () => {
     const stepDuration = duration / steps;
 
     const timer = setInterval(() => {
-      setCounters(prev => {
+      setCounters((prev) => {
         const newCounters = { ...prev };
         let allComplete = true;
 
-        Object.keys(newCounters).forEach(key => {
+        Object.keys(newCounters).forEach((key) => {
           const target = targetStats[key];
-          const increment = (target - prev[key]) / (steps - Object.keys(prev).filter(k => prev[k] >= targetStats[k]).length);
-          
+          const increment =
+            (target - prev[key]) /
+            (steps - Object.keys(prev).filter((k) => prev[k] >= targetStats[k]).length);
+
           if (newCounters[key] < target) {
             newCounters[key] = Math.min(newCounters[key] + increment, target);
             allComplete = false;
@@ -51,44 +60,47 @@ export const Stats = () => {
     {
       icon: FaUsers,
       value: Math.round(counters.users).toLocaleString(),
-      label: "Active Users",
-      suffix: "+",
-      color: "from-emerald-500 to-cyan-500",
-      bgColor: "from-emerald-100 to-cyan-100"
+      label: 'Active Users',
+      suffix: '+',
+      color: 'from-emerald-500 to-cyan-500',
+      bgColor: 'from-emerald-100 to-cyan-100',
     },
     {
       icon: FaMapMarkerAlt,
       value: Math.round(counters.properties).toLocaleString(),
-      label: "Properties Listed",
-      suffix: "+",
-      color: "from-blue-500 to-purple-500",
-      bgColor: "from-blue-100 to-purple-100"
+      label: 'Properties Listed',
+      suffix: '+',
+      color: 'from-blue-500 to-purple-500',
+      bgColor: 'from-blue-100 to-purple-100',
     },
     {
       icon: FaStar,
       value: Math.round(counters.satisfaction),
-      label: "Satisfaction Rate",
-      suffix: "%",
-      color: "from-yellow-500 to-orange-500",
-      bgColor: "from-yellow-100 to-orange-100"
+      label: 'Satisfaction Rate',
+      suffix: '%',
+      color: 'from-yellow-500 to-orange-500',
+      bgColor: 'from-yellow-100 to-orange-100',
     },
     {
       icon: FaClock,
       value: Math.round(counters.years),
-      label: "Years of Innovation",
-      suffix: "+",
-      color: "from-rose-500 to-pink-500",
-      bgColor: "from-rose-100 to-pink-100"
-    }
+      label: 'Years of Innovation',
+      suffix: '+',
+      color: 'from-rose-500 to-pink-500',
+      bgColor: 'from-rose-100 to-pink-100',
+    },
   ];
 
   return (
     <section className="py-20 lg:py-24 bg-gradient-to-br from-slate-50 via-emerald-50 to-slate-50">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        ></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,16 +110,17 @@ export const Stats = () => {
             <FaRocket className="mr-2" />
             Our Impact
           </div>
-          
+
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
             Numbers That
             <span className="block bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
               Speak for Themselves
             </span>
           </h2>
-          
+
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Our growth and impact measured in real numbers, reflecting our commitment to excellence
+            Our growth and impact measured in real numbers, reflecting our commitment to
+            excellence
           </p>
         </div>
 
@@ -115,22 +128,24 @@ export const Stats = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
-            
+
             return (
-              <div
-                key={index}
-                className="group relative"
-              >
+              <div key={index} className="group relative">
                 {/* Stat Card */}
                 <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/20 hover:border-emerald-200/50 text-center">
-                  
                   {/* Gradient Overlay on Hover */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor}/20 transition-opacity duration-700 opacity-0 group-hover:opacity-100`}></div>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor}/20 transition-opacity duration-700 opacity-0 group-hover:opacity-100`}
+                  ></div>
 
                   {/* Icon */}
                   <div className="flex justify-center mb-6">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${stat.bgColor} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110`}>
-                      <Icon className={`text-2xl bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`} />
+                    <div
+                      className={`w-16 h-16 bg-gradient-to-br ${stat.bgColor} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110`}
+                    >
+                      <Icon
+                        className={`text-2xl bg-gradient-to-br ${stat.color} bg-clip-text text-transparent`}
+                      />
                     </div>
                   </div>
 
@@ -140,15 +155,15 @@ export const Stats = () => {
                       {stat.value}
                       <span className="text-2xl sm:text-3xl">{stat.suffix}</span>
                     </div>
-                    
-                    <p className="text-gray-600 font-medium">
-                      {stat.label}
-                    </p>
+
+                    <p className="text-gray-600 font-medium">{stat.label}</p>
                   </div>
                 </div>
 
                 {/* Glow Effect */}
-                <div className={`absolute -inset-1 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700`}></div>
+                <div
+                  className={`absolute -inset-1 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700`}
+                ></div>
               </div>
             );
           })}

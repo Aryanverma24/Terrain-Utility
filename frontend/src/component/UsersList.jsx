@@ -10,7 +10,7 @@ const UsersList = ({ setSelectedUserId }) => {
     const fetchUsers = async () => {
       try {
         // Replace with your correct API endpoint
-        const response = await axios.get('http://localhost:5000/api/users'); 
+        const response = await axios.get('http://localhost:5000/api/users');
 
         console.log(response.data); // Log the data to inspect its structure
 

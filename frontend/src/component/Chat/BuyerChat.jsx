@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext, useRef } from "react";
-import axios from "axios";
-import io from "socket.io-client";
-import { useParams, useLocation } from "react-router-dom";
-import { AuthContext } from "../../../contexts/AuthContext";
-import socket from "../../../utils/socket";
+import React, { useEffect, useState, useContext, useRef } from 'react';
+import axios from 'axios';
+import io from 'socket.io-client';
+import { useParams, useLocation } from 'react-router-dom';
+import { AuthContext } from '../../../contexts/AuthContext';
+import socket from '../../../utils/socket';
 const SOCKET_URL = socket;
 
 export default function BuyerChat() {
@@ -18,7 +18,7 @@ export default function BuyerChat() {
   const [chat, setChat] = useState(null);
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const messagesEndRef = useRef(null);
 
   // --- Get or create chat ---
@@ -27,17 +27,17 @@ export default function BuyerChat() {
       const res = await axios.post(
         `${SOCKET_URL}/api/chat/get-or-create`,
         { landId, buyerId, ownerId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       return res.data;
     } catch (err) {
-      console.error("Error getting or creating chat:", err);
+      console.error('Error getting or creating chat:', err);
     }
   };
 
   useEffect(() => {
     if (!landId || !buyerId || !ownerId) return;
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     createOrGetChat(landId, buyerId, ownerId, token).then((chatData) => {
       if (chatData) setChat(chatData);
     });
@@ -49,9 +49,9 @@ export default function BuyerChat() {
     const s = io(SOCKET_URL);
     setSocket(s);
 
-    s.emit("joinRoom", { room: chat._id });
+    s.emit('joinRoom', { room: chat._id });
 
-    s.on("message", (msg) => setMessages((prev) => [...prev, msg]));
+    s.on('message', (msg) => setMessages((prev) => [...prev, msg]));
     return () => s.disconnect();
   }, [chat?._id, buyerId]);
 
@@ -63,7 +63,7 @@ export default function BuyerChat() {
         const res = await axios.get(`${SOCKET_URL}/api/chat/${chat._id}/messages`);
         setMessages(res.data || []);
       } catch (err) {
-        console.error("Error fetching messages:", err);
+        console.error('Error fetching messages:', err);
       }
     };
     fetchMessages();
@@ -71,13 +71,13 @@ export default function BuyerChat() {
 
   // --- Scroll to bottom ---
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // --- Send message ---
   const handleSend = async () => {
     if (!text.trim() || !chat) return;
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
 
     const msgPayload = {
       chatId: chat._id,
@@ -92,11 +92,14 @@ export default function BuyerChat() {
       await axios.post(`${SOCKET_URL}/api/chat/send`, msgPayload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      socket?.emit("sendMessage", msgPayload);
-      setMessages((prev) => [...prev, { ...msgPayload, timestamp: new Date().toISOString() }]);
-      setText("");
+      socket?.emit('sendMessage', msgPayload);
+      setMessages((prev) => [
+        ...prev,
+        { ...msgPayload, timestamp: new Date().toISOString() },
+      ]);
+      setText('');
     } catch (err) {
-      console.error("Send message error:", err);
+      console.error('Send message error:', err);
     }
   };
 
@@ -106,7 +109,7 @@ export default function BuyerChat() {
         {/* Chat Header */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
           <h2 className="text-2xl font-bold text-gray-800 animate-pulse">
-            Chat with {ownerName || "Owner"}
+            Chat with {ownerName || 'Owner'}
           </h2>
           <span className="text-sm text-gray-500">{buyerName}</span>
         </div>
@@ -121,17 +124,20 @@ export default function BuyerChat() {
           {messages.map((m, i) => {
             const mine = m.senderId === buyerId;
             return (
-              <div key={m._id || i} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div
+                key={m._id || i}
+                className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
+              >
                 <div
                   className={`p-3 rounded-2xl max-w-[80%] break-words transition-shadow duration-200 ${
                     mine
-                      ? "bg-rose-200 text-rose-900 hover:shadow-lg"
-                      : "bg-gray-100 text-gray-900 hover:shadow-md"
+                      ? 'bg-rose-200 text-rose-900 hover:shadow-lg'
+                      : 'bg-gray-100 text-gray-900 hover:shadow-md'
                   }`}
                   style={{
                     boxShadow: mine
-                      ? "6px 6px 18px rgba(219, 39, 119, 0.15)"
-                      : "6px 6px 18px rgba(15,23,42,0.05)",
+                      ? '6px 6px 18px rgba(219, 39, 119, 0.15)'
+                      : '6px 6px 18px rgba(15,23,42,0.05)',
                   }}
                 >
                   <div className="text-sm font-semibold mb-1">{m.senderName}</div>
@@ -151,7 +157,7 @@ export default function BuyerChat() {
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             className="flex-1 rounded-2xl border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all duration-200 shadow-sm"
             placeholder="Type your message..."
           />

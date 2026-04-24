@@ -1,10 +1,10 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const UserDocumentSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
@@ -44,7 +44,7 @@ const UserDocumentSchema = new mongoose.Schema(
       },
       lawyerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
         default: null,
       },
     },
@@ -54,13 +54,13 @@ const UserDocumentSchema = new mongoose.Schema(
     // =========================
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
     },
 
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       default: null,
     },
 
@@ -77,13 +77,13 @@ const UserDocumentSchema = new mongoose.Schema(
         type: {
           type: String,
           enum: [
-            "Aadhaar",
-            "PAN",
-            "Passport",
-            "VoterID",
-            "DrivingLicense",
-            "AddressProof",
-            "ProfilePhoto",
+            'Aadhaar',
+            'PAN',
+            'Passport',
+            'VoterID',
+            'DrivingLicense',
+            'AddressProof',
+            'ProfilePhoto',
           ],
           required: true,
         },
@@ -101,13 +101,13 @@ const UserDocumentSchema = new mongoose.Schema(
 
         status: {
           type: String,
-          enum: ["pending", "approved", "rejected"],
-          default: "pending",
+          enum: ['pending', 'approved', 'rejected'],
+          default: 'pending',
         },
 
         reviewedBy: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
           default: null,
         },
 
@@ -119,7 +119,7 @@ const UserDocumentSchema = new mongoose.Schema(
         // 🔥 (NEW - optional but powerful)
         reviewNote: {
           type: String,
-          default: "",
+          default: '',
         },
 
         uploadedAt: {
@@ -129,7 +129,7 @@ const UserDocumentSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model("UserDocument", UserDocumentSchema);
+export default mongoose.model('UserDocument', UserDocumentSchema);

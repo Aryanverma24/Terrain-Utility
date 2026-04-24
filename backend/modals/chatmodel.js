@@ -1,11 +1,11 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const chatSchema = new mongoose.Schema(
   {
     participants: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
         required: true,
         index: true, // 🔥 fast lookup by user
       },
@@ -13,21 +13,22 @@ const chatSchema = new mongoose.Schema(
 
     landId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Land",
+      ref: 'Land',
       default: null,
     },
 
-    caseId: {   // 🔥 IMPORTANT (NEW)
+    caseId: {
+      // 🔥 IMPORTANT (NEW)
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Case",
+      ref: 'Case',
       default: null,
       index: true,
     },
 
     chatType: {
       type: String,
-      enum: ["normal", "consultation", "legal"],
-      default: "normal",
+      enum: ['normal', 'consultation', 'legal'],
+      default: 'normal',
     },
 
     chatKey: {
@@ -37,14 +38,14 @@ const chatSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["active", "terminated"],
-      default: "active",
+      enum: ['active', 'terminated'],
+      default: 'active',
       index: true,
     },
 
     terminatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       default: null,
     },
 
@@ -55,13 +56,13 @@ const chatSchema = new mongoose.Schema(
 
     terminationReasonType: {
       type: String,
-      enum: ["deal_completed", "not_interested", "no_response", "spam", "other"],
+      enum: ['deal_completed', 'not_interested', 'no_response', 'spam', 'other'],
       default: null,
     },
 
     terminationReasonText: {
       type: String,
-      default: "",
+      default: '',
       maxlength: 500, // 🔥 prevent abuse
     },
 
@@ -73,11 +74,11 @@ const chatSchema = new mongoose.Schema(
 
     lastMessage: {
       type: String,
-      default: "",
+      default: '',
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const Chat = mongoose.model("Chat", chatSchema);
+const Chat = mongoose.model('Chat', chatSchema);
 export default Chat;

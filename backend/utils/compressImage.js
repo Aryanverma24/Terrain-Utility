@@ -1,8 +1,8 @@
-import sharp from "sharp";
-import path from "path";
+import sharp from 'sharp';
+import path from 'path';
 
 export const compressImage = async (inputPath) => {
-  const outputPath = inputPath.replace(/(\.\w+)$/, "-compressed.jpg");
+  const outputPath = inputPath.replace(/(\.\w+)$/, '-compressed.jpg');
 
   await sharp(inputPath)
     .resize(1200) // good quality width

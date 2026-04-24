@@ -1,19 +1,19 @@
-import { FaMapMarkerAlt, FaLandmark, FaChartLine, FaCity } from "react-icons/fa";
-import { useState, useEffect } from "react";
+import { FaMapMarkerAlt, FaLandmark, FaChartLine, FaCity } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 
 export const Stats = ({ stats }) => {
   const [animatedStats, setAnimatedStats] = useState({
     totalLands: 0,
     avgPrice: 0,
     cities: 0,
-    landTypes: 0
+    landTypes: 0,
   });
 
   const targetStats = {
     totalLands: stats.totalLands || 1247,
     avgPrice: stats.avgPrice || 2500000,
     cities: stats.cities || 45,
-    landTypes: stats.landTypes || 7
+    landTypes: stats.landTypes || 7,
   };
 
   useEffect(() => {
@@ -22,14 +22,16 @@ export const Stats = ({ stats }) => {
     const stepDuration = duration / steps;
 
     const timer = setInterval(() => {
-      setAnimatedStats(prev => {
+      setAnimatedStats((prev) => {
         const newStats = { ...prev };
         let allComplete = true;
 
-        Object.keys(newStats).forEach(key => {
+        Object.keys(newStats).forEach((key) => {
           const target = targetStats[key];
-          const increment = (target - prev[key]) / (steps - Object.keys(prev).filter(k => prev[k] >= targetStats[k]).length);
-          
+          const increment =
+            (target - prev[key]) /
+            (steps - Object.keys(prev).filter((k) => prev[k] >= targetStats[k]).length);
+
           if (newStats[key] < target) {
             newStats[key] = Math.min(newStats[key] + increment, target);
             allComplete = false;
@@ -69,31 +71,31 @@ export const Stats = ({ stats }) => {
     {
       icon: FaLandmark,
       value: formatNumber(animatedStats.totalLands),
-      label: "Total Properties",
-      color: "from-emerald-500 to-cyan-500",
-      bgColor: "from-emerald-100 to-cyan-100"
+      label: 'Total Properties',
+      color: 'from-emerald-500 to-cyan-500',
+      bgColor: 'from-emerald-100 to-cyan-100',
     },
     {
       icon: FaChartLine,
       value: formatPrice(animatedStats.avgPrice),
-      label: "Average Price",
-      color: "from-blue-500 to-purple-500",
-      bgColor: "from-blue-100 to-purple-100"
+      label: 'Average Price',
+      color: 'from-blue-500 to-purple-500',
+      bgColor: 'from-blue-100 to-purple-100',
     },
     {
       icon: FaCity,
       value: Math.round(animatedStats.cities) + '+',
-      label: "Cities Covered",
-      color: "from-orange-500 to-red-500",
-      bgColor: "from-orange-100 to-red-100"
+      label: 'Cities Covered',
+      color: 'from-orange-500 to-red-500',
+      bgColor: 'from-orange-100 to-red-100',
     },
     {
       icon: FaMapMarkerAlt,
       value: Math.round(animatedStats.landTypes) + '+',
-      label: "Land Types",
-      color: "from-rose-500 to-pink-500",
-      bgColor: "from-rose-100 to-pink-100"
-    }
+      label: 'Land Types',
+      color: 'from-rose-500 to-pink-500',
+      bgColor: 'from-rose-100 to-pink-100',
+    },
   ];
 
   return (
@@ -116,21 +118,21 @@ export const Stats = ({ stats }) => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
-            
+
             return (
-              <div
-                key={index}
-                className="group relative"
-              >
+              <div key={index} className="group relative">
                 {/* Stat Card */}
                 <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-700 border border-white/20 text-center">
-                  
                   {/* Gradient Overlay on Hover */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor}/10 transition-opacity duration-700 opacity-0 group-hover:opacity-100`}></div>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${stat.bgColor}/10 transition-opacity duration-700 opacity-0 group-hover:opacity-100`}
+                  ></div>
 
                   {/* Icon */}
                   <div className="flex justify-center mb-4">
-                    <div className={`w-16 h-16 bg-gradient-to-br ${stat.bgColor} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
+                    <div
+                      className={`w-16 h-16 bg-gradient-to-br ${stat.bgColor} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
+                    >
                       <Icon className={`text-2xl text-black/80`} />
                     </div>
                   </div>
@@ -140,15 +142,15 @@ export const Stats = ({ stats }) => {
                     <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
                       {stat.value}
                     </div>
-                    
-                    <p className="text-gray-600 font-medium">
-                      {stat.label}
-                    </p>
+
+                    <p className="text-gray-600 font-medium">{stat.label}</p>
                   </div>
                 </div>
 
                 {/* Glow Effect */}
-                <div className={`absolute -inset-1 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700`}></div>
+                <div
+                  className={`absolute -inset-1 bg-gradient-to-r ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-700`}
+                ></div>
               </div>
             );
           })}

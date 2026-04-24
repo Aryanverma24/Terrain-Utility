@@ -1,17 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const OwnershipHistorySchema = new mongoose.Schema(
   {
     landId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Land",
+      ref: 'Land',
       required: true,
       index: true,
     },
 
     fromOwner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
@@ -22,7 +22,7 @@ const OwnershipHistorySchema = new mongoose.Schema(
 
     toOwner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
 
@@ -33,8 +33,8 @@ const OwnershipHistorySchema = new mongoose.Schema(
 
     transferType: {
       type: String,
-      enum: ["sale", "inheritance", "gift"],
-      default: "sale",
+      enum: ['sale', 'inheritance', 'gift'],
+      default: 'sale',
     },
 
     price: {
@@ -50,7 +50,7 @@ const OwnershipHistorySchema = new mongoose.Schema(
     documents: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Document",
+        ref: 'Document',
       },
     ],
 
@@ -60,8 +60,8 @@ const OwnershipHistorySchema = new mongoose.Schema(
         type: [Number], // [lat, lng]
         default: [],
       },
-      address: { type: String, default: "" },
-      area: { type: String, default: "" },
+      address: { type: String, default: '' },
+      area: { type: String, default: '' },
     },
 
     // 🔐 BLOCKCHAIN-LIKE FIELDS
@@ -87,15 +87,15 @@ const OwnershipHistorySchema = new mongoose.Schema(
       default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // 🔥 Important Index
 OwnershipHistorySchema.index({ landId: 1, createdAt: -1 });
 
 export const OwnershipHistory = mongoose.model(
-  "OwnershipHistory",
-  OwnershipHistorySchema
+  'OwnershipHistory',
+  OwnershipHistorySchema,
 );
 
 export default OwnershipHistory;

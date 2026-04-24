@@ -1,8 +1,8 @@
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 export const Pagination = ({ pagination, onPageChange }) => {
   const { currentPage, totalPages, totalLands, limit } = pagination;
-  
+
   const startItem = (currentPage - 1) * limit + 1;
   const endItem = Math.min(currentPage * limit, totalLands);
 
@@ -13,7 +13,11 @@ export const Pagination = ({ pagination, onPageChange }) => {
     let l;
 
     for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - delta && i <= currentPage + delta)
+      ) {
         range.push(i);
       }
     }
@@ -72,8 +76,8 @@ export const Pagination = ({ pagination, onPageChange }) => {
                 page === currentPage
                   ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg'
                   : page === '...'
-                  ? 'text-gray-400 cursor-default'
-                  : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'text-gray-400 cursor-default'
+                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
               {page}

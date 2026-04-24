@@ -1,6 +1,5 @@
-
-import Notification from "../modals/notificationModel.js";
-import User from "../modals/userModel.js";   // To find users by role
+import Notification from '../modals/notificationModel.js';
+import User from '../modals/userModel.js'; // To find users by role
 
 /**
  * Universal Notification Sender
@@ -13,7 +12,7 @@ export const sendNotification = async ({
   receiverRole = null,
   title,
   message,
-  type = "system",
+  type = 'system',
 }) => {
   try {
     let receivers = [];
@@ -24,17 +23,17 @@ export const sendNotification = async ({
     }
 
     // 2️⃣ If receiverRole is provided → send to all users of that role
-   if (receiverRole) {
-  Notification.create({
-     targetRole: receiverRole,
-     title,
-     message,
-     type
-  })
-}
+    if (receiverRole) {
+      Notification.create({
+        targetRole: receiverRole,
+        title,
+        message,
+        type,
+      });
+    }
 
     if (receivers.length === 0) {
-      throw new Error("No receiver found for notification.");
+      throw new Error('No receiver found for notification.');
     }
 
     // 3️⃣ Create notifications for all receivers
@@ -45,12 +44,12 @@ export const sendNotification = async ({
           title,
           message,
           type,
-        })
-      )
+        }),
+      ),
     );
 
     return notifications;
   } catch (err) {
-    console.error("Error sending notification:", err.message);
+    console.error('Error sending notification:', err.message);
   }
 };

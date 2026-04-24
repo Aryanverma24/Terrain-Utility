@@ -1,10 +1,10 @@
-import { useEffect, useState, useContext } from "react";
-import { API } from "../../utils/API";
-import { Link } from "react-router-dom";
-import { FaStar } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../contexts/authContext";
-import { toast } from "react-toastify";
+import { useEffect, useState, useContext } from 'react';
+import { API } from '../../utils/API';
+import { Link } from 'react-router-dom';
+import { FaStar } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../../contexts/authContext';
+import { toast } from 'react-toastify';
 
 const WishlistLand = ({ landId }) => {
   const [land, setLand] = useState();
@@ -12,8 +12,8 @@ const WishlistLand = ({ landId }) => {
   const [wishlist, setWishlist] = useState([]);
 
   const reloadPage = () => {
-    console.log("reloded");
-    navigate("/wishlist");
+    console.log('reloded');
+    navigate('/wishlist');
   };
   const navigate = useNavigate();
 
@@ -38,11 +38,11 @@ const WishlistLand = ({ landId }) => {
       API.get(`/api/wishlist/${user._id}`)
         .then((response) => {
           setWishlist(response.data[0].lands || []);
-          console.log("fetching done");
+          console.log('fetching done');
         })
         .catch((error) => {
-          console.log("error while fetching wishlist", error);
-          toast.error("something went wrong while fetching wishlist");
+          console.log('error while fetching wishlist', error);
+          toast.error('something went wrong while fetching wishlist');
         });
     }
   }, [user]);
@@ -51,19 +51,19 @@ const WishlistLand = ({ landId }) => {
     const userId = user._id;
 
     if (!userId) {
-      toast.error("Please login first");
-      navigate("/login");
+      toast.error('Please login first');
+      navigate('/login');
       return;
     }
 
     try {
       const response = await API.delete(`/api/wishlist/${userId}/${land._id}`);
       if (response.status === 200) {
-        toast.success("Wishlist updated successfully!");
+        toast.success('Wishlist updated successfully!');
         console.log(wishlist);
         // Remove the land from the wishlist immediately from the UI
         setWishlist((prevWishlist) =>
-          prevWishlist.filter((item) => console.log(item === land._id))
+          prevWishlist.filter((item) => console.log(item === land._id)),
         );
         console.log(wishlist);
 
@@ -72,17 +72,17 @@ const WishlistLand = ({ landId }) => {
             setWishlist(response.data[0].lands || []);
           })
           .catch((error) => {
-            console.log("Error fetching updated wishlist", error);
-            toast.error("Error fetching updated wishlist");
+            console.log('Error fetching updated wishlist', error);
+            toast.error('Error fetching updated wishlist');
           });
-        navigate("/");
+        navigate('/');
       } else {
-        toast.error("Some error occurred while updating wishlist.");
+        toast.error('Some error occurred while updating wishlist.');
       }
       console.log(wishlist);
     } catch (error) {
-      console.error("Error while updating the wishlist:", error);
-      toast.error("Something went wrong while updating the wishlist");
+      console.error('Error while updating the wishlist:', error);
+      toast.error('Something went wrong while updating the wishlist');
     }
   };
 
@@ -157,7 +157,7 @@ const WishlistLand = ({ landId }) => {
                   <div>
                     <img
                       src={`http://localhost:5000/uploads/${land.image}`}
-                      alt={land.landtype || "land"}
+                      alt={land.landtype || 'land'}
                       className="rounded-lg h-48 w-full object-cover mb-4"
                     />
                   </div>
@@ -166,25 +166,16 @@ const WishlistLand = ({ landId }) => {
                 {/* Land Info */}
                 <div className="text-black text-md">
                   <h2 className="font-semibold text-lg mb-2">
-                    LAND TYPE:{" "}
-                    <span className="font-normal">{land.landtype}</span>
+                    LAND TYPE: <span className="font-normal">{land.landtype}</span>
                   </h2>
-                  <p className="text-sm  mb-2">
-                    OWNER: {land.ownerName}
-                  </p>
-                  <p className="text-sm  mb-2">
-                    CITY: {land.city}
-                  </p>
-                  <p className="text-sm  mb-2">
-                    STATE: {land.state}
-                  </p>
-                  <p className="text-sm  mb-2">
-                    PINCODE: {land.pincode}
-                  </p>
+                  <p className="text-sm  mb-2">OWNER: {land.ownerName}</p>
+                  <p className="text-sm  mb-2">CITY: {land.city}</p>
+                  <p className="text-sm  mb-2">STATE: {land.state}</p>
+                  <p className="text-sm  mb-2">PINCODE: {land.pincode}</p>
 
                   {/* Rating */}
                   <div className="flex items-center mt-2">
-                    Rating:{" "}
+                    Rating:{' '}
                     {averageRating > 0 ? (
                       renderStars(averageRating)
                     ) : (

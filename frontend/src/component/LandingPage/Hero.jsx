@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
-import { FaSearch, FaArrowRight, FaCheckCircle, FaPlay } from "react-icons/fa";
-import { useContext } from "react";
-import { AuthContext } from "../../../contexts/AuthContext";
+import { Link } from 'react-router-dom';
+import { FaSearch, FaArrowRight, FaCheckCircle, FaPlay } from 'react-icons/fa';
+import { useContext } from 'react';
+import { AuthContext } from '../../../contexts/AuthContext';
 
 const Hero = () => {
   const { user } = useContext(AuthContext);
@@ -10,9 +10,12 @@ const Hero = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900">
       {/* Background Grid Pattern */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3Cpath d='M20 0v40M0 20h40' stroke='%23ffffff' stroke-width='0.5' fill-opacity='0.1'/%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3Cpath d='M20 0v40M0 20h40' stroke='%23ffffff' stroke-width='0.5' fill-opacity='0.1'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        ></div>
       </div>
 
       {/* Animated Gradient Overlay */}
@@ -20,10 +23,9 @@ const Hero = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
           {/* Left Content */}
           <div className="text-center lg:text-left md:pt-12">
-                {/* Main Heading */}
+            {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
               Find Your Perfect
               <span className="block bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mt-2">
@@ -33,8 +35,9 @@ const Hero = () => {
 
             {/* Enhanced Subheading */}
             <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed max-w-2xl">
-              Connect with premium land opportunities for agriculture, commercial, recreation, and urban development. 
-              Transparent, secure, and efficient land management platform.
+              Connect with premium land opportunities for agriculture, commercial,
+              recreation, and urban development. Transparent, secure, and efficient land
+              management platform.
             </p>
 
             {/* Enhanced CTA Buttons */}
@@ -47,7 +50,7 @@ const Hero = () => {
                 Explore Properties
                 <FaArrowRight className="ml-3 group-hover:translate-x-1 transition-transform" />
               </Link>
-              
+
               <Link
                 to="/register"
                 className="group inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300 transform hover:scale-105"
@@ -60,15 +63,21 @@ const Hero = () => {
             {/* Stats with Enhanced Design */}
             <div className="grid grid-cols-3 gap-6 max-w-lg">
               <div className="text-center lg:text-left">
-                <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">5,000+</div>
+                <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">
+                  5,000+
+                </div>
                 <div className="text-gray-400 text-sm">Active Listings</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl md:text-4xl font-bold text-cyan-400 mb-1">98%</div>
+                <div className="text-3xl md:text-4xl font-bold text-cyan-400 mb-1">
+                  98%
+                </div>
                 <div className="text-gray-400 text-sm">Satisfaction</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">24/7</div>
+                <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">
+                  24/7
+                </div>
                 <div className="text-gray-400 text-sm">Support</div>
               </div>
             </div>

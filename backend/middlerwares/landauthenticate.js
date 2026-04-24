@@ -4,7 +4,7 @@ import asyncHandler from './asyncHandler.js';
 
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  console.log("Authorization header:", authHeader); // Debug log
+  console.log('Authorization header:', authHeader); // Debug log
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ message: 'No token provided or invalid format' });
@@ -28,7 +28,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     req.user = { id: user._id.toString(), username: user.username, role: user.role };
     next();
   } catch (error) {
-    console.error("Token verification failed:", error.message);
+    console.error('Token verification failed:', error.message);
     return res.status(401).json({ message: 'Token verification failed' });
   }
 });

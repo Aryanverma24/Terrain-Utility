@@ -1,7 +1,16 @@
-import { Link } from "react-router-dom";
-import { FaHeart, FaMapMarkerAlt, FaExpand, FaTag, FaEye, FaStar, FaCheckCircle, FaArrowRight } from "react-icons/fa";
-import { useState } from "react";
-import { getFileUrl } from "../../../../backend/utils/getFileUrl";
+import { Link } from 'react-router-dom';
+import {
+  FaHeart,
+  FaMapMarkerAlt,
+  FaExpand,
+  FaTag,
+  FaEye,
+  FaStar,
+  FaCheckCircle,
+  FaArrowRight,
+} from 'react-icons/fa';
+import { useState } from 'react';
+import { getFileUrl } from '../../../../backend/utils/getFileUrl';
 export const LandGrid = ({ lands, loading, currentPage }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -23,9 +32,9 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
   const handleWishlist = (e, landId) => {
     e.preventDefault();
     const isInWishlist = wishlist.includes(landId);
-    
+
     if (isInWishlist) {
-      setWishlist(wishlist.filter(id => id !== landId));
+      setWishlist(wishlist.filter((id) => id !== landId));
       // TODO: Call API to remove from wishlist
     } else {
       setWishlist([...wishlist, landId]);
@@ -80,17 +89,18 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
           >
             {/* Premium Card - Matching Landing Page Style */}
             <div className="group relative bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:shadow-2xl hover:border-emerald-400/30 transition-all duration-500 overflow-hidden hover:-translate-y-2">
-              
               {/* Gradient Overlay on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}></div>
+              <div
+                className={`absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+              ></div>
 
               {/* Property Image */}
               <div className="relative h-48 overflow-hidden">
                 {land.image ? (
                   <>
                     <img
-                       src={getFileUrl(land.image)}
-                      alt={land.landtype || "land"}
+                      src={getFileUrl(land.image)}
+                      alt={land.landtype || 'land'}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     {/* Dark Overlay */}
@@ -105,7 +115,9 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                 )}
 
                 {/* Floating Action Buttons */}
-                <div className={`absolute top-3 right-3 flex flex-col gap-2 transition-all duration-500 ${isHovered ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'}`}>
+                <div
+                  className={`absolute top-3 right-3 flex flex-col gap-2 transition-all duration-500 ${isHovered ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'}`}
+                >
                   {/* Wishlist Button */}
                   <button
                     onClick={(e) => handleWishlist(e, land._id)}
@@ -113,11 +125,13 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                   >
                     <FaHeart
                       className={`text-lg transition-colors ${
-                        isInWishlist ? 'text-red-500' : 'text-gray-400 group-hover:text-red-500'
+                        isInWishlist
+                          ? 'text-red-500'
+                          : 'text-gray-400 group-hover:text-red-500'
                       }`}
                     />
                   </button>
-                  
+
                   {/* Quick View Button */}
                   <Link
                     to={`/land/${land._id}`}
@@ -130,7 +144,7 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                 {/* Status Badge */}
                 <div className="absolute top-3 left-3">
                   <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
-                    {land.status === "approved" ? (
+                    {land.status === 'approved' ? (
                       <>
                         <FaCheckCircle className="mr-1" />
                         VERIFIED
@@ -145,7 +159,8 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                 <div className="absolute bottom-3 left-3">
                   <div className="bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
                     <FaMapMarkerAlt className="mr-1 text-xs" />
-                    {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) || 'Location'}
+                    {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) ||
+                      'Location'}
                   </div>
                 </div>
               </div>
@@ -157,7 +172,8 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                   <div className="flex items-center justify-between mb-2">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
                       <FaTag className="mr-1 text-xs" />
-                      {land.landtype?.charAt(0).toUpperCase() + land.landtype?.slice(1) || 'Land'}
+                      {land.landtype?.charAt(0).toUpperCase() + land.landtype?.slice(1) ||
+                        'Land'}
                     </span>
                     <div className="flex items-center">
                       {renderStars(averageRating)}
@@ -166,13 +182,16 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">
-                    {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) || 'Prime Location'}
+                    {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) ||
+                      'Prime Location'}
                   </h3>
-                  
+
                   <p className="text-sm text-gray-600">
-                    by {land.ownerName?.charAt(0).toUpperCase() + land.ownerName?.slice(1) || 'Unknown Owner'}
+                    by{' '}
+                    {land.ownerName?.charAt(0).toUpperCase() + land.ownerName?.slice(1) ||
+                      'Unknown Owner'}
                   </p>
                 </div>
 
@@ -184,7 +203,9 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Area</div>
-                      <div className="text-sm font-semibold">{land.area || 'N/A'} acres</div>
+                      <div className="text-sm font-semibold">
+                        {land.area || 'N/A'} acres
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center text-gray-600">
@@ -193,7 +214,9 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Location</div>
-                      <div className="text-sm font-semibold truncate">{land.city || 'N/A'}</div>
+                      <div className="text-sm font-semibold truncate">
+                        {land.city || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -206,7 +229,7 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                       ₹{land.price ? land.price.toLocaleString() : 'Contact'}
                     </div>
                   </div>
-                  
+
                   <Link
                     to={`/land/${land._id}`}
                     className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-emerald-500/25 hover:scale-105 text-xs relative z-30 pointer-events-auto"

@@ -1,207 +1,184 @@
-import React, { useEffect, useState, useContext } from "react";
-import axios from "axios";
-import { AuthContext } from "../../../contexts/AuthContext";
-import { io } from "socket.io-client";
-import socket from "../../../utils/socket";
+import React, { useEffect, useState, useContext } from 'react';
+import axios from 'axios';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { io } from 'socket.io-client';
+import socket from '../../../utils/socket';
 
 const getId = (val) => {
   if (!val) return null;
-  return typeof val === "object" ? val._id?.toString() : val.toString();
+  return typeof val === 'object' ? val._id?.toString() : val.toString();
 };
 
 export default function ChatList({ type, onSelectChat }) {
   const { user } = useContext(AuthContext);
   const userId = getId(user?._id);
-const isLawyer = user?.role === "lawyer";
+  const isLawyer = user?.role === 'lawyer';
   const [chats, setChats] = useState([]);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [onlineUsers, setOnlineUsers] = useState([]);
 
- const fetchChats = async () => {
-  try {
-  
+  const fetchChats = async () => {
+    try {
+      if (!userId) {
+        return;
+      }
 
-    if (!userId) {
-     
-      return;
+      const res = await axios.get(`http://localhost:5000/api/chat/user/${userId}`);
+
+      const sorted = res.data.sort(
+        (a, b) =>
+          new Date(b.updatedAt || b.lastMessageAt) -
+          new Date(a.updatedAt || a.lastMessageAt),
+      );
+
+      setChats(sorted);
+
+      const unreadRes = await axios.get(
+        `http://localhost:5000/api/chat/unread/${userId}`,
+      );
+
+      const formatted = {};
+      Object.entries(unreadRes.data).forEach(([chatId, count]) => {
+        formatted[getId(chatId)] = count;
+      });
+      setUnreadCounts(formatted);
+    } catch (err) {
+      console.error(' ChatList | Error fetching chats:', err);
     }
-
-    const res = await axios.get(`http://localhost:5000/api/chat/user/${userId}`);
-    
-   const sorted = res.data.sort(
-  (a, b) => new Date(b.updatedAt || b.lastMessageAt) - new Date(a.updatedAt || a.lastMessageAt)
-);
-
-setChats(sorted);
-
-    const unreadRes = await axios.get(`http://localhost:5000/api/chat/unread/${userId}`);
-   
-   const formatted = {};
-Object.entries(unreadRes.data).forEach(([chatId, count]) => {
-  formatted[getId(chatId)] = count;
-});
-setUnreadCounts(formatted);
-  } catch (err) {
-    console.error(" ChatList | Error fetching chats:", err);
-  }
-};
-
-
+  };
 
   useEffect(() => {
     if (!user?._id) return;
 
-    socket.emit("join", user._id);
+    socket.emit('join', user._id);
 
     const handleOnlineUsers = (users) => setOnlineUsers(users);
-    socket.on("onlineUsers", handleOnlineUsers);
+    socket.on('onlineUsers', handleOnlineUsers);
 
     return () => {
-      socket.off("onlineUsers", handleOnlineUsers);
+      socket.off('onlineUsers', handleOnlineUsers);
     };
   }, [user?._id]);
 
+  useEffect(() => {
+    fetchChats();
+  }, [userId, type]);
 
+  const openChat = async (chat) => {
+    try {
+      await axios.put(`http://localhost:5000/api/chat/read/${chat._id}/${userId}`);
+      setUnreadCounts((prev) => ({ ...prev, [getId(chat._id)]: 0 }));
 
-useEffect(() => {
-  fetchChats(); 
-}, [userId, type]);
-
-
- const openChat = async (chat) => {
-  
-
-  try {
-    await axios.put(`http://localhost:5000/api/chat/read/${chat._id}/${userId}`);
-    setUnreadCounts((prev) => ({ ...prev, [getId(chat._id)]: 0 }));
-
-    if (onSelectChat) {
-      
-      onSelectChat(chat);
+      if (onSelectChat) {
+        onSelectChat(chat);
+      }
+    } catch (err) {
+      console.error(' ChatList | Error in openChat:', err);
     }
-  } catch (err) {
-    console.error(" ChatList | Error in openChat:", err);
-  }
-};
-useEffect(() => {
-  const handleChatTerminated = ({ chatIds }) => {
-    console.log("🔥 ChatList termination event:", chatIds);
+  };
+  useEffect(() => {
+    const handleChatTerminated = ({ chatIds }) => {
+      console.log('🔥 ChatList termination event:', chatIds);
 
-    setChats((prev) =>
-      prev.map((chat) => {
-        const isMatch = chatIds.some(
-          (id) => getId(id) === getId(chat._id)
-        );
+      setChats((prev) =>
+        prev.map((chat) => {
+          const isMatch = chatIds.some((id) => getId(id) === getId(chat._id));
 
-        if (isMatch) {
-          console.log("❌ Terminating chat in list:", chat._id);
-          return { ...chat, status: "terminated" };
+          if (isMatch) {
+            console.log('❌ Terminating chat in list:', chat._id);
+            return { ...chat, status: 'terminated' };
+          }
+
+          return chat;
+        }),
+      );
+    };
+
+    socket.on('chatTerminated', handleChatTerminated);
+
+    return () => socket.off('chatTerminated', handleChatTerminated);
+  }, []);
+  useEffect(() => {
+    if (!userId) return;
+
+    const handleMessage = (msg) => {
+      const chatId = getId(msg.chatId);
+
+      setChats((prev) => {
+        let updated = [...prev];
+
+        const index = updated.findIndex((c) => getId(c._id) === chatId);
+
+        let chat;
+
+        if (index !== -1) {
+          chat = { ...updated[index] };
+
+          chat.lastMessage = msg.text;
+          chat.lastMessageAt = new Date().toISOString();
+
+          updated.splice(index, 1);
+        } else {
+          axios.get(`http://localhost:5000/api/chat/${chatId}`).then((res) => {
+            setChats((prevChats) => [res.data, ...prevChats]);
+          });
+
+          return prev;
         }
+        const landOwnerId = getId(chat.land?.owner);
+        const isLegalChat = chat.chatType === 'legal';
+        const isConsultationChat = chat.chatType === 'consultation';
 
-        return chat;
-      })
-    );
-  };
+        let shouldInclude = false;
 
-  socket.on("chatTerminated", handleChatTerminated);
+        if (type === 'buyer')
+          shouldInclude = landOwnerId !== userId && !isLegalChat && !isConsultationChat;
+        else if (type === 'owner')
+          shouldInclude = landOwnerId === userId && !isLegalChat && !isConsultationChat;
+        else if (type === 'legal') shouldInclude = isLegalChat || isConsultationChat;
+        else shouldInclude = true;
 
-  return () => socket.off("chatTerminated", handleChatTerminated);
-}, []);
-useEffect(() => {
-  if (!userId) return;
+        // ❌ DO NOT update UI if not part of this section
+        if (!shouldInclude) return prev;
 
-  const handleMessage = (msg) => {
-  const chatId = getId(msg.chatId);
+        updated.unshift(chat);
 
-  setChats((prev) => {
-    let updated = [...prev];
+        return updated;
+      });
+    };
 
-    const index = updated.findIndex(
-      (c) => getId(c._id) === chatId
-    );
+    socket.on('message', handleMessage);
 
-    let chat;
-
-    if (index !== -1) {
-      chat = { ...updated[index] };
-
-      chat.lastMessage = msg.text;
-      chat.lastMessageAt = new Date().toISOString();
-
-      updated.splice(index, 1);
-    } else {
-     
-      axios
-        .get(`http://localhost:5000/api/chat/${chatId}`)
-        .then((res) => {
-          setChats((prevChats) => [res.data, ...prevChats]);
-        });
-
-      return prev;
-    }
-    const landOwnerId = getId(chat.land?.owner);
-    const isLegalChat = chat.chatType === "legal";
-    const isConsultationChat = chat.chatType === "consultation";
-
-    let shouldInclude = false;
-
-    if (type === "buyer")
-      shouldInclude =
-        landOwnerId !== userId && !isLegalChat && !isConsultationChat;
-
-    else if (type === "owner")
-      shouldInclude =
-        landOwnerId === userId && !isLegalChat && !isConsultationChat;
-
-    else if (type === "legal")
-      shouldInclude = isLegalChat || isConsultationChat;
-
-    else shouldInclude = true;
-
-    // ❌ DO NOT update UI if not part of this section
-    if (!shouldInclude) return prev;
-
-   
-    updated.unshift(chat);
-
-    return updated;
-  });
-};
-
-  socket.on("message", handleMessage);
-
-  return () => {
-    socket.off("message", handleMessage);
-  };
-}, [userId, type]);
+    return () => {
+      socket.off('message', handleMessage);
+    };
+  }, [userId, type]);
   // 🔹 Filter chats based on section type
-const filteredChats = chats.filter((chat) => {
-  if (chat.status === "terminated") return false; // 🔥 ADD THIS LINE
+  const filteredChats = chats.filter((chat) => {
+    if (chat.status === 'terminated') return false; // 🔥 ADD THIS LINE
 
-  const landOwnerId = getId(chat.land?.owner);
-  const isLegalChat = chat.chatType === "legal";
-  const isConsultationChat = chat.chatType === "consultation";
+    const landOwnerId = getId(chat.land?.owner);
+    const isLegalChat = chat.chatType === 'legal';
+    const isConsultationChat = chat.chatType === 'consultation';
 
-  //  LAWYER LOGIC
-  if (isLawyer) {
-    if (type === "owner") return landOwnerId === userId;
-    if (type === "buyer") return landOwnerId !== userId;
+    //  LAWYER LOGIC
+    if (isLawyer) {
+      if (type === 'owner') return landOwnerId === userId;
+      if (type === 'buyer') return landOwnerId !== userId;
+      return true;
+    }
+
+    //  NORMAL USER LOGIC
+    if (type === 'buyer')
+      return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
+
+    if (type === 'owner')
+      return landOwnerId === userId && !isLegalChat && !isConsultationChat;
+
+    if (type === 'legal') return isLegalChat || isConsultationChat;
+
     return true;
-  }
-
-  //  NORMAL USER LOGIC
-  if (type === "buyer")
-    return landOwnerId !== userId && !isLegalChat && !isConsultationChat;
-
-  if (type === "owner")
-    return landOwnerId === userId && !isLegalChat && !isConsultationChat;
-
-  if (type === "legal")
-    return isLegalChat || isConsultationChat;
-
-  return true;
-});
-
+  });
 
   return (
     <div className="flex flex-col">
@@ -212,9 +189,9 @@ const filteredChats = chats.filter((chat) => {
       )}
 
       {filteredChats.map((c) => {
-       const unread = unreadCounts[getId(c._id)] || 0;
+        const unread = unreadCounts[getId(c._id)] || 0;
         const otherUser = c.participants.find((p) => getId(p._id || p) !== userId);
-        const otherUserName = otherUser?.username || "User";
+        const otherUserName = otherUser?.username || 'User';
         const land = c.land;
 
         return (
@@ -232,9 +209,11 @@ const filteredChats = chats.filter((chat) => {
               {/* ONLINE DOT */}
               <span
                 className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                  onlineUsers.includes(getId(otherUser._id)) ? "bg-green-500" : "bg-gray-400"
+                  onlineUsers.includes(getId(otherUser._id))
+                    ? 'bg-green-500'
+                    : 'bg-gray-400'
                 }`}
-                title={onlineUsers.includes(getId(otherUser._id)) ? "Online" : "Offline"}
+                title={onlineUsers.includes(getId(otherUser._id)) ? 'Online' : 'Offline'}
               ></span>
             </div>
 
@@ -248,10 +227,10 @@ const filteredChats = chats.filter((chat) => {
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {c.lastMessageAt
                     ? new Date(c.lastMessageAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
+                        hour: '2-digit',
+                        minute: '2-digit',
                       })
-                    : ""}
+                    : ''}
                 </span>
               </div>
 
@@ -259,13 +238,13 @@ const filteredChats = chats.filter((chat) => {
               {land && (
                 <div className="mt-2 flex flex-col gap-1">
                   <p className="text-xs font-semibold text-emerald-600 truncate">
-                    {land.landtype || "Land"}
+                    {land.landtype || 'Land'}
                   </p>
                   <span className="text-xs text-gray-500 truncate flex items-center gap-1">
                     <span>📍</span>
                     <span>
-                      {land.city || "Unknown City"}, {land.state || "Unknown State"}
-                      {land.pincode ? ` - ${land.pincode}` : ""}
+                      {land.city || 'Unknown City'}, {land.state || 'Unknown State'}
+                      {land.pincode ? ` - ${land.pincode}` : ''}
                     </span>
                   </span>
                 </div>
@@ -273,7 +252,7 @@ const filteredChats = chats.filter((chat) => {
 
               {/* LAST MESSAGE */}
               <p className="text-sm text-gray-600 truncate mt-1">
-                {c.lastMessage || "No messages yet"}
+                {c.lastMessage || 'No messages yet'}
               </p>
             </div>
 

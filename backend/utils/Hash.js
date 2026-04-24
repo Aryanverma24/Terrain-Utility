@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from 'crypto';
 
 // 🔒 Ensure consistent key order
 const normalizeData = (data) => {
@@ -8,13 +8,10 @@ const normalizeData = (data) => {
       .reduce((acc, key) => {
         acc[key] = data[key];
         return acc;
-      }, {})
+      }, {}),
   );
 };
 
 export const generateHash = (data) => {
-  return crypto
-    .createHash("sha256")
-    .update(normalizeData(data))
-    .digest("hex");
+  return crypto.createHash('sha256').update(normalizeData(data)).digest('hex');
 };

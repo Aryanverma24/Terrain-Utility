@@ -1,33 +1,28 @@
-import socket from "../../../utils/socket";
-import React, {
-  useContext,
-  useState,
-  useEffect,
-  forwardRef,
-} from "react";
-import { AuthContext } from "../../../contexts/AuthContext";
-import { useLocation } from "react-router-dom";
-import ChatList from "../Chat/ChatList";
-import ChatWindow from "../Chat/ChatWindow";
-import axios from "axios";
-import { useRef } from "react";
-import CaseList from "../lawyer/caseList";
+import socket from '../../../utils/socket';
+import React, { useContext, useState, useEffect, forwardRef } from 'react';
+import { AuthContext } from '../../../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
+import ChatList from '../Chat/ChatList';
+import ChatWindow from '../Chat/ChatWindow';
+import axios from 'axios';
+import { useRef } from 'react';
+import CaseList from '../lawyer/caseList';
 const getId = (val) => (val?._id ? val._id.toString() : val?.toString());
 
 /* ✅ NEW HELPER (NON-BREAKING ADDITION) */
 const getChatRole = (chat, userId, isLawyer) => {
-  if (!chat) return "buyer";
+  if (!chat) return 'buyer';
 
   // Legal / Consultation chats
-  if (chat.chatType === "legal" || chat.chatType === "consultation") {
-    return isLawyer ? "buyer" : "legal";
+  if (chat.chatType === 'legal' || chat.chatType === 'consultation') {
+    return isLawyer ? 'buyer' : 'legal';
   }
 
   const ownerId = getId(chat.land?.owner);
 
-  if (ownerId === userId) return "owner";
+  if (ownerId === userId) return 'owner';
 
-  return "buyer";
+  return 'buyer';
 };
 
 const Inbox = forwardRef((props, ref) => {
@@ -37,45 +32,41 @@ const Inbox = forwardRef((props, ref) => {
   const chatsRef = useRef([]);
 
   const [selectedChat, setSelectedChat] = useState(null);
-  const [activeSection, setActiveSection] = useState("buyer");
+  const [activeSection, setActiveSection] = useState('buyer');
   const [unreadCounts, setUnreadCounts] = useState({
     buyer: 0,
     owner: 0,
     legal: 0,
   });
 
-
-  const isLawyer = user?.role === "lawyer";
+  const isLawyer = user?.role === 'lawyer';
   const userId = getId(user);
   //states for cases
   const [cases, setCases] = useState([]);
-const [selectedCase, setSelectedCase] = useState(null);
-//for fetching cases 
+  const [selectedCase, setSelectedCase] = useState(null);
+  //for fetching cases
   useEffect(() => {
-  if (!isLawyer) return;
+    if (!isLawyer) return;
 
-  const fetchCases = async () => {
-    try {
-      const res = await axios.get(
-  `http://localhost:5000/api/lawyer/${userId}/cases`,
-  {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  }
-);
-      setCases(res.data);
-    } catch (err) {
-      console.error("Case fetch error:", err);
-    }
-  };
+    const fetchCases = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/lawyer/${userId}/cases`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        setCases(res.data);
+      } catch (err) {
+        console.error('Case fetch error:', err);
+      }
+    };
 
-  fetchCases();
-}, [isLawyer, userId]);
+    fetchCases();
+  }, [isLawyer, userId]);
 
   useEffect(() => {
-    if (isLawyer && activeSection === "legal") {
-      setActiveSection("buyer");
+    if (isLawyer && activeSection === 'legal') {
+      setActiveSection('buyer');
     }
   }, [isLawyer]);
 
@@ -86,15 +77,13 @@ const [selectedCase, setSelectedCase] = useState(null);
 
       if (getId(selectedChat?._id) === getId(chatId)) return;
 
-      const chat = chatsRef.current.find(
-        (c) => getId(c._id) === getId(chatId)
-      );
+      const chat = chatsRef.current.find((c) => getId(c._id) === getId(chatId));
 
       if (!chat) {
         axios
           .get(`http://localhost:5000/api/chat/${chatId}`, {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           })
           .then((res) => {
@@ -108,10 +97,10 @@ const [selectedCase, setSelectedCase] = useState(null);
       fetchUnread();
     };
 
-    socket.on("message", handleMessage);
+    socket.on('message', handleMessage);
 
     return () => {
-      socket.off("message", handleMessage);
+      socket.off('message', handleMessage);
     };
   }, [selectedChat, userId]);
 
@@ -144,24 +133,21 @@ const [selectedCase, setSelectedCase] = useState(null);
 
   /* OPEN CHAT FROM URL */
   useEffect(() => {
-    const chatId = new URLSearchParams(location.search).get("chatId");
+    const chatId = new URLSearchParams(location.search).get('chatId');
 
     if (!chatId || !userId) return;
 
     const fetchChatAndOpen = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/chat/${chatId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const res = await axios.get(`http://localhost:5000/api/chat/${chatId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
 
         openChatInInbox(res.data);
       } catch (err) {
-        console.error("Failed to load chat:", err);
+        console.error('Failed to load chat:', err);
       }
     };
 
@@ -197,7 +183,7 @@ const [selectedCase, setSelectedCase] = useState(null);
 
       setUnreadCounts(counts);
     } catch (err) {
-      console.error("Unread fetch error:", err);
+      console.error('Unread fetch error:', err);
     }
   };
 
@@ -206,20 +192,19 @@ const [selectedCase, setSelectedCase] = useState(null);
   }, [userId]);
 
   const sections = isLawyer
-  ? [
-      { key: "buyer", label: "Buyer Chats", color: "emerald" },
-      { key: "owner", label: "Owner Chats", color: "blue" },
-      { key: "cases", label: "Legal Cases", color: "purple" }, // ✅ NEW
-    ]
-  : [
-      { key: "buyer", label: "Buyer Chats", color: "emerald" },
-      { key: "owner", label: "Owner Chats", color: "blue" },
-      { key: "legal", label: "Legal / Consultation", color: "purple" },
-    ];
+    ? [
+        { key: 'buyer', label: 'Buyer Chats', color: 'emerald' },
+        { key: 'owner', label: 'Owner Chats', color: 'blue' },
+        { key: 'cases', label: 'Legal Cases', color: 'purple' }, // ✅ NEW
+      ]
+    : [
+        { key: 'buyer', label: 'Buyer Chats', color: 'emerald' },
+        { key: 'owner', label: 'Owner Chats', color: 'blue' },
+        { key: 'legal', label: 'Legal / Consultation', color: 'purple' },
+      ];
 
   return (
     <div className="h-screen flex flex-col bg-[#f4f7f6]">
-
       {/* TOP SECTION */}
       <div className="flex justify-center gap-4 px-5 py-3 bg-white border-b shadow-sm mt-20">
         {sections.map((s) => (
@@ -241,127 +226,132 @@ const [selectedCase, setSelectedCase] = useState(null);
           </button>
         ))}
       </div>
-{/* ✅ SECTION DESCRIPTION BANNER */}
-<div className="px-6 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b text-sm text-gray-600 text-center">
+      {/* ✅ SECTION DESCRIPTION BANNER */}
+      <div className="px-6 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b text-sm text-gray-600 text-center">
+        {/* 🏡 OWNER */}
+        {activeSection === 'owner' && (
+          <span>
+            🏡 <b>Owner Chats:</b>{' '}
+            {isLawyer ? (
+              <>
+                These are <b>legal case-related chats initiated by land owners</b> for
+                dispute resolution, documentation, or legal assistance.
+              </>
+            ) : (
+              <>
+                These are chats where <b>buyers contacted you</b> regarding your land
+                listings.
+              </>
+            )}
+          </span>
+        )}
 
-  {/* 🏡 OWNER */}
-  {activeSection === "owner" && (
-    <span>
-      🏡 <b>Owner Chats:</b>{" "}
-      {isLawyer ? (
-        <>
-          These are <b>legal case-related chats initiated by land owners</b> for dispute resolution, documentation, or legal assistance.
-        </>
-      ) : (
-        <>
-          These are chats where <b>buyers contacted you</b> regarding your land listings.
-        </>
-      )}
-    </span>
-  )}
+        {/* 🛒 BUYER */}
+        {activeSection === 'buyer' && (
+          <span>
+            🛒 <b>Buyer Chats:</b>{' '}
+            {isLawyer ? (
+              <>
+                These are chats where{' '}
+                <b>buyers contacted you for consultation or general queries</b>, including
+                legal advice or discussions not tied to a formal case.
+              </>
+            ) : (
+              <>
+                These are chats where <b>you reached out to land owners</b> for their
+                properties.
+              </>
+            )}
+          </span>
+        )}
 
-  {/* 🛒 BUYER */}
-  {activeSection === "buyer" && (
-    <span>
-      🛒 <b>Buyer Chats:</b>{" "}
-      {isLawyer ? (
-        <>
-          These are chats where <b>buyers contacted you for consultation or general queries</b>, including legal advice or discussions not tied to a formal case.
-        </>
-      ) : (
-        <>
-          These are chats where <b>you reached out to land owners</b> for their properties.
-        </>
-      )}
-    </span>
-  )}
+        {/* ⚖️ CASES */}
+        {activeSection === 'cases' && isLawyer && (
+          <span>
+            ⚖️ <b>Legal Cases:</b> This section shows{' '}
+            <b>all legal cases where you are assigned as a lawyer</b>. You can view
+            participants and manage case closure.
+          </span>
+        )}
 
-  {/* ⚖️ CASES */}
-  {activeSection === "cases" && isLawyer && (
-    <span>
-      ⚖️ <b>Legal Cases:</b> This section shows <b>all legal cases where you are assigned as a lawyer</b>. You can view participants and manage case closure.
-    </span>
-  )}
-
-  {/* ⚖️ LEGAL (NON-LAWYER) */}
-  {activeSection === "legal" && !isLawyer && (
-    <span>
-      ⚖️ <b>Legal / Consultation:</b> These are your <b>legal discussions and lawyer consultations</b>.
-    </span>
-  )}
-
-</div>
-     <div className={`flex flex-1 overflow-hidden ${activeSection === "cases" && isLawyer ? "flex-col" : ""}`}>
-
+        {/* ⚖️ LEGAL (NON-LAWYER) */}
+        {activeSection === 'legal' && !isLawyer && (
+          <span>
+            ⚖️ <b>Legal / Consultation:</b> These are your{' '}
+            <b>legal discussions and lawyer consultations</b>.
+          </span>
+        )}
+      </div>
+      <div
+        className={`flex flex-1 overflow-hidden ${activeSection === 'cases' && isLawyer ? 'flex-col' : ''}`}
+      >
         {/* LEFT PANEL */}
-     <div className={`${activeSection === "cases" && isLawyer ? "w-full" : "md:w-1/3 w-full"} flex flex-col border-r bg-white shadow-sm overflow-y-auto`}>
-
-  {activeSection === "cases" && isLawyer ? (
-    <CaseList
-      cases={cases}
-      onSelectCase={(c) => {
-        setSelectedCase(c);
-        setSelectedChat(null);
-      }}
-    />
-  ) : (
-    <ChatList
-      type={activeSection}
-      onSelectChat={(chat) => {
-        setSelectedChat(chat);
-        setSelectedCase(null);
-      }}
-    />
-  )}
-
-</div>
+        <div
+          className={`${activeSection === 'cases' && isLawyer ? 'w-full' : 'md:w-1/3 w-full'} flex flex-col border-r bg-white shadow-sm overflow-y-auto`}
+        >
+          {activeSection === 'cases' && isLawyer ? (
+            <CaseList
+              cases={cases}
+              onSelectCase={(c) => {
+                setSelectedCase(c);
+                setSelectedChat(null);
+              }}
+            />
+          ) : (
+            <ChatList
+              type={activeSection}
+              onSelectChat={(chat) => {
+                setSelectedChat(chat);
+                setSelectedCase(null);
+              }}
+            />
+          )}
+        </div>
 
         {/* RIGHT PANEL */}
-{!(activeSection === "cases" && isLawyer) && (
-  <div className="md:w-2/3 w-full bg-white flex flex-col shadow-sm">
+        {!(activeSection === 'cases' && isLawyer) && (
+          <div className="md:w-2/3 w-full bg-white flex flex-col shadow-sm">
+            <div className="sticky top-0 bg-white z-10 px-5 py-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-800">
+                {activeSection === 'buyer'
+                  ? 'Buyer Chats'
+                  : activeSection === 'owner'
+                    ? 'Owner Chats'
+                    : !isLawyer
+                      ? 'Legal / Consultation Chats'
+                      : ''}
+              </h2>
 
-    <div className="sticky top-0 bg-white z-10 px-5 py-4 border-b">
-      <h2 className="text-lg font-semibold text-gray-800">
-        {activeSection === "buyer"
-          ? "Buyer Chats"
-          : activeSection === "owner"
-          ? "Owner Chats"
-          : !isLawyer
-          ? "Legal / Consultation Chats"
-          : ""}
-      </h2>
+              <p className="text-xs text-gray-500">
+                {selectedChat ? (
+                  <>
+                    Chat with{' '}
+                    {selectedChat.participants
+                      .map((p) => p.username)
+                      .filter((u) => u !== user.username)
+                      .join(', ')}
+                    {' • '}
+                    <span className="font-semibold capitalize">
+                      {getChatRole(selectedChat, userId, isLawyer)} chat
+                    </span>
+                  </>
+                ) : (
+                  'Select a chat from the left'
+                )}
+              </p>
+            </div>
 
-      <p className="text-xs text-gray-500">
-        {selectedChat ? (
-          <>
-            Chat with{" "}
-            {selectedChat.participants
-              .map((p) => p.username)
-              .filter((u) => u !== user.username)
-              .join(", ")}
-            {" • "}
-            <span className="font-semibold capitalize">
-              {getChatRole(selectedChat, userId, isLawyer)} chat
-            </span>
-          </>
-        ) : (
-          "Select a chat from the left"
+            <div className="flex-1 overflow-y-auto p-5">
+              {selectedChat ? (
+                <ChatWindow key={selectedChat._id} chat={selectedChat} />
+              ) : (
+                <div className="text-center text-gray-400 mt-20">
+                  Select a chat from the left
+                </div>
+              )}
+            </div>
+          </div>
         )}
-      </p>
-    </div>
-
-    <div className="flex-1 overflow-y-auto p-5">
-      {selectedChat ? (
-        <ChatWindow key={selectedChat._id} chat={selectedChat} />
-      ) : (
-        <div className="text-center text-gray-400 mt-20">
-          Select a chat from the left
-        </div>
-      )}
-    </div>
-
-  </div>
-)}
       </div>
     </div>
   );

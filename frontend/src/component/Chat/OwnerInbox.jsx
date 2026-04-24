@@ -1,17 +1,16 @@
-import React, { useState } from "react";
-import ChatList from "./ChatList";
-import ChatWindow from "./ChatWindow";
+import React, { useState } from 'react';
+import ChatList from './ChatList';
+import ChatWindow from './ChatWindow';
 
 const OwnerInbox = () => {
   const [selectedChat, setSelectedChat] = useState(null);
 
   return (
     <div className="pt-20 h-screen flex">
-
       {/* 🔹 LEFT: CHAT LIST */}
       <div className="w-1/3 border-r bg-white overflow-y-auto">
-        <ChatList 
-          type="owner"   // ✅ FIXED
+        <ChatList
+          type="owner" // ✅ FIXED
           onSelectChat={setSelectedChat}
         />
       </div>
@@ -26,7 +25,6 @@ const OwnerInbox = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };

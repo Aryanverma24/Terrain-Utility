@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FaArrowUp } from "react-icons/fa";
+import { useEffect, useState } from 'react';
+import { FaArrowUp } from 'react-icons/fa';
 
 const BackToTop = () => {
   const [visibility, setVisibility] = useState(false);
@@ -13,18 +13,18 @@ const BackToTop = () => {
       }
     };
 
-    window.addEventListener("scroll", toggleVisibility);
+    window.addEventListener('scroll', toggleVisibility);
 
     // Clean up listener on unmount
     return () => {
-      window.removeEventListener("scroll", toggleVisibility);
+      window.removeEventListener('scroll', toggleVisibility);
     };
   }, []);
 
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
   };
 

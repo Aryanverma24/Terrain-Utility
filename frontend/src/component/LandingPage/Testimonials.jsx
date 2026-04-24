@@ -1,42 +1,50 @@
-import { FaQuoteLeft, FaStar, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useState } from "react";
+import { FaQuoteLeft, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { useState } from 'react';
 
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const testimonials = [
     {
-      name: "Rajesh Kumar",
-      role: "Agricultural Land Owner",
-      location: "Punjab",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-      content: "Bhu-Parichiye made it incredibly easy to find the perfect buyer for my agricultural land. The verification process gave me confidence, and the transaction was smooth and secure.",
-      rating: 5
+      name: 'Rajesh Kumar',
+      role: 'Agricultural Land Owner',
+      location: 'Punjab',
+      image:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+      content:
+        'Bhu-Parichiye made it incredibly easy to find the perfect buyer for my agricultural land. The verification process gave me confidence, and the transaction was smooth and secure.',
+      rating: 5,
     },
     {
-      name: "Priya Sharma",
-      role: "Real Estate Developer",
-      location: "Mumbai",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-      content: "As a developer, I need reliable land sources. Bhu-Parichiye's verified listings and detailed documentation saved me countless hours of due diligence. Highly recommended!",
-      rating: 5
+      name: 'Priya Sharma',
+      role: 'Real Estate Developer',
+      location: 'Mumbai',
+      image:
+        'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+      content:
+        "As a developer, I need reliable land sources. Bhu-Parichiye's verified listings and detailed documentation saved me countless hours of due diligence. Highly recommended!",
+      rating: 5,
     },
     {
-      name: "Amit Patel",
-      role: "Commercial Investor",
-      location: "Gujarat",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-      content: "The platform's legal verification and secure payment system gave me complete peace of mind. I found excellent commercial properties that perfectly matched my investment criteria.",
-      rating: 5
+      name: 'Amit Patel',
+      role: 'Commercial Investor',
+      location: 'Gujarat',
+      image:
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+      content:
+        "The platform's legal verification and secure payment system gave me complete peace of mind. I found excellent commercial properties that perfectly matched my investment criteria.",
+      rating: 5,
     },
     {
-      name: "Sneha Reddy",
-      role: "Farm Owner",
-      location: "Karnataka",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-      content: "I was skeptical about online land transactions, but Bhu-Parichiye changed my mind. Their team guided me through every step, and I got a great price for my farm land.",
-      rating: 5
-    }
+      name: 'Sneha Reddy',
+      role: 'Farm Owner',
+      location: 'Karnataka',
+      image:
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+      content:
+        'I was skeptical about online land transactions, but Bhu-Parichiye changed my mind. Their team guided me through every step, and I got a great price for my farm land.',
+      rating: 5,
+    },
   ];
 
   const nextTestimonial = () => {
@@ -101,9 +109,7 @@ const Testimonials = () => {
                   <div className="font-bold text-gray-900 text-lg">
                     {testimonials[currentIndex].name}
                   </div>
-                  <div className="text-gray-600">
-                    {testimonials[currentIndex].role}
-                  </div>
+                  <div className="text-gray-600">{testimonials[currentIndex].role}</div>
                   <div className="text-sm text-gray-500">
                     {testimonials[currentIndex].location}
                   </div>

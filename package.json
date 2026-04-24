@@ -43,7 +43,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "daisyui": "^5.0.40"
+    "daisyui": "^5.0.40",
+    "prettier": "^3.8.3"
   },
   "overrides": {
     "node-fetch": "2.6.9"

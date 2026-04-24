@@ -1,11 +1,11 @@
-import mongoose from "mongoose";
-import User from "./UserModal.js";
-import OwnershipHistory from "./ownershipHistroyModal.js";
+import mongoose from 'mongoose';
+import User from './UserModal.js';
+import OwnershipHistory from './ownershipHistroyModal.js';
 const ReviewSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
     username: {
@@ -33,7 +33,7 @@ const ReviewSchema = new mongoose.Schema(
 const LandSchema = new mongoose.Schema(
   {
     landtype: { type: String, required: true },
-    description: { type: String, default: "" },
+    description: { type: String, default: '' },
 
     image: {
       cloudinary: { type: String, default: null },
@@ -44,20 +44,20 @@ const LandSchema = new mongoose.Schema(
     state: { type: String, required: true },
     pincode: { type: Number, required: true },
 
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     ownerName: { type: String, required: true },
 
     price: { type: Number, required: true },
 
     assignedLawyer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       default: null,
     },
 
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
 
     rejectionReason: { type: String },
@@ -65,8 +65,8 @@ const LandSchema = new mongoose.Schema(
     location: {
       type: {
         type: String,
-        enum: ["Point"],
-        default: "Point",
+        enum: ['Point'],
+        default: 'Point',
       },
       coordinates: {
         type: [Number], // [lng, lat]
@@ -95,13 +95,13 @@ const LandSchema = new mongoose.Schema(
 
       status: {
         type: String,
-        enum: ["pending", "matched", "mismatched"],
-        default: "pending",
+        enum: ['pending', 'matched', 'mismatched'],
+        default: 'pending',
       },
 
       verifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
         default: null,
       },
 
@@ -117,7 +117,7 @@ const LandSchema = new mongoose.Schema(
 
       note: {
         type: String,
-        default: "",
+        default: '',
       },
 
       //  NEW → LAWYER DECLARATION
@@ -134,7 +134,7 @@ const LandSchema = new mongoose.Schema(
 
         lawyerId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
           default: null,
         },
       },
@@ -162,14 +162,14 @@ const LandSchema = new mongoose.Schema(
       {
         user: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
+          ref: 'User',
           required: true,
         },
 
         status: {
           type: String,
-          enum: ["pending", "accepted", "withdrawn"],
-          default: "pending",
+          enum: ['pending', 'accepted', 'withdrawn'],
+          default: 'pending',
         },
 
         createdAt: {
@@ -211,7 +211,7 @@ const LandSchema = new mongoose.Schema(
 
       version: {
         type: String,
-        default: "v1.0",
+        default: 'v1.0',
       },
     },
 
@@ -220,11 +220,11 @@ const LandSchema = new mongoose.Schema(
     // =========================
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
     },
 
-    documents: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
+    documents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Document' }],
 
     // =========================
     // OWNERSHIP FEATURES
@@ -232,7 +232,7 @@ const LandSchema = new mongoose.Schema(
     ownershipHistory: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "OwnershipHistory",
+        ref: 'OwnershipHistory',
       },
     ],
 
@@ -243,14 +243,32 @@ const LandSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-      enum: ["not_started", "partial", "completed"],
-      default: "not_started",
+      enum: ['not_started', 'partial', 'completed'],
+      default: 'not_started',
     },
 
     currentTransaction: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Transaction",
+      ref: 'Transaction',
       default: null,
+    },
+    transferStatus: {
+      enum: [
+        'available',
+        'token_pending',
+        'token_paid',
+        'appointment_pending',
+        'appointment_booked',
+        'under_registration',
+        'mutation_pending',
+        'transferred',
+      ],
+      default: 'available',
+    },
+    tokenConfig: {
+      amount: Number,
+      percentage: Number,
+      setByOwner: Boolean,
     },
 
     isLocked: {
@@ -263,12 +281,12 @@ const LandSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 //  PERFORMANCE INDEXES
 LandSchema.index({ ownershipCount: -1 });
-LandSchema.index({ "interestedUsers.user": 1 });
-LandSchema.index({ location: "2dsphere" });
-export const Land = mongoose.model("Land", LandSchema);
+LandSchema.index({ 'interestedUsers.user': 1 });
+LandSchema.index({ location: '2dsphere' });
+export const Land = mongoose.model('Land', LandSchema);
 export default Land;

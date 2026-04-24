@@ -1,23 +1,26 @@
-import { FaSearch, FaMapMarkerAlt, FaFilter, FaChartLine } from "react-icons/fa";
-import { useState } from "react";
+import { FaSearch, FaMapMarkerAlt, FaFilter, FaChartLine } from 'react-icons/fa';
+import { useState } from 'react';
 
 export const HeroSection = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
   const tabs = [
-    { id: "all", label: "All Properties", icon: FaSearch },
-    { id: "trending", label: "Trending", icon: FaChartLine },
-    { id: "featured", label: "Featured", icon: FaFilter }
+    { id: 'all', label: 'All Properties', icon: FaSearch },
+    { id: 'trending', label: 'Trending', icon: FaChartLine },
+    { id: 'featured', label: 'Featured', icon: FaFilter },
   ];
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900">
       {/* Background Grid Pattern - Matching Hero */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3Cpath d='M20 0v40M0 20h40' stroke='%23ffffff' stroke-width='0.5' fill-opacity='0.1'/%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3Cpath d='M20 0v40M0 20h40' stroke='%23ffffff' stroke-width='0.5' fill-opacity='0.1'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        ></div>
       </div>
 
       {/* Animated Gradient Overlay - Matching Hero */}
@@ -41,8 +44,8 @@ export const HeroSection = () => {
 
           {/* Enhanced Subheading - Matching Hero */}
           <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
-            Browse through our extensive collection of premium land properties, 
-            from residential plots to commercial spaces, find exactly what you're looking for.
+            Browse through our extensive collection of premium land properties, from
+            residential plots to commercial spaces, find exactly what you're looking for.
           </p>
 
           {/* Search Bar - Matching Landing Page Style */}
@@ -76,8 +79,8 @@ export const HeroSection = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`group inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-emerald-500/25 transform hover:scale-105 ${
                     activeTab === tab.id
-                      ? "ring-2 ring-emerald-400/50"
-                      : "bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20"
+                      ? 'ring-2 ring-emerald-400/50'
+                      : 'bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20'
                   }`}
                 >
                   <Icon className="mr-3 group-hover:scale-110 transition-transform" />
@@ -90,7 +93,9 @@ export const HeroSection = () => {
           {/* Stats with Enhanced Design - Matching Hero */}
           <div className="grid grid-cols-3 gap-6 max-w-lg">
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">5,000+</div>
+              <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">
+                5,000+
+              </div>
               <div className="text-gray-400 text-sm">Active Listings</div>
             </div>
             <div className="text-center">
@@ -98,7 +103,9 @@ export const HeroSection = () => {
               <div className="text-gray-400 text-sm">Satisfaction</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">24/7</div>
+              <div className="text-3xl md:text-4xl font-bold text-emerald-400 mb-1">
+                24/7
+              </div>
               <div className="text-gray-400 text-sm">Support</div>
             </div>
           </div>

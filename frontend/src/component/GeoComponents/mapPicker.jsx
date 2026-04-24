@@ -1,10 +1,10 @@
-import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
-import { useState, useEffect } from "react";
-import L from "leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
+import { useState, useEffect } from 'react';
+import L from 'leaflet';
 
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // Fix default icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -52,7 +52,7 @@ export default function MapPicker({ center, setCoordinates }) {
         className="h-full w-full"
       >
         <TileLayer
-          attribution='© OpenStreetMap contributors'
+          attribution="© OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 

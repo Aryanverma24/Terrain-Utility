@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
-import { FaStar, FaMapMarkerAlt, FaHeart, FaEye, FaArrowRight, FaShieldAlt } from "react-icons/fa";
-import { useState } from "react";
-import { getFileUrl } from "../../../../backend/utils/getFileUrl";
+import { Link } from 'react-router-dom';
+import {
+  FaStar,
+  FaMapMarkerAlt,
+  FaHeart,
+  FaEye,
+  FaArrowRight,
+  FaShieldAlt,
+} from 'react-icons/fa';
+import { useState } from 'react';
+import { getFileUrl } from '../../../../backend/utils/getFileUrl';
 export const FeaturedLands = ({ lands, loading }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -69,115 +76,124 @@ export const FeaturedLands = ({ lands, loading }) => {
       {/* Featured Lands Grid */}
       <div className="space-y-6">
         {lands
-  .slice()
-  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-  .slice(0, 3)
-  .map((land, index) => {
-          const averageRating = calculateAverageRating(land.reviews);
-          const isHovered = hoveredCard === land._id;
+          .slice()
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 3)
+          .map((land, index) => {
+            const averageRating = calculateAverageRating(land.reviews);
+            const isHovered = hoveredCard === land._id;
 
-          return (
-            <div
-              key={land._id}
-              className="group relative"
-              onMouseEnter={() => setHoveredCard(land._id)}
-              onMouseLeave={() => setHoveredCard(null)}
-            >
-              {/* Premium Card */}
-              <div className="relative overflow-hidden rounded-xl border border-emerald-100 hover:border-emerald-200 transition-all duration-300">
-                {/* Property Image */}
-                <div className="relative h-32">
-                  {land.image ? (
-                    <img
-                       src={getFileUrl(land.image)}
-                      alt={land.landtype || "land"}
-                      className="w-full h-full object-cover transition-transform duration-500"
-                      style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-cyan-100 flex items-center justify-center">
-                      <FaMapMarkerAlt className="text-emerald-600 text-3xl" />
+            return (
+              <div
+                key={land._id}
+                className="group relative"
+                onMouseEnter={() => setHoveredCard(land._id)}
+                onMouseLeave={() => setHoveredCard(null)}
+              >
+                {/* Premium Card */}
+                <div className="relative overflow-hidden rounded-xl border border-emerald-100 hover:border-emerald-200 transition-all duration-300">
+                  {/* Property Image */}
+                  <div className="relative h-32">
+                    {land.image ? (
+                      <img
+                        src={getFileUrl(land.image)}
+                        alt={land.landtype || 'land'}
+                        className="w-full h-full object-cover transition-transform duration-500"
+                        style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-cyan-100 flex items-center justify-center">
+                        <FaMapMarkerAlt className="text-emerald-600 text-3xl" />
+                      </div>
+                    )}
+
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+
+                    {/* Premium Badge */}
+                    <div className="absolute top-3 left-3">
+                      <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
+                        PREMIUM
+                      </div>
                     </div>
-                  )}
 
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-
-                  {/* Premium Badge */}
-                  <div className="absolute top-3 left-3">
-                    <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center shadow-lg">
-                      PREMIUM
-                    </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className={`absolute top-3 right-3 flex space-x-2 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                    <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all duration-300">
-                      <FaHeart className="text-sm text-gray-600 hover:text-red-500" />
-                    </button>
-                    <Link
-                      to={`/land/${land._id}`}
-                      className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all duration-300"
+                    {/* Quick Actions */}
+                    <div
+                      className={`absolute top-3 right-3 flex space-x-2 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
                     >
-                      <FaEye className="text-sm text-gray-600 hover:text-emerald-600" />
-                    </Link>
-                  </div>
-
-                  {/* Location Badge */}
-                  <div className="absolute bottom-3 left-3">
-                    <div className="bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
-                      <FaMapMarkerAlt className="mr-1 text-xs" />
-                      {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) || 'Location'}
+                      <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all duration-300">
+                        <FaHeart className="text-sm text-gray-600 hover:text-red-500" />
+                      </button>
+                      <Link
+                        to={`/land/${land._id}`}
+                        className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all duration-300"
+                      >
+                        <FaEye className="text-sm text-gray-600 hover:text-emerald-600" />
+                      </Link>
                     </div>
-                  </div>
-                </div>
 
-                {/* Property Details */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors truncate">
-                        {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) || 'Prime Location'}
-                      </h4>
-                      <p className="text-xs text-gray-600 mb-2">
-                        {land.landtype?.charAt(0).toUpperCase() + land.landtype?.slice(1) || 'Land'} • {land.area || 'N/A'} acres
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                        ₹{land.price ? (land.price / 100000).toFixed(1) + 'L' : 'Contact'}
+                    {/* Location Badge */}
+                    <div className="absolute bottom-3 left-3">
+                      <div className="bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium flex items-center">
+                        <FaMapMarkerAlt className="mr-1 text-xs" />
+                        {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) ||
+                          'Location'}
                       </div>
                     </div>
                   </div>
 
-                  {/* Rating */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {renderStars(averageRating)}
-                      <span className="text-xs text-gray-500 ml-1">
-                        ({land.reviews?.length || 0})
-                      </span>
+                  {/* Property Details */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors truncate">
+                          {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) ||
+                            'Prime Location'}
+                        </h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          {land.landtype?.charAt(0).toUpperCase() +
+                            land.landtype?.slice(1) || 'Land'}{' '}
+                          • {land.area || 'N/A'} acres
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+                          ₹
+                          {land.price
+                            ? (land.price / 100000).toFixed(1) + 'L'
+                            : 'Contact'}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-emerald-600 font-medium">
-                      Verified
-                    </div>
-                  </div>
 
-                  {/* CTA Button */}
-                  <div className={`mt-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
-                    <Link
-                      to={`/land/${land._id}`}
-                      className="flex items-center justify-center w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-xs font-bold rounded-lg hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-emerald-500/25"
+                    {/* Rating */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {renderStars(averageRating)}
+                        <span className="text-xs text-gray-500 ml-1">
+                          ({land.reviews?.length || 0})
+                        </span>
+                      </div>
+                      <div className="text-xs text-emerald-600 font-medium">Verified</div>
+                    </div>
+
+                    {/* CTA Button */}
+                    <div
+                      className={`mt-3 transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}
                     >
-                      View Details
-                      <FaArrowRight className="ml-1 text-xs" />
-                    </Link>
+                      <Link
+                        to={`/land/${land._id}`}
+                        className="flex items-center justify-center w-full px-3 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white text-xs font-bold rounded-lg hover:from-emerald-600 hover:to-cyan-600 transition-all duration-300 shadow-md hover:shadow-emerald-500/25"
+                      >
+                        View Details
+                        <FaArrowRight className="ml-1 text-xs" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
 
       {/* View All Button */}

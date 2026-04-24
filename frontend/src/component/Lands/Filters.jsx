@@ -1,34 +1,51 @@
-import { FaFilter, FaTimes, FaSlidersH } from "react-icons/fa";
-import { useState } from "react";
+import { FaFilter, FaTimes, FaSlidersH } from 'react-icons/fa';
+import { useState } from 'react';
 
 export const Filters = ({ filters, onFilterChange, loading }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
 
   const landTypes = [
-    "Residential", "Commercial", "Agricultural", "Industrial", 
-    "Mixed Use", "Recreational", "Institutional"
+    'Residential',
+    'Commercial',
+    'Agricultural',
+    'Industrial',
+    'Mixed Use',
+    'Recreational',
+    'Institutional',
   ];
 
   const cities = [
-    "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", 
-    "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Lucknow",
-    "Surat", "Kanpur", "Nagpur", "Indore", "Thane"
+    'Mumbai',
+    'Delhi',
+    'Bangalore',
+    'Hyderabad',
+    'Chennai',
+    'Kolkata',
+    'Pune',
+    'Ahmedabad',
+    'Jaipur',
+    'Lucknow',
+    'Surat',
+    'Kanpur',
+    'Nagpur',
+    'Indore',
+    'Thane',
   ];
 
   const sortOptions = [
-    { value: "createdAt", label: "Latest First" },
-    { value: "price", label: "Price: Low to High" },
-    { value: "-price", label: "Price: High to Low" },
-    { value: "area", label: "Area: Small to Large" },
-    { value: "-area", label: "Area: Large to Small" },
-    { value: "city", label: "City: A to Z" }
+    { value: 'createdAt', label: 'Latest First' },
+    { value: 'price', label: 'Price: Low to High' },
+    { value: '-price', label: 'Price: High to Low' },
+    { value: 'area', label: 'Area: Small to Large' },
+    { value: '-area', label: 'Area: Large to Small' },
+    { value: 'city', label: 'City: A to Z' },
   ];
 
   const handleInputChange = (field, value) => {
-    setLocalFilters(prev => ({
+    setLocalFilters((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -45,13 +62,15 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
       minArea: '',
       maxArea: '',
       sortBy: 'createdAt',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
     };
     setLocalFilters(clearedFilters);
     onFilterChange(clearedFilters);
   };
 
-  const hasActiveFilters = Object.values(localFilters).some(value => value && value !== '');
+  const hasActiveFilters = Object.values(localFilters).some(
+    (value) => value && value !== '',
+  );
 
   return (
     <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg hover:border-emerald-400/30 transition-all duration-500 sticky top-24">
@@ -90,25 +109,27 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
               className="w-full px-4 py-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition-all duration-300"
             >
               <option value="">All Types</option>
-              {landTypes.map(type => (
-                <option key={type} value={type.toLowerCase()}>{type}</option>
+              {landTypes.map((type) => (
+                <option key={type} value={type.toLowerCase()}>
+                  {type}
+                </option>
               ))}
             </select>
           </div>
 
           {/* City Filter */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
-              City
-            </label>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">City</label>
             <select
               value={localFilters.city}
               onChange={(e) => handleInputChange('city', e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
             >
               <option value="">All Cities</option>
-              {cities.map(city => (
-                <option key={city} value={city.toLowerCase()}>{city}</option>
+              {cities.map((city) => (
+                <option key={city} value={city.toLowerCase()}>
+                  {city}
+                </option>
               ))}
             </select>
           </div>
@@ -169,8 +190,10 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
               onChange={(e) => handleInputChange('sortBy', e.target.value)}
               className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300"
             >
-              {sortOptions.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
           </div>
@@ -184,7 +207,7 @@ export const Filters = ({ filters, onFilterChange, loading }) => {
             >
               {loading ? 'Applying...' : 'Apply Filters'}
             </button>
-            
+
             <button
               onClick={clearFilters}
               disabled={loading}

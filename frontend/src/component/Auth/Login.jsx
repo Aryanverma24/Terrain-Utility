@@ -1,61 +1,70 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { API } from "../../../utils/API";
-import { AuthContext } from "../../../contexts/authContext";
-import { toast } from "react-toastify";
-import { FaUser, FaLock, FaEnvelope, FaShieldAlt, FaHome, FaUserShield, FaHandshake } from "react-icons/fa";
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { API } from '../../../utils/API';
+import { AuthContext } from '../../../contexts/authContext';
+import { toast } from 'react-toastify';
+import {
+  FaUser,
+  FaLock,
+  FaEnvelope,
+  FaShieldAlt,
+  FaHome,
+  FaUserShield,
+  FaHandshake,
+} from 'react-icons/fa';
 
 const Login = () => {
   const { isAuthenticated, getUser } = useContext(AuthContext);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("buyerSeller");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('buyerSeller');
 
   const navigate = useNavigate();
 
   const getLogin = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await API.post("/api/users/auth", {
+      const { data } = await API.post('/api/users/auth', {
         email,
         password,
         role,
       });
 
       if (data) {
-        localStorage.setItem("token", data?.token);
-        localStorage.setItem("user", JSON.stringify(data?.user));
-        localStorage.setItem("role", role);
+        localStorage.setItem('token', data?.token);
+        localStorage.setItem('user', JSON.stringify(data?.user));
+        localStorage.setItem('role', role);
 
         await getUser();
 
-        if (role === "lawyer") navigate("/lawyer-dashboard");
-        else navigate("/");
+        if (role === 'lawyer') navigate('/lawyer-dashboard');
+        else navigate('/');
       }
     } catch (error) {
-      toast.error("Invalid username or password");
+      toast.error('Invalid username or password');
       console.log(error);
     }
   };
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/");
+    if (isAuthenticated) navigate('/');
   }, [isAuthenticated, navigate]);
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-6xl">
         <div className="flex flex-col lg:flex-row bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden">
-          
           {/* LEFT: HERO SECTION */}
           <div className="w-full lg:w-1/2 bg-gradient-to-br from-emerald-600 via-cyan-600 to-emerald-700 p-8 lg:p-12 flex flex-col justify-center relative overflow-hidden">
-            
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`
-              }}></div>
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`,
+                }}
+              ></div>
             </div>
 
             {/* Content */}
@@ -65,16 +74,17 @@ const Login = () => {
                   <FaShieldAlt className="mr-2" />
                   Secure Authentication
                 </div>
-                
+
                 <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
                   Welcome Back
                   <span className="block text-2xl lg:text-3xl font-light text-emerald-100 mt-2">
                     to Bhu-Parichiye
                   </span>
                 </h1>
-                
+
                 <p className="text-emerald-100 text-lg lg:text-xl max-w-md">
-                  Access your account and continue your journey in finding the perfect property
+                  Access your account and continue your journey in finding the perfect
+                  property
                 </p>
               </div>
 
@@ -86,10 +96,12 @@ const Login = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold">Professional Network</h3>
-                    <p className="text-emerald-200 text-sm">Connect with verified users</p>
+                    <p className="text-emerald-200 text-sm">
+                      Connect with verified users
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center text-white">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-4">
                     <FaLock className={`mx-auto h-6 w-6 mb-2 text-emerald-200`} />
@@ -99,7 +111,7 @@ const Login = () => {
                     <p className="text-emerald-200 text-sm">Protected authentication</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center text-white">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-4">
                     <FaHandshake className={`mx-auto h-6 w-6 mb-2 text-emerald-200`} />
@@ -115,7 +127,6 @@ const Login = () => {
 
           {/* RIGHT: LOGIN FORM */}
           <div className="w-full lg:w-1/2 p-8 lg:p-12">
-            
             {/* Header */}
             <div className="text-center mb-8">
               <Link
@@ -125,7 +136,7 @@ const Login = () => {
                 <FaHome className="mr-2" />
                 Back to Home
               </Link>
-              
+
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Sign In
                 <span className="block text-lg font-medium text-gray-600 mt-1">
@@ -135,7 +146,6 @@ const Login = () => {
             </div>
 
             <form onSubmit={getLogin} className="space-y-6">
-
               {/* Role Selector */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -143,49 +153,61 @@ const Login = () => {
                 </label>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
-                    role === "buyerSeller" 
-                      ? "border-emerald-500 bg-emerald-50" 
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}>
+                  <label
+                    className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
+                      role === 'buyerSeller'
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
                     <input
                       type="radio"
                       value="buyerSeller"
-                      checked={role === "buyerSeller"}
+                      checked={role === 'buyerSeller'}
                       onChange={(e) => setRole(e.target.value)}
                       className="sr-only"
                     />
                     <div className="text-center">
-                      <FaUser className={`mx-auto h-6 w-6 mb-2 ${
-                        role === "buyerSeller" ? "text-emerald-600" : "text-gray-400"
-                      }`} />
-                      <span className={`text-sm font-medium ${
-                        role === "buyerSeller" ? "text-emerald-900" : "text-gray-700"
-                      }`}>
+                      <FaUser
+                        className={`mx-auto h-6 w-6 mb-2 ${
+                          role === 'buyerSeller' ? 'text-emerald-600' : 'text-gray-400'
+                        }`}
+                      />
+                      <span
+                        className={`text-sm font-medium ${
+                          role === 'buyerSeller' ? 'text-emerald-900' : 'text-gray-700'
+                        }`}
+                      >
                         Buyer / Seller
                       </span>
                     </div>
                   </label>
 
-                  <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
-                    role === "lawyer" 
-                      ? "border-emerald-500 bg-emerald-50" 
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }`}>
+                  <label
+                    className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
+                      role === 'lawyer'
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
                     <input
                       type="radio"
                       value="lawyer"
-                      checked={role === "lawyer"}
+                      checked={role === 'lawyer'}
                       onChange={(e) => setRole(e.target.value)}
                       className="sr-only"
                     />
                     <div className="text-center">
-                      <FaUserShield className={`mx-auto h-6 w-6 mb-2 ${
-                        role === "lawyer" ? "text-emerald-600" : "text-gray-400"
-                      }`} />
-                      <span className={`text-sm font-medium ${
-                        role === "lawyer" ? "text-emerald-900" : "text-gray-700"
-                      }`}>
+                      <FaUserShield
+                        className={`mx-auto h-6 w-6 mb-2 ${
+                          role === 'lawyer' ? 'text-emerald-600' : 'text-gray-400'
+                        }`}
+                      />
+                      <span
+                        className={`text-sm font-medium ${
+                          role === 'lawyer' ? 'text-emerald-900' : 'text-gray-700'
+                        }`}
+                      >
                         Lawyer
                       </span>
                     </div>
@@ -244,16 +266,15 @@ const Login = () => {
               {/* Register Link */}
               <div className="text-center">
                 <p className="text-gray-600">
-                  New to Bhu-Parichiye?{" "}
-                  <Link 
-                    to="/register" 
+                  New to Bhu-Parichiye?{' '}
+                  <Link
+                    to="/register"
                     className="font-medium text-emerald-600 hover:text-emerald-700 transition-colors duration-200"
                   >
                     Create an account
                   </Link>
                 </p>
               </div>
-
             </form>
           </div>
         </div>

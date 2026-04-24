@@ -1,25 +1,23 @@
-import { FaCity, FaMapMarkerAlt } from "react-icons/fa";
-import { useState, useEffect } from "react";
-import { locationData } from "../../data/indiancities";
+import { FaCity, FaMapMarkerAlt } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { locationData } from '../../data/indiancities';
 
 export default function StateCitySelector({ state, city, onChange }) {
   // internal UI state synced with parent
-  const [selectedState, setSelectedState] = useState(state || "");
-  const [selectedCity, setSelectedCity] = useState(city || "");
+  const [selectedState, setSelectedState] = useState(state || '');
+  const [selectedCity, setSelectedCity] = useState(city || '');
 
   const states = [...new Set(locationData.map((c) => c.State))];
 
-  const citiesForState = locationData.filter(
-    (c) => c.State === selectedState
-  );
+  const citiesForState = locationData.filter((c) => c.State === selectedState);
 
   // 🔥 Sync when coming back to step
   useEffect(() => {
-    setSelectedState(state || "");
+    setSelectedState(state || '');
   }, [state]);
 
   useEffect(() => {
-    setSelectedCity(city || "");
+    setSelectedCity(city || '');
   }, [city]);
 
   // State change
@@ -27,10 +25,10 @@ export default function StateCitySelector({ state, city, onChange }) {
     const newState = e.target.value;
 
     setSelectedState(newState);
-    setSelectedCity(""); // reset city UI
+    setSelectedCity(''); // reset city UI
 
     if (onChange) {
-      onChange({ state: newState, city: "" });
+      onChange({ state: newState, city: '' });
     }
   };
 
@@ -47,7 +45,6 @@ export default function StateCitySelector({ state, city, onChange }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-3">
-      
       {/* STATE */}
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-3 border border-white/10">
         <div className="flex items-center mb-4">
@@ -90,11 +87,7 @@ export default function StateCitySelector({ state, city, onChange }) {
           </option>
 
           {citiesForState.map((city) => (
-            <option
-              key={city.Location}
-              value={city.Location}
-              className="bg-slate-800"
-            >
+            <option key={city.Location} value={city.Location} className="bg-slate-800">
               {city.Location}
             </option>
           ))}

@@ -1,14 +1,17 @@
-import { FaArrowRight, FaHandshake, FaRocket, FaPhone, FaEnvelope } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaArrowRight, FaHandshake, FaRocket, FaPhone, FaEnvelope } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 export const CTA = () => {
   return (
     <section className="py-20 lg:py-24 bg-gradient-to-br from-emerald-600 via-cyan-600 to-emerald-700 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        ></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,8 +31,8 @@ export const CTA = () => {
             </h2>
 
             <p className="text-xl text-emerald-100 max-w-3xl mx-auto leading-relaxed mb-12">
-              Whether you're looking to manage your land investments, find your perfect property, 
-              or partner with us, we're here to help you succeed.
+              Whether you're looking to manage your land investments, find your perfect
+              property, or partner with us, we're here to help you succeed.
             </p>
 
             {/* CTA Buttons */}
@@ -83,7 +86,9 @@ export const CTA = () => {
           <div className="mt-16">
             <div className="inline-flex items-center px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-2xl border border-white/30">
               <FaHandshake className="mr-3 text-xl" />
-              <span className="font-bold text-lg">Building Tomorrow's Land Solutions Today</span>
+              <span className="font-bold text-lg">
+                Building Tomorrow's Land Solutions Today
+              </span>
             </div>
           </div>
         </div>

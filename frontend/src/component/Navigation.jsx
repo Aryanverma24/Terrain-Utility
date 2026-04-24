@@ -1,14 +1,14 @@
-import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaHome, FaEnvelope, FaUser, FaSignOutAlt, FaInfoCircle } from "react-icons/fa";
-import { PiIslandBold } from "react-icons/pi";
-import { MdLandscape } from "react-icons/md";
-import { IoStorefrontOutline } from "react-icons/io5";
-import { HiMenuAlt3, HiX } from "react-icons/hi";
-import { API } from "../../utils/API";
-import { AuthContext } from "../../contexts/authContext";
-import { toast } from "react-toastify";
-import NotificationPanel from "../component/NotificationPanel";
+import { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FaHome, FaEnvelope, FaUser, FaSignOutAlt, FaInfoCircle } from 'react-icons/fa';
+import { PiIslandBold } from 'react-icons/pi';
+import { MdLandscape } from 'react-icons/md';
+import { IoStorefrontOutline } from 'react-icons/io5';
+import { HiMenuAlt3, HiX } from 'react-icons/hi';
+import { API } from '../../utils/API';
+import { AuthContext } from '../../contexts/authContext';
+import { toast } from 'react-toastify';
+import NotificationPanel from '../component/NotificationPanel';
 
 const Navigation = () => {
   const [menubar, setMenubar] = useState(false);
@@ -26,7 +26,7 @@ const Navigation = () => {
         const total = Object.values(data).reduce((acc, val) => acc + val, 0);
         setUnreadCount(total);
       } catch (err) {
-        console.error("Unread fetch error", err);
+        console.error('Unread fetch error', err);
       }
     };
 
@@ -37,32 +37,32 @@ const Navigation = () => {
 
   const logoutUser = async () => {
     try {
-      const { data } = await API.post("/api/users/logout");
+      const { data } = await API.post('/api/users/logout');
       if (data) {
         logout();
-        navigate("/login");
+        navigate('/login');
       }
     } catch (error) {
-      toast.error("Logout failed. Try again.");
+      toast.error('Logout failed. Try again.');
       console.log(error);
     }
   };
 
   const getLinkClass = (path) => {
     const baseClass =
-      "relative px-4 py-2 rounded-xl transition-all duration-300 flex items-center group";
+      'relative px-4 py-2 rounded-xl transition-all duration-300 flex items-center group';
     const activeClass =
       location.pathname === path
-        ? "bg-emerald-500/20 text-emerald-400"
-        : "hover:bg-white/10 text-gray-300 hover:text-white";
+        ? 'bg-emerald-500/20 text-emerald-400'
+        : 'hover:bg-white/10 text-gray-300 hover:text-white';
     return `${baseClass} ${activeClass}`;
   };
 
-  const isLawyer = user?.role === "lawyer";
+  const isLawyer = user?.role === 'lawyer';
 
   return (
     <>
-      {(location.pathname === "/login" || location.pathname === "/register") ? null : (
+      {location.pathname === '/login' || location.pathname === '/register' ? null : (
         <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-gradient-to-r from-slate-900/90 via-emerald-900/90 to-slate-900/90 border-b border-white/10 shadow-2xl">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -77,37 +77,39 @@ const Navigation = () => {
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
                     Bhu-Parichiye
                   </h1>
-                  <span className="text-xs text-gray-400 tracking-wider">PREMIUM PROPERTIES</span>
+                  <span className="text-xs text-gray-400 tracking-wider">
+                    PREMIUM PROPERTIES
+                  </span>
                 </div>
               </div>
 
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center space-x-2">
-                <Link to="/" className={getLinkClass("/")}>
+                <Link to="/" className={getLinkClass('/')}>
                   <FaHome className="mr-3 text-lg transition-transform group-hover:scale-110" />
                   <span className="font-medium">Home</span>
                 </Link>
 
                 {!isLawyer && (
                   <>
-                    <Link to="/lands" className={getLinkClass("/lands")}>
+                    <Link to="/lands" className={getLinkClass('/lands')}>
                       <MdLandscape className="mr-3 text-lg transition-transform group-hover:scale-110" />
                       <span className="font-medium">Lands</span>
                     </Link>
 
-                    <Link to="/wishlist" className={getLinkClass("/wishlist")}>
+                    <Link to="/wishlist" className={getLinkClass('/wishlist')}>
                       <IoStorefrontOutline className="mr-3 text-lg transition-transform group-hover:scale-110" />
                       <span className="font-medium">Wishlist</span>
                     </Link>
                   </>
                 )}
 
-                <Link to="/MyLands" className={getLinkClass("/MyLands")}>
+                <Link to="/MyLands" className={getLinkClass('/MyLands')}>
                   <PiIslandBold className="mr-3 text-lg transition-transform group-hover:scale-110" />
                   <span className="font-medium">My Lands</span>
                 </Link>
 
-                <Link to="/about" className={getLinkClass("/about")}>
+                <Link to="/about" className={getLinkClass('/about')}>
                   <FaInfoCircle className="mr-3 text-lg transition-transform group-hover:scale-110" />
                   <span className="font-medium">About Us</span>
                 </Link>
@@ -117,7 +119,10 @@ const Navigation = () => {
               <div className="hidden lg:flex items-center space-x-4">
                 {user && (
                   <>
-                    <Link to="/inbox" className="relative p-2 rounded-xl hover:bg-white/10 transition-all duration-300 group">
+                    <Link
+                      to="/inbox"
+                      className="relative p-2 rounded-xl hover:bg-white/10 transition-all duration-300 group"
+                    >
                       <FaEnvelope className="text-xl text-gray-300 group-hover:text-emerald-400 transition-colors" />
                       {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse">

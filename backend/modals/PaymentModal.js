@@ -1,68 +1,69 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const paymentSchema = new mongoose.Schema({
-    land :{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Land",
-        required: true
+const paymentSchema = new mongoose.Schema(
+  {
+    land: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Land',
+      required: true,
     },
     buyer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
-    amount :{
-        type: Number,
-        required: true
-    },   
+    amount: {
+      type: Number,
+      required: true,
+    },
 
     currency: {
       type: String,
-      default: "INR",
+      default: 'INR',
     },
-      // Stripe Data
+    // Stripe Data
     paymentIntentId: {
       type: String,
       required: true,
     },
 
-     clientSecret: {
+    clientSecret: {
       type: String,
     },
 
-    paymentMethod :{
-        type: String,
-        enum: ["cash", "card", "upi"],
-        default : "card",
-        required: true
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'card', 'upi'],
+      default: 'card',
+      required: true,
     },
-     status: {
+    status: {
       type: String,
       enum: [
-        "created",
-        "pending",
-        "requires_action",
-        "succeeded",
-        "failed",
-        "cancelled",
-        "refunded",
+        'created',
+        'pending',
+        'requires_action',
+        'succeeded',
+        'failed',
+        'cancelled',
+        'refunded',
       ],
-      default: "created",
+      default: 'created',
     },
 
-        // Payment Type
+    // Payment Type
     type: {
       type: String,
-      enum: ["full", "token", "remaining"],
-      default: "full",
+      enum: ['full', 'token', 'remaining'],
+      default: 'full',
     },
-      // Failure Handling
+    // Failure Handling
     failureReason: {
       type: String,
       default: null,
     },
 
-      // Refund
+    // Refund
     refundId: {
       type: String,
       default: null,
@@ -73,14 +74,16 @@ const paymentSchema = new mongoose.Schema({
       default: 0,
     },
 
-       // Metadata 
+    // Metadata
     metadata: {
       type: Object,
       default: {},
     },
-},{
+  },
+  {
     timestamps: true,
-})
+  },
+);
 
-export const Payment = mongoose.model("Payment", paymentSchema)
-export default Payment
+export const Payment = mongoose.model('Payment', paymentSchema);
+export default Payment;

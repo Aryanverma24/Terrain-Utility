@@ -1,16 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
-import io from "socket.io-client";
-import axios from "axios";
-import { toast } from "react-toastify";
-import socket from "../../../utils/socket";
-
+import React, { useEffect, useRef, useState } from 'react';
+import io from 'socket.io-client';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import socket from '../../../utils/socket';
 
 export default function ChatRoom({
-  chat,                 // ✅ FULL CHAT OBJECT
+  chat, // ✅ FULL CHAT OBJECT
   currentUserId,
 }) {
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [typingFrom, setTypingFrom] = useState(null);
   const [loading, setLoading] = useState(true);
   const listRef = useRef(null);
@@ -19,35 +18,27 @@ export default function ChatRoom({
 
   // ✅ GET OTHER USER NAME CORRECTLY
   const otherUserName =
-    String(chat?.buyerId) === String(currentUserId)
-      ? chat?.ownerName
-      : chat?.buyerName;
+    String(chat?.buyerId) === String(currentUserId) ? chat?.ownerName : chat?.buyerName;
 
   const otherUserId =
-    String(chat?.buyerId) === String(currentUserId)
-      ? chat?.ownerId
-      : chat?.buyerId;
+    String(chat?.buyerId) === String(currentUserId) ? chat?.ownerId : chat?.buyerId;
 
   useEffect(() => {
     if (!chatId || !currentUserId) return;
 
-    
-
     // ✅ JOIN USING chatId
-    socket.emit("joinRoom", { room: chatId });
+    socket.emit('joinRoom', { room: chatId });
 
-   socket.on("message", (msg) => {
-  setMessages((prev) => {
-    const exists = prev.some(
-      (m) => String(m._id) === String(msg._id)
-    );
+    socket.on('message', (msg) => {
+      setMessages((prev) => {
+        const exists = prev.some((m) => String(m._id) === String(msg._id));
 
-    if (exists) return prev; // ✅ prevent duplicate
+        if (exists) return prev; // ✅ prevent duplicate
 
-    return [...prev, msg];
-  });
-});
-    socket.on("typing", ({ senderName }) => {
+        return [...prev, msg];
+      });
+    });
+    socket.on('typing', ({ senderName }) => {
       setTypingFrom(senderName);
       setTimeout(() => setTypingFrom(null), 1500);
     });
@@ -55,20 +46,18 @@ export default function ChatRoom({
     // ✅ FETCH FROM CORRECT API
     (async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/chat/${chatId}/messages`
-        );
+        const res = await axios.get(`http://localhost:5000/api/chat/${chatId}/messages`);
         setMessages(res.data || []);
       } catch (err) {
-        console.error("fetch messages:", err);
+        console.error('fetch messages:', err);
       } finally {
         setLoading(false);
       }
     })();
 
     return () => {
-      socket.off("message");
-      socket.off("typing");
+      socket.off('message');
+      socket.off('typing');
       socket.disconnect();
     };
   }, [chatId, currentUserId]);
@@ -93,27 +82,24 @@ export default function ChatRoom({
 
     try {
       // ✅ Optimistic UI
-      setMessages((prev) => [
-        ...prev,
-        { ...messageData, timestamp: new Date() },
-      ]);
+      setMessages((prev) => [...prev, { ...messageData, timestamp: new Date() }]);
 
-      setText("");
+      setText('');
 
       // ✅ SOCKET EMIT
-      socket.emit("sendMessage", messageData);
+      socket.emit('sendMessage', messageData);
 
       // ✅ SAVE TO DB
-      await axios.post("http://localhost:5000/api/chat/send", messageData);
+      await axios.post('http://localhost:5000/api/chat/send', messageData);
     } catch (err) {
-      console.error("sendMessage error", err);
-      toast.error("Failed to send message.");
+      console.error('sendMessage error', err);
+      toast.error('Failed to send message.');
     }
   };
 
   const handleTyping = (val) => {
     setText(val);
-    socket.emit("typing", {
+    socket.emit('typing', {
       room: chatId,
       senderName:
         String(chat?.buyerId) === String(currentUserId)
@@ -129,53 +115,37 @@ export default function ChatRoom({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold">
-                Chat with {otherUserName || "User"}
+                Chat with {otherUserName || 'User'}
               </h2>
               {typingFrom && (
-                <p className="text-sm text-gray-500">
-                  {typingFrom} is typing...
-                </p>
+                <p className="text-sm text-gray-500">{typingFrom} is typing...</p>
               )}
             </div>
-            <div className="text-sm text-gray-500">
-              Chat ID: {chatId}
-            </div>
+            <div className="text-sm text-gray-500">Chat ID: {chatId}</div>
           </div>
 
-          <div
-            ref={listRef}
-            className="space-y-3 overflow-y-auto max-h-[60vh] p-2 mb-4"
-          >
+          <div ref={listRef} className="space-y-3 overflow-y-auto max-h-[60vh] p-2 mb-4">
             {loading ? (
-              <p className="text-center text-gray-500">
-                Loading messages...
-              </p>
+              <p className="text-center text-gray-500">Loading messages...</p>
             ) : messages.length === 0 ? (
-              <p className="text-center text-gray-500">
-                No messages yet
-              </p>
+              <p className="text-center text-gray-500">No messages yet</p>
             ) : (
               messages.map((m, i) => {
-                const mine =
-                  String(m.senderId) === String(currentUserId);
+                const mine = String(m.senderId) === String(currentUserId);
 
                 return (
                   <div
                     key={m._id || i}
-                    className={`flex ${
-                      mine ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`rounded-xl px-4 py-2 max-w-[75%] break-words shadow-sm
                       ${
-                        mine
-                          ? "bg-rose-100 text-rose-900"
-                          : "bg-gray-100 text-gray-900"
+                        mine ? 'bg-rose-100 text-rose-900' : 'bg-gray-100 text-gray-900'
                       }`}
                     >
                       <div className="text-sm font-medium mb-1">
-                        {mine ? "You" : m.senderName}
+                        {mine ? 'You' : m.senderName}
                       </div>
                       <div className="text-base">{m.message}</div>
                       <div className="text-xs text-gray-500 mt-1 text-right">
@@ -192,7 +162,7 @@ export default function ChatRoom({
             <input
               value={text}
               onChange={(e) => handleTyping(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               className="flex-1 border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-200"
               placeholder="Type a message..."
             />

@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
-import { FaChartLine, FaHeart, FaMapMarkerAlt, FaEye, FaStar, FaArrowRight } from "react-icons/fa";
-import { useState } from "react";
-import { getFileUrl } from "../../../../backend/utils/getFileUrl";
+import { Link } from 'react-router-dom';
+import {
+  FaChartLine,
+  FaHeart,
+  FaMapMarkerAlt,
+  FaEye,
+  FaStar,
+  FaArrowRight,
+} from 'react-icons/fa';
+import { useState } from 'react';
+import { getFileUrl } from '../../../../backend/utils/getFileUrl';
 export const TrendingLands = ({ lands, loading }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -90,8 +97,8 @@ export const TrendingLands = ({ lands, loading }) => {
                 <div className="relative flex-shrink-0">
                   {land.image ? (
                     <img
-                       src={getFileUrl(land.image)}
-                      alt={land.landtype || "land"}
+                      src={getFileUrl(land.image)}
+                      alt={land.landtype || 'land'}
                       className="w-24 h-24 rounded-xl object-cover"
                     />
                   ) : (
@@ -99,11 +106,10 @@ export const TrendingLands = ({ lands, loading }) => {
                       <FaMapMarkerAlt className="text-emerald-600 text-2xl" />
                     </div>
                   )}
-                  
+
                   {/* Trending Badge */}
                   <div className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center">
-                    <FaChartLine className="mr-1 text-xs" />
-                    #{index + 1}
+                    <FaChartLine className="mr-1 text-xs" />#{index + 1}
                   </div>
                 </div>
 
@@ -112,10 +118,13 @@ export const TrendingLands = ({ lands, loading }) => {
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-bold text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors truncate">
-                        {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) || 'Prime Location'}
+                        {land.city?.charAt(0).toUpperCase() + land.city?.slice(1) ||
+                          'Prime Location'}
                       </h4>
                       <p className="text-xs text-gray-600 mb-2">
-                        {land.landtype?.charAt(0).toUpperCase() + land.landtype?.slice(1) || 'Land'} • {land.area || 'N/A'} acres
+                        {land.landtype?.charAt(0).toUpperCase() +
+                          land.landtype?.slice(1) || 'Land'}{' '}
+                        • {land.area || 'N/A'} acres
                       </p>
                     </div>
                     <div className="text-right">
@@ -140,7 +149,9 @@ export const TrendingLands = ({ lands, loading }) => {
                   </div>
 
                   {/* Action Buttons on Hover */}
-                  <div className={`flex items-center space-x-2 mt-2 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                  <div
+                    className={`flex items-center space-x-2 mt-2 transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+                  >
                     <button className="flex items-center px-2 py-1 bg-white rounded-lg text-xs font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
                       <FaHeart className="mr-1" />
                       Save

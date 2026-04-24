@@ -1,13 +1,23 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import { API } from "../../../utils/API";
-import { FaShieldAlt, FaLock, FaUser, FaEye, FaEyeSlash, FaExclamationTriangle, FaCheckCircle, FaArrowLeft, FaUserShield } from "react-icons/fa";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { API } from '../../../utils/API';
+import {
+  FaShieldAlt,
+  FaLock,
+  FaUser,
+  FaEye,
+  FaEyeSlash,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaArrowLeft,
+  FaUserShield,
+} from 'react-icons/fa';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: '',
+    password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,75 +26,75 @@ const AdminLogin = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+      newErrors.email = 'Please enter a valid email';
     }
-    
+
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear error for this field when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ""
+        [name]: '',
       }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
-      toast.error("Please fix the errors in the form");
+      toast.error('Please fix the errors in the form');
       return;
     }
 
     setIsLoading(true);
-    
+
     try {
-      const response = await API.post("/api/users/auth", {
+      const response = await API.post('/api/users/auth', {
         email: formData.email,
         password: formData.password,
-        role: "admin"
+        role: 'admin',
       });
-      
+
       if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        localStorage.setItem("role", "admin");
-        
-        toast.success("Welcome back, Admin!");
-        navigate("/adminDashboard");
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('role', 'admin');
+
+        toast.success('Welcome back, Admin!');
+        navigate('/adminDashboard');
       }
     } catch (error) {
-      console.error("Admin login error:", error);
-      
+      console.error('Admin login error:', error);
+
       if (error.response?.status === 401) {
-        toast.error("Invalid credentials. Please check your email and password.");
+        toast.error('Invalid credentials. Please check your email and password.');
       } else if (error.response?.status === 403) {
-        toast.error("Access denied. Admin privileges required.");
+        toast.error('Access denied. Admin privileges required.');
       } else if (error.response?.status === 404) {
-        toast.error("Admin account not found.");
+        toast.error('Admin account not found.');
       } else {
-        toast.error(error.response?.data?.message || "Login failed. Please try again.");
+        toast.error(error.response?.data?.message || 'Login failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -92,22 +102,23 @@ const AdminLogin = () => {
   };
 
   const handleBackToUserLogin = () => {
-    navigate("/login");
+    navigate('/login');
   };
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-emerald-50 via-cyan-50 to-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-6xl">
         <div className="flex flex-col lg:flex-row bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden">
-          
           {/* LEFT: HERO SECTION */}
           <div className="w-full lg:w-1/2 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 p-8 lg:p-12 flex flex-col justify-center relative overflow-hidden">
-            
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`
-              }}></div>
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.3'%3E%3Cpath d='M30 30c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm0 0c0 11.046 8.954 20 20 20s20-8.954 20-20-8.954-20-20-20-20 8.954-20 20z'/%3E%3C/g%3E%3C/svg%3E")`,
+                }}
+              ></div>
             </div>
 
             {/* Content */}
@@ -117,16 +128,17 @@ const AdminLogin = () => {
                   <FaShieldAlt className="mr-2" />
                   Admin Authentication
                 </div>
-                
+
                 <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4">
                   Admin Portal
                   <span className="block text-2xl lg:text-3xl font-light text-purple-100 mt-2">
                     Secure Access Control
                   </span>
                 </h1>
-                
+
                 <p className="text-purple-100 text-lg lg:text-xl max-w-md">
-                  Enter your admin credentials to access the dashboard and manage the platform
+                  Enter your admin credentials to access the dashboard and manage the
+                  platform
                 </p>
               </div>
 
@@ -141,7 +153,7 @@ const AdminLogin = () => {
                     <p className="text-purple-200 text-sm">Full system access</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center text-white">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-4">
                     <FaLock className={`mx-auto h-6 w-6 mb-2 text-purple-200`} />
@@ -151,7 +163,7 @@ const AdminLogin = () => {
                     <p className="text-purple-200 text-sm">Multi-layer protection</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center text-white">
                   <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center mr-4">
                     <FaShieldAlt className={`mx-auto h-6 w-6 mb-2 text-purple-200`} />
@@ -167,7 +179,6 @@ const AdminLogin = () => {
 
           {/* RIGHT: LOGIN FORM */}
           <div className="w-full lg:w-1/2 p-8 lg:p-12">
-            
             {/* Header */}
             <div className="text-center mb-8">
               <button
@@ -177,7 +188,7 @@ const AdminLogin = () => {
                 <FaArrowLeft className="mr-2" />
                 Back to User Login
               </button>
-              
+
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Admin Sign In
                 <span className="block text-lg font-medium text-gray-600 mt-1">
@@ -187,7 +198,6 @@ const AdminLogin = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-
               {/* Email Field */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -195,7 +205,9 @@ const AdminLogin = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaUser className={`h-5 w-5 ${errors.email ? 'text-red-400' : 'text-gray-400'}`} />
+                    <FaUser
+                      className={`h-5 w-5 ${errors.email ? 'text-red-400' : 'text-gray-400'}`}
+                    />
                   </div>
                   <input
                     type="email"
@@ -203,9 +215,7 @@ const AdminLogin = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 ${
-                      errors.email 
-                        ? 'border-red-400 bg-red-50' 
-                        : 'border-gray-300'
+                      errors.email ? 'border-red-400 bg-red-50' : 'border-gray-300'
                     }`}
                     placeholder="admin@example.com"
                     disabled={isLoading}
@@ -226,17 +236,17 @@ const AdminLogin = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className={`h-5 w-5 ${errors.password ? 'text-red-400' : 'text-gray-400'}`} />
+                    <FaLock
+                      className={`h-5 w-5 ${errors.password ? 'text-red-400' : 'text-gray-400'}`}
+                    />
                   </div>
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
                     className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 ${
-                      errors.password 
-                        ? 'border-red-400 bg-red-50' 
-                        : 'border-gray-300'
+                      errors.password ? 'border-red-400 bg-red-50' : 'border-gray-300'
                     }`}
                     placeholder="Enter your admin password"
                     disabled={isLoading}
@@ -303,14 +313,16 @@ const AdminLogin = () => {
                 <div className="flex items-start">
                   <FaExclamationTriangle className="text-yellow-600 mt-1 mr-3 flex-shrink-0" />
                   <div>
-                    <p className="text-yellow-800 text-sm font-medium mb-1">Security Notice</p>
+                    <p className="text-yellow-800 text-sm font-medium mb-1">
+                      Security Notice
+                    </p>
                     <p className="text-yellow-700 text-xs">
-                      This is a restricted area. Unauthorized access attempts will be logged and reported.
+                      This is a restricted area. Unauthorized access attempts will be
+                      logged and reported.
                     </p>
                   </div>
                 </div>
               </div>
-
             </form>
           </div>
         </div>

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { toast } from "react-toastify";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const DirectPaymentForm = ({ landId, landPrice, onClose, onSuccess, landDetails }) => {
-  console.log("DirectPaymentForm rendering - NEW VERSION"); // Debug log
+  console.log('DirectPaymentForm rendering - NEW VERSION'); // Debug log
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -13,22 +13,22 @@ const DirectPaymentForm = ({ landId, landPrice, onClose, onSuccess, landDetails 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!stripe || !elements) {
-      toast.error("Stripe is not loaded yet");
+      toast.error('Stripe is not loaded yet');
       return;
     }
 
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem('token');
 
       // 1️⃣ Create Payment Intent
       const { data } = await axios.post(
-        "/api/payment/create-intent",
+        '/api/payment/create-intent',
         { landId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       // 2️⃣ Confirm Payment
@@ -44,33 +44,39 @@ const DirectPaymentForm = ({ landId, landPrice, onClose, onSuccess, landDetails 
       }
 
       // 3️⃣ Success - Confirm on backend
-      if (result.paymentIntent.status === "succeeded") {
+      if (result.paymentIntent.status === 'succeeded') {
         try {
           const confirmResponse = await axios.post(
-            "/api/payment/confirm",
+            '/api/payment/confirm',
             { paymentIntentId: result.paymentIntent.id },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${token}` } },
           );
-          
-          console.log("Backend confirmation successful:", confirmResponse.data);
-          toast.success("Payment Successful 🎉");
+
+          console.log('Backend confirmation successful:', confirmResponse.data);
+          toast.success('Payment Successful 🎉');
           onSuccess();
           onClose();
-          
+
           // Redirect to congratulations page with land details
-          navigate('/congratulations', { 
-            state: { 
+          navigate('/congratulations', {
+            state: {
               landDetails: landDetails || { title: 'Property', price: landPrice },
-              transactionId: confirmResponse.data.transactionId || result.paymentIntent.id
-            } 
+              transactionId:
+                confirmResponse.data.transactionId || result.paymentIntent.id,
+            },
           });
         } catch (confirmError) {
-          console.error("Backend confirmation failed:", confirmError.response?.data || confirmError);
-          toast.error(`Payment succeeded but confirmation failed: ${confirmError.response?.data?.error || confirmError.message}`);
+          console.error(
+            'Backend confirmation failed:',
+            confirmError.response?.data || confirmError,
+          );
+          toast.error(
+            `Payment succeeded but confirmation failed: ${confirmError.response?.data?.error || confirmError.message}`,
+          );
         }
       }
     } catch (err) {
-      console.error("Payment error:", err);
+      console.error('Payment error:', err);
       toast.error(`Payment failed: ${err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
@@ -83,7 +89,7 @@ const DirectPaymentForm = ({ landId, landPrice, onClose, onSuccess, landDetails 
         💳 Test Card: 4000002760003184 (INR)
       </div>
       <div className="border p-3 rounded-lg">
-        <CardElement 
+        <CardElement
           options={{
             style: {
               base: {
@@ -107,7 +113,7 @@ const DirectPaymentForm = ({ landId, landPrice, onClose, onSuccess, landDetails 
         disabled={!stripe || loading}
         className="w-full bg-green-600 text-white py-2 rounded-lg disabled:bg-gray-400"
       >
-        {loading ? "Processing..." : "Pay Now"}
+        {loading ? 'Processing...' : 'Pay Now'}
       </button>
     </form>
   );

@@ -1,9 +1,9 @@
-import { HeroSection } from "./HeroSection";
-import { MissionVision } from "./MissionVision";
-import { Founders } from "./Founders";
-import { Values } from "./Values";
-import { Stats } from "./Stats";
-import { CTA } from "./CTA";
+import { HeroSection } from './HeroSection';
+import { MissionVision } from './MissionVision';
+import { Founders } from './Founders';
+import { Values } from './Values';
+import { Stats } from './Stats';
+import { CTA } from './CTA';
 
 const About = () => {
   return (

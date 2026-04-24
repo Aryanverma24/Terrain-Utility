@@ -1,56 +1,56 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const caseSchema = new mongoose.Schema(
   {
-    buyerChatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
-ownerChatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
+    buyerChatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
+    ownerChatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
     landId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Land",
+      ref: 'Land',
       required: true,
     },
 
     buyerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
 
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
 
     lawyerId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
 
     status: {
       type: String,
-      enum: ["active", "closed"],
-      default: "active",
+      enum: ['active', 'closed'],
+      default: 'active',
       index: true,
     },
 
     buyerLawyerChat: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Chat",
+      ref: 'Chat',
     },
 
     ownerLawyerChat: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Chat",
+      ref: 'Chat',
     },
 
     closedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       default: null,
     },
 
@@ -61,18 +61,26 @@ ownerChatId: { type: mongoose.Schema.Types.ObjectId, ref: "Chat" },
 
     closureReasonType: {
       type: String,
-      enum: ["deal_completed", "cancelled", "dispute", "expired","mutual_agreement",
-    "closed_by_lawyer", "not_interested","other"],
+      enum: [
+        'deal_completed',
+        'cancelled',
+        'dispute',
+        'expired',
+        'mutual_agreement',
+        'closed_by_lawyer',
+        'not_interested',
+        'other',
+      ],
       default: null,
     },
 
     closureReasonText: {
       type: String,
-      default: "",
+      default: '',
       maxlength: 500,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-export default mongoose.model("Case", caseSchema);
+export default mongoose.model('Case', caseSchema);

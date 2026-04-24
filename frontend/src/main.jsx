@@ -3,8 +3,8 @@ import App from './App.jsx';
 import './index.css';
 
 import { Route, RouterProvider, createRoutesFromElements } from 'react-router';
-import { createBrowserRouter } from "react-router-dom";
-import { createRef } from "react";
+import { createBrowserRouter } from 'react-router-dom';
+import { createRef } from 'react';
 import Login from './component/Auth/Login.jsx';
 import Register from './component/Auth/Register.jsx';
 import AdminLogin from './component/Auth/AdminLogin.jsx';
@@ -28,7 +28,7 @@ import Settings from './component/AdminDashboard/components/Settings.jsx';
 import HelpSupport from './component/AdminDashboard/components/HelpSupport.jsx';
 import Wishlist from './component/Wishlist.jsx';
 import LawyerDashboard from './component/lawyerDashboard.jsx';
-import NotificationPanelPage from "./component/NotificationPanelPage";
+import NotificationPanelPage from './component/NotificationPanelPage';
 import ChatList from './component/Chat/ChatList.jsx';
 import Inbox from './component/Chat/BuyerInbox.jsx';
 import OwnerInbox from './component/Chat/OwnerInbox.jsx';
@@ -53,76 +53,71 @@ const router = createBrowserRouter(
       <Route path="/register" element={<Register />} />
       <Route path="/lawyer-dashboard" element={<LawyerDashboard />} />
 
-
       {/* User Routes */}
       <Route path="/userProfile" element={<Profile />} />
       <Route index element={<DynamicHome />} />
       <Route path="/about" element={<About />} />
       <Route path="/uploads" element={<CreateLand />} />
       <Route path="/mylands" element={<MyLand />} />
-      <Route path='/wishlist' element={<Wishlist  />} />
+      <Route path="/wishlist" element={<Wishlist />} />
       <Route path="/lands" element={<Lands />} />
 
       <Route path="/notifications" element={<NotificationPanelPage />} />
       <Route path="/admin-login" element={<AdminLogin />} />
-      <Route path="/registrar-activate" element={<RegistrarActivate />}/>
-      <Route path="/registrar-login" element={<RegistrarLogin />}/>
+      <Route path="/registrar-activate" element={<RegistrarActivate />} />
+      <Route path="/registrar-login" element={<RegistrarLogin />} />
       {/* Land Details Route */}
       <Route path="/land/:id" element={<SingleLand />} />
 
-       {/* Chat Routes */}
+      {/* Chat Routes */}
       <Route path="/chat" element={<ChatList />} />
-{/* <Route path="/chat/:chatId" element={<ChatWindow />} /> */}
+      {/* <Route path="/chat/:chatId" element={<ChatWindow />} /> */}
       <Route path="/inbox" element={<Inbox />}>
+        {/* <Route path to open chat from single land to inbox*/}
+        <Route path="/inbox" element={<Inbox ref={inboxRef} />}>
+          <Route
+            path="land/:id"
+            element={
+              <SingleLand
+                onOpenChat={(chat) => inboxRef.current?.openChatInInbox(chat)}
+              />
+            }
+          />
+        </Route>
+      </Route>
 
-{/* <Route path to open chat from single land to inbox*/}
-<Route path="/inbox" element={<Inbox ref={inboxRef} />}>
-  <Route
-    path="land/:id"
-    element={
-      <SingleLand
-        onOpenChat={(chat) =>
-          inboxRef.current?.openChatInInbox(chat)
-        }
-      />
-    }
-  />
-</Route>
-</Route>
-
-<Route path="/land/:id/owner-documents" element={<OwnerDocuments />} />
-<Route path="/lawyer/documents/:id" element={<LawyerDocuments />} />
+      <Route path="/land/:id/owner-documents" element={<OwnerDocuments />} />
+      <Route path="/lawyer/documents/:id" element={<LawyerDocuments />} />
       {/* Face Authentication Routes */}
       {/* <Route path='/facial-auth' element={<FaceAuthentication />} /> */}
       {/* <Route path='/add-face' element={<FaceSetup />} /> */}
-   
-    {/* registrar routes */}
-    <Route path="/registrar-dashboard" element={<RegistrarDashboard/>}/>
-  {/* admin routes */}
-      <Route path='/adminDashboard' element={<AdminDashboard />} />
+
+      {/* registrar routes */}
+      <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
+      {/* admin routes */}
+      <Route path="/adminDashboard" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<UserManagement />} />
       <Route path="/admin/lands" element={<LandManagement />} />
       <Route path="/admin/analytics" element={<Analytics />} />
       <Route path="/admin/reports" element={<Reports />} />
       <Route path="/admin/settings" element={<Settings />} />
       <Route path="/admin/help" element={<HelpSupport />} />
-      
- {/* buyer inbox Route */}
-<Route path="/inbox" element={<Inbox />} />
 
- {/* owner inbox Route */}
-<Route path="/owner-inbox" element={<OwnerInbox />} />
-     {/* interset dadshboard Route */}
- <Route path="/interest-dashboard/:landId" element={<InterestDashboard />} />   
- {/* Congratulations Page */}
- <Route path="/congratulations" element={<CongratulationsPage />} />   
-    </Route>
-    
-  )
+      {/* buyer inbox Route */}
+      <Route path="/inbox" element={<Inbox />} />
+
+      {/* owner inbox Route */}
+      <Route path="/owner-inbox" element={<OwnerInbox />} />
+      {/* interset dadshboard Route */}
+      <Route path="/interest-dashboard/:landId" element={<InterestDashboard />} />
+      {/* Congratulations Page */}
+      <Route path="/congratulations" element={<CongratulationsPage />} />
+    </Route>,
+  ),
 );
 
 createRoot(document.getElementById('root')).render(
   <AuthState>
     <RouterProvider router={router} />
-  </AuthState>
+  </AuthState>,
 );

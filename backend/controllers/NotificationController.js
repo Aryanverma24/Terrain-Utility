@@ -1,6 +1,6 @@
-import Notification from "../modals/NotificationModal.js";
-import { io } from "../index.js"; // if you export io from index.js
-import User from "../modals/UserModal.js";
+import Notification from '../modals/NotificationModal.js';
+import { io } from '../index.js'; // if you export io from index.js
+import User from '../modals/UserModal.js';
 
 // GET /notifications/:userId
 export const getNotifications = async (req, res) => {
@@ -8,14 +8,14 @@ export const getNotifications = async (req, res) => {
     const { userId } = req.params;
     const user = await User.findById(userId);
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     // Fetch notifications meant for this user
     const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
 
     res.json(notifications);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -24,12 +24,9 @@ export const markAllRead = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    await Notification.updateMany(
-      { userId },
-      { isRead: true }
-    );
+    await Notification.updateMany({ userId }, { isRead: true });
 
-    res.json({ message: "All notifications marked as read" });
+    res.json({ message: 'All notifications marked as read' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -43,12 +40,12 @@ export const markAsRead = async (req, res) => {
     const updated = await Notification.findByIdAndUpdate(
       id,
       { isRead: true },
-      { new: true }
+      { new: true },
     );
 
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -58,8 +55,8 @@ export const deleteNotification = async (req, res) => {
     const { id } = req.params;
 
     await Notification.findByIdAndDelete(id);
-    res.json({ message: "Notification deleted" });
+    res.json({ message: 'Notification deleted' });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };

@@ -1,21 +1,11 @@
-import express from "express";
+import express from 'express';
 
-import {
-activateRegistrar,
-loginRegistrar
-}
-from "../controllers/registrarController.js";
+import { activateRegistrar, loginRegistrar } from '../controllers/registrarController.js';
 
-const router=express.Router();
+const router = express.Router();
 
-router.post(
-"/activate",
-activateRegistrar
-);
+router.post('/activate', activateRegistrar);
 
-router.post(
-"/login",
-loginRegistrar
-);
+router.post('/login', loginRegistrar);
 
 export default router;
