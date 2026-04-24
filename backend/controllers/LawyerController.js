@@ -5,7 +5,8 @@ import Land from "../modals/LandModal.js";
 import mongoose from "mongoose";
 import { io } from "../index.js";
 import NotificationModal from "../modals/NotificationModal.js";
-
+import Case from "../modals/caseModal.js";
+import Chat from "../modals/chatmodel.js";
 // Approve land (old simple method)
 const approveLand = asyncHandler(async (req, res) => {
   const { landId } = req.params;
@@ -135,7 +136,40 @@ const approveOrRejectLand = asyncHandler(async (req, res) => {
     land: updatedLand,
   });
 });
+export const getCasesForLawyer = async (req, res) => {
+  try {
+    const { lawyerId } = req.params;
 
+    const cases = await Case.find({ lawyerId })
+      .populate("buyerId", "username")
+      .populate("ownerId", "username")
+      .populate("lawyerId", "username");
+
+    // ✅ ATTACH CHAT IDS
+    const updatedCases = await Promise.all(
+      cases.map(async (c) => {
+        const buyerChat = await Chat.findOne({
+          participants: { $all: [c.buyerId._id, c.lawyerId._id] },
+        });
+
+        const ownerChat = await Chat.findOne({
+          participants: { $all: [c.ownerId._id, c.lawyerId._id] },
+        });
+
+        return {
+          ...c.toObject(),
+          buyerChatId: buyerChat?._id || null,
+          ownerChatId: ownerChat?._id || null,
+        };
+      })
+    );
+
+    res.json(updatedCases);
+  } catch (err) {
+    console.error("Fetch cases error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 // EXPORTS
 export {
   getPendingLands,

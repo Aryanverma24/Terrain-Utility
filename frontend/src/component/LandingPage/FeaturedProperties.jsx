@@ -34,16 +34,18 @@ const FeaturedProperties = () => {
         }
 
         const data = await response.json();
-        console.log("API Response:", data); // Debug log
+        
         
         let allLands = Array.isArray(data.data) ? data.data : [];
-        console.log("All lands:", allLands); // Debug log
-
+       
         // Filter for approved lands and take only featured ones
         const approvedLands = allLands.filter(land => land.status === "approved");
-        const featuredLands = approvedLands.slice(0, 6); // Show 6 featured properties
+       const featuredLands = approvedLands
+  .slice()
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  .slice(0, 6);// Show 6 featured properties
         
-        console.log("Featured lands:", featuredLands); // Debug log
+        
 
         setLands(featuredLands);
       } catch (error) {
@@ -226,8 +228,8 @@ const FeaturedProperties = () => {
                     <div className="absolute top-3 left-3 sm:top-4 sm:left-4">
                       <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs font-bold flex items-center shadow-lg">
                         <FaCheckCircle className="mr-1 text-xs" />
-                        <span className="hidden xs:inline">PREMIUM</span>
-                        <span className="xs:hidden">P</span>
+                        <span className="hidden sm:inline">PREMIUM</span>
+                        <span className="sm:hidden">P</span>
                       </div>
                     </div>
 

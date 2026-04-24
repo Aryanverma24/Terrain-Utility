@@ -3,8 +3,8 @@ import axios from "axios";
 import io from "socket.io-client";
 import { useParams, useLocation } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
-
-const SOCKET_URL = "http://localhost:5000";
+import socket from "../../../utils/socket";
+const SOCKET_URL = socket;
 
 export default function BuyerChat() {
   const { landId } = useParams();

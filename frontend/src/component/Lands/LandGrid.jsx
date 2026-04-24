@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaHeart, FaMapMarkerAlt, FaExpand, FaTag, FaEye, FaStar, FaCheckCircle, FaArrowRight } from "react-icons/fa";
 import { useState } from "react";
-
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 export const LandGrid = ({ lands, loading, currentPage }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -89,7 +89,7 @@ export const LandGrid = ({ lands, loading, currentPage }) => {
                 {land.image ? (
                   <>
                     <img
-                      src={`http://localhost:5000/uploads/${land.image}`}
+                       src={getFileUrl(land.image)}
                       alt={land.landtype || "land"}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

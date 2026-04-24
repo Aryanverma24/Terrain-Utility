@@ -24,7 +24,7 @@ import { authenticate } from "./middlerwares/landauthenticate.js";
 import { createLand, deleteReview } from "../backend/controllers/LandController.js";
 import Land from "./modals/LandModal.js";
 import User from "./modals/UserModal.js";
-
+import Chat from "./modals/chatmodel.js";
 import { Server } from 'socket.io';
 import http from 'http';
 import Message from "./modals/messageModel.js";
@@ -50,6 +50,7 @@ const io = new Server(server, {
   }
 });
 app.set("trust proxy", true);
+app.set("io", io);
 // CORS options
 const corsOption = {
   origin: "http://localhost:5173",
@@ -97,40 +98,68 @@ io.on("connection", (socket) => {
   // SEND MESSAGE
   // -----------------------
   socket.on("sendMessage", async (data) => {
-    try {
-      const {
-        room,
-        landId,
-        senderId,
-        senderName,
-        receiverId,
-        receiverName,
-        message: text
-      } = data;
+  console.log("🔥 SOCKET RECEIVED:", data);
 
-      if (!chatId) return;
+  try {
+    const {
+      chatId,          // ✅ FIXED
+      room,
+      senderId,
+      senderName,
+      receiverId,
+      receiverName,
+      message          // ✅ FIXED (no rename confusion)
+    } = data;
 
-      const msg = await Message.create({
-        chatId,
-        senderId,
-        senderName,
-        receiverId,
-        receiverName,
-        message,
-        isRead: false,
-        delivered: true,
-      });
+    console.log("👉 chatId:", chatId);
+    console.log("👉 message:", message);
 
-      await Chat.findByIdAndUpdate(chatId, {
-        lastMessage: message,
-        lastMessageAt: new Date(),
-      });
-
-      io.to(chatId).emit("message", msg);
-    } catch (err) {
-      console.error("socket sendMessage error:", err);
+    if (!chatId || !message) {
+      console.log("❌ Missing chatId or message");
+      return;
     }
-  });
+
+    const chat = await Chat.findById(chatId);
+
+    if (!chat) {
+      console.log("❌ Chat not found");
+      return;
+    }
+
+    if (chat.status === "terminated") {
+      console.log("❌ Chat terminated");
+      return;
+    }
+
+    // ✅ CREATE MESSAGE
+    const msg = await Message.create({
+      chatId,
+      senderId,
+      senderName,
+      receiverId,
+      receiverName,
+      message,
+      isRead: false,
+      delivered: true,
+    });
+
+    console.log("✅ Message saved:", msg._id);
+
+    // ✅ UPDATE CHAT
+    chat.lastMessage = message;
+    chat.lastMessageAt = new Date();
+    await chat.save();
+
+    // ✅ EMIT TO ROOM
+    io.to(room).emit("message", msg);
+
+    // ✅ FALLBACK (sender gets message too)
+    socket.emit("message", msg);
+
+  } catch (err) {
+    console.error("❌ socket sendMessage error:", err);
+  }
+});
 
   // -----------------------
   // TYPING

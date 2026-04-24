@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaStar, FaMapMarkerAlt, FaHeart, FaEye, FaArrowRight, FaShieldAlt } from "react-icons/fa";
 import { useState } from "react";
-
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 export const FeaturedLands = ({ lands, loading }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -68,7 +68,11 @@ export const FeaturedLands = ({ lands, loading }) => {
 
       {/* Featured Lands Grid */}
       <div className="space-y-6">
-        {lands.slice(0, 3).map((land, index) => {
+        {lands
+  .slice()
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  .slice(0, 3)
+  .map((land, index) => {
           const averageRating = calculateAverageRating(land.reviews);
           const isHovered = hoveredCard === land._id;
 
@@ -85,7 +89,7 @@ export const FeaturedLands = ({ lands, loading }) => {
                 <div className="relative h-32">
                   {land.image ? (
                     <img
-                      src={`http://localhost:5000/uploads/${land.image}`}
+                       src={getFileUrl(land.image)}
                       alt={land.landtype || "land"}
                       className="w-full h-full object-cover transition-transform duration-500"
                       style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}

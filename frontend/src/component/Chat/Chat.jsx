@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 import axios from "axios";
 import { toast } from "react-toastify";
+import socket from "../../../utils/socket";
 
-const socketUrl = "http://localhost:5000";
-let socket;
 
 export default function ChatRoom({
   chat,                 // ✅ FULL CHAT OBJECT
@@ -32,7 +31,7 @@ export default function ChatRoom({
   useEffect(() => {
     if (!chatId || !currentUserId) return;
 
-    socket = io(socketUrl);
+    
 
     // ✅ JOIN USING chatId
     socket.emit("joinRoom", { room: chatId });

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { io } from "socket.io-client";
-const socket = io("http://localhost:5000");
+import socket from "../../../utils/socket";
 
 const getId = (val) => {
   if (!val) return null;
@@ -83,7 +83,30 @@ useEffect(() => {
     console.error(" ChatList | Error in openChat:", err);
   }
 };
+useEffect(() => {
+  const handleChatTerminated = ({ chatIds }) => {
+    console.log("🔥 ChatList termination event:", chatIds);
 
+    setChats((prev) =>
+      prev.map((chat) => {
+        const isMatch = chatIds.some(
+          (id) => getId(id) === getId(chat._id)
+        );
+
+        if (isMatch) {
+          console.log("❌ Terminating chat in list:", chat._id);
+          return { ...chat, status: "terminated" };
+        }
+
+        return chat;
+      })
+    );
+  };
+
+  socket.on("chatTerminated", handleChatTerminated);
+
+  return () => socket.off("chatTerminated", handleChatTerminated);
+}, []);
 useEffect(() => {
   if (!userId) return;
 
@@ -153,6 +176,8 @@ useEffect(() => {
 }, [userId, type]);
   // 🔹 Filter chats based on section type
 const filteredChats = chats.filter((chat) => {
+  if (chat.status === "terminated") return false; // 🔥 ADD THIS LINE
+
   const landOwnerId = getId(chat.land?.owner);
   const isLegalChat = chat.chatType === "legal";
   const isConsultationChat = chat.chatType === "consultation";

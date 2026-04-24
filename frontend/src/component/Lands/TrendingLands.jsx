@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaChartLine, FaHeart, FaMapMarkerAlt, FaEye, FaStar, FaArrowRight } from "react-icons/fa";
 import { useState } from "react";
-
+import { getFileUrl } from "../../../../backend/utils/getFileUrl";
 export const TrendingLands = ({ lands, loading }) => {
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -90,7 +90,7 @@ export const TrendingLands = ({ lands, loading }) => {
                 <div className="relative flex-shrink-0">
                   {land.image ? (
                     <img
-                      src={`http://localhost:5000/uploads/${land.image}`}
+                       src={getFileUrl(land.image)}
                       alt={land.landtype || "land"}
                       className="w-24 h-24 rounded-xl object-cover"
                     />

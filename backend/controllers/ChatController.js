@@ -163,9 +163,17 @@ export const getChatById = asyncHandler(async (req, res) => {
     return res.status(400).json({ error: "Invalid chat ID" });
   }
 
-  const chat = await Chat.findById(chatId)
-    .populate("participants", "username role email") 
-    .populate("landId", "title");
+ const chat = await Chat.findById(chatId)
+  .populate("participants", "username role email")
+  .populate({
+    path: "landId",
+    select: "title owner",
+    populate: {
+      path: "owner",
+      select: "_id username",
+    },
+  })
+  .populate("terminatedBy", "username");
 
   if (!chat) {
     return res.status(404).json({ error: "Chat not found" });
@@ -198,8 +206,9 @@ export const getUserChats = asyncHandler(async (req, res) => {
 
   // Fetch chats (ONLY participants-based system)
   const chats = await Chat.find({
-    participants: { $in: [userId] },
-  })
+  participants: userId,
+ status: { $in: ["active", "terminated"] }  // 🔥 REQUIRED
+})
     .populate("participants", "username role") // 🔥 KEY FIX
     .populate("landId", " landtype image city state pincode owner")
     .sort({ updatedAt: -1 })

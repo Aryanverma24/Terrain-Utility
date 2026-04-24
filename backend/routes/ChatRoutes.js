@@ -22,6 +22,7 @@ import {
   // getLawyerChats
 } from "../controllers/ChatController.js";
 import { authenticate } from "../middlerwares/authMiddlewares.js";
+import { terminateSession } from "../controllers/terminateSessionController.js";
 
 
 // import User from "../modals/UserModal.js";
@@ -60,9 +61,12 @@ router.get("/consultation", authenticate, getConsultationLands);
 //route to ger cases by land 
 router.get("/land/:landId", authenticate, getCasesByLand);
 // dynamic routes 
-router.get("/:chatId", getChatById); // ✅ ADD THIS
+router.get("/:chatId", getChatById); 
 // Get messages for a chat
 router.get("/:chatId/messages", getMessages);
 
-
+// Terminate via Chat
+router.put("/:chatId/terminate", authenticate, terminateSession);
+// Terminate via Case
+router.put("/case/:caseId/terminate", authenticate, terminateSession);
 export default router;
