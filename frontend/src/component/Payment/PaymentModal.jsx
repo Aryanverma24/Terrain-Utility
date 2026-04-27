@@ -1,6 +1,10 @@
 import PaymentWrapper from './PaymentWrapper';
 
-const PaymentModal = ({ isOpen, onClose, land }) => {
+const PaymentModal = ({ isOpen, onClose, land, onSuccess }) => {
+  const payableAmount =
+  land?.transferStatus === 'token_paid'
+    ? land.price
+    : land?.tokenConfig?.amount || Math.round(land.price * 0.05);
   if (!isOpen) return null;
 
   return (
@@ -12,7 +16,12 @@ const PaymentModal = ({ isOpen, onClose, land }) => {
 
         <h2 className="text-lg font-semibold mb-4">Complete Payment</h2>
 
-        <PaymentWrapper landId={land._id} price={land.price} land={land} />
+      <PaymentWrapper
+  landId={land._id}
+  price={payableAmount}
+  land={land}
+  onSuccess={onSuccess}
+/>
       </div>
     </div>
   );

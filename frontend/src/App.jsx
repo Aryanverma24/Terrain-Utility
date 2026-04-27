@@ -17,14 +17,14 @@ const stripePromise = loadStripe(stripeKey);
 
 function App() {
   const { getUser, user } = useContext(AuthContext);
-
-  useEffect(() => {
-    getUser();
-  }, []);
-
   const location = useLocation();
 
-  // Hide footer on specific routes (no need for useEffect)
+  useEffect(() => {
+  if (localStorage.getItem("token")) {
+    getUser();
+  }
+}, []);
+
   const hideFooter = [
     '/login',
     '/register',
@@ -36,19 +36,26 @@ function App() {
     '/congratulations',
   ].includes(location.pathname);
 
+  const isRegistrarRoute =
+    location.pathname.startsWith("/registrar") ||
+    location.pathname.startsWith("/registrarDashboard");
+
   return (
-    <>
-      <Elements stripe={stripePromise}>
-        <ToastContainer />
-        <div className="flex flex-col min-h-screen">
-          <Navigation />
-          <main className="flex-grow bg-[#atb69b]">
-            <Outlet context={{ user }} />
-          </main>
-          {!hideFooter && <Footer />}
-        </div>
-      </Elements>
-    </>
+    <Elements stripe={stripePromise}>
+      <ToastContainer />
+
+      <div className="flex flex-col min-h-screen">
+
+        {/* ✅ HIDE NAVBAR FOR REGISTRAR */}
+        {!isRegistrarRoute && <Navigation />}
+
+        <main className="flex-grow bg-[#atb69b]">
+          <Outlet context={{ user }} />
+        </main>
+
+        {!hideFooter && <Footer />}
+      </div>
+    </Elements>
   );
 }
 

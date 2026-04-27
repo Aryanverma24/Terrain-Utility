@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 
 const registrarSchema = new mongoose.Schema(
   {
-    // Official Preloaded Identity
+    // =========================
+    // IDENTITY
+    // =========================
     registrarUniqueId: {
       type: String,
       required: true,
-      unique: true, // e.g REG-UK-HRD-00127
+      unique: true,
       index: true,
     },
 
@@ -25,10 +27,11 @@ const registrarSchema = new mongoose.Schema(
     designation: {
       type: String,
       default: 'Sub Registrar',
-      // later can support Patwari, District Registrar etc
     },
 
-    // Office Information
+    // =========================
+    // OFFICE INFO
+    // =========================
     officeName: {
       type: String,
       required: true,
@@ -49,7 +52,26 @@ const registrarSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Preloaded official email
+    jurisdiction: {
+      cities: [String],
+      pincodes: [Number],
+    },
+
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point',
+      },
+      coordinates: {
+        type: [Number], // [lng, lat]
+        index: '2dsphere',
+      },
+    },
+
+    // =========================
+    // CONTACT
+    // =========================
     officialEmail: {
       type: String,
       required: true,
@@ -61,7 +83,9 @@ const registrarSchema = new mongoose.Schema(
       type: String,
     },
 
-    // Activation Flow
+    // =========================
+    // AUTH / STATUS
+    // =========================
     isActivated: {
       type: Boolean,
       default: false,
@@ -73,18 +97,15 @@ const registrarSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      // required only after activation
     },
 
     lastLogin: {
       type: Date,
     },
 
-    // Role Verification
     isVerifiedRegistrar: {
       type: Boolean,
       default: true,
-      // preloaded government records assumed verified
     },
 
     status: {
@@ -93,31 +114,6 @@ const registrarSchema = new mongoose.Schema(
       default: 'active',
     },
 
-    // Appointment handling
-    availableSlots: [
-      {
-        date: Date,
-        slots: [
-          {
-            time: String,
-            isBooked: {
-              type: Boolean,
-              default: false,
-            },
-          },
-        ],
-      },
-    ],
-
-    // References to transactions
-    assignedTransactions: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'LandTransaction',
-      },
-    ],
-
-    // Audit / Security
     activationAttempts: {
       type: Number,
       default: 0,
@@ -126,16 +122,59 @@ const registrarSchema = new mongoose.Schema(
     lastActivationAttempt: {
       type: Date,
     },
+
+    // =========================
+    // SLOT SYSTEM (STATIC RULES)
+    // =========================
+    slotTemplate: [
+      {
+        time: {
+          type: String, // "10:00-11:00"
+          required: true,
+        },
+        capacity: {
+          type: Number,
+          default: 5,
+        },
+      },
+    ],
+
+    // =========================
+    // APPOINTMENT SETTINGS (LIGHTWEIGHT)
+    // =========================
+    appointmentSettings: {
+      autoAssign: {
+        type: Boolean,
+        default: true,
+      },
+      allowReschedule: {
+        type: Boolean,
+        default: true,
+      },
+    },
+
+    // =========================
+    // RELATIONS
+    // =========================
+    assignedTransactions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LandTransaction',
+      },
+    ],
   },
   {
     timestamps: true,
-  },
+  }
 );
 
-// Useful indexes
+// =========================
+// INDEXES
+// =========================
 registrarSchema.index({ district: 1 });
 registrarSchema.index({ registrarUniqueId: 1 });
 registrarSchema.index({ officeCode: 1 });
+registrarSchema.index({ location: '2dsphere' });
 
 const Registrar = mongoose.model('Registrar', registrarSchema);
 

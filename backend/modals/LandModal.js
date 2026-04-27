@@ -225,7 +225,11 @@ const LandSchema = new mongoose.Schema(
     },
 
     documents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Document' }],
-
+assignedRegistrar: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Registrar",
+  default: null
+},
     // =========================
     // OWNERSHIP FEATURES
     // =========================
@@ -240,7 +244,10 @@ const LandSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+tokenBuyer: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User"
+},
     paymentStatus: {
       type: String,
       enum: ['not_started', 'partial', 'completed'],
@@ -252,24 +259,41 @@ const LandSchema = new mongoose.Schema(
       ref: 'Transaction',
       default: null,
     },
-    transferStatus: {
-      enum: [
-        'available',
-        'token_pending',
-        'token_paid',
-        'appointment_pending',
-        'appointment_booked',
-        'under_registration',
-        'mutation_pending',
-        'transferred',
-      ],
-      default: 'available',
-    },
-    tokenConfig: {
-      amount: Number,
-      percentage: Number,
-      setByOwner: Boolean,
-    },
+   transferStatus:{
+ type:String,
+ enum:[
+   "available",
+   "token_pending",
+   "token_paid",
+   "appointment_pending",
+   "appointment_booked",
+   "under_registration",
+   "mutation_pending",
+   "transferred"
+ ],
+ default:"available"
+},
+tokenConfig:{
+ amount:{
+   type:Number,
+   default:null
+ },
+
+ percentage:{
+   type:Number,
+   default:5
+ },
+
+ setByOwner:{
+   type:Boolean,
+   default:false
+ },
+
+ editable:{
+   type:Boolean,
+   default:true
+ }
+},
 
     isLocked: {
       type: Boolean,

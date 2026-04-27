@@ -20,6 +20,7 @@ import upload from './utils/multerConfig.js';
 import notificationRoutes from './routes/NotificationRoutes.js';
 import paymentRoutes from './routes/PaymentRoutes.js';
 import registrarRoutes from './routes/registrarRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
 
 import { authenticate } from './middlerwares/landauthenticate.js';
 import { createLand, deleteReview } from '../backend/controllers/LandController.js';
@@ -60,7 +61,12 @@ const corsOption = {
 };
 
 // Middleware
-app.use(cors(corsOption));
+app.use(
+  cors({
+    origin: "http://localhost:5173", // your frontend
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -268,6 +274,7 @@ app.use('/api/chat', chatRoutes); // Chat routes integration
 app.use('/api/lawyer', lawyerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/registrar', registrarRoutes);
+app.use("/api/appointments", appointmentRoutes);
 app.use((req, res, next) => {
   console.log('🌍 Incoming:', req.method, req.url);
   next();

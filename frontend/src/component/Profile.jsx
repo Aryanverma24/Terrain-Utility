@@ -104,16 +104,19 @@ const Profile = () => {
     }
   };
   useEffect(() => {
-    API.get('/api/users/profile')
-      .then((response) => {
-        setUserdata(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        setError(error.response?.data || error.message);
-        setLoading(false);
-      });
-  }, []);
+  const fetchProfile = async () => {
+    try {
+      const res = await API.get('/api/users/profile');
+      setUserdata(res.data);
+    } catch (err) {
+      setError(err.response?.data || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -132,24 +135,30 @@ const Profile = () => {
 
   useEffect(() => {
     const fetchUserDocsStatus = async () => {
-      try {
-        const res = await API.get('/api/users/my-documents');
+  try {
+    const token = localStorage.getItem('token');
 
-        if (res.data) {
-          setDocuments(res.data);
+    const res = await API.get('/api/users/my-documents', {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
-          if (res.data.documents?.length > 0) {
-            setHasUploadedDocs(true);
-          }
+    if (res.data) {
+      setDocuments(res.data);
 
-          if (res.data.userDeclaration?.accepted) {
-            setUserDeclarationAccepted(true);
-          }
-        }
-      } catch (err) {
-        console.log('No documents yet');
+      if (res.data.documents?.length > 0) {
+        setHasUploadedDocs(true);
       }
-    };
+
+      if (res.data.userDeclaration?.accepted) {
+        setUserDeclarationAccepted(true);
+      }
+    }
+  } catch (err) {
+    console.log('No documents yet');
+  }
+};
 
     fetchUserDocsStatus();
   }, []);
@@ -279,23 +288,27 @@ const Profile = () => {
   //saved land count
 
   useEffect(() => {
-    if (user) {
-      const fetchWishlist = async () => {
-        try {
-          const { data } = await API.get(`/api/wishlist/${user._id}`);
-          setWishlist(data[0].lands);
-          console.log(data[0].lands);
-        } catch (error) {
-          console.log(error);
-          toast.success('lands are fetched');
-        }
-      };
-      fetchWishlist();
-    }
-  }, [user]);
+  if (user) {
+    const fetchWishlist = async () => {
+      try {
+        const res = await API.get(`/api/wishlist/${user._id}`);
 
+        const landsArray = res.data?.data?.[0]?.lands || [];
+
+        setWishlist(landsArray);
+
+        console.log("wishlist lands:", landsArray);
+      } catch (error) {
+        console.log(error);
+        toast.error("Failed to fetch wishlist");
+      }
+    };
+
+    fetchWishlist();
+  }
+}, [user]);
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+if (error) return <div>Error: {error?.message || error}</div>;
 
   return (
     <>

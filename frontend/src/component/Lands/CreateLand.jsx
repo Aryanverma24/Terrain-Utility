@@ -42,6 +42,7 @@ function CreateLand() {
   const [length, setLength] = useState('');
   const [breadth, setBreadth] = useState('');
   const [description, setDescription] = useState('');
+  
   const [documents, setDocuments] = useState({
     Aadhaar: null,
     Pan: null,
@@ -56,6 +57,9 @@ function CreateLand() {
     Bills: [],
     LandPhotos: [],
   });
+  //token money states
+  const [tokenAmount, setTokenAmount] = useState('');
+const [customTokenEdited, setCustomTokenEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100%
   const [docErrors, setDocErrors] = useState({});
@@ -195,6 +199,12 @@ Do not add any extra text before or after.`;
     setShowAIModal(false);
     toast.success('Description selected!');
   };
+  //-------for auto setiting token------
+  useEffect(() => {
+  if (price && !customTokenEdited) {
+    setTokenAmount(Math.round(price * 0.05)); // 5%
+  }
+}, [price, customTokenEdited]);
   //----------------these are for the auto glow of required fields error seprately ---------
   //for dynamiic toastify errors
   const requiredFields = [
@@ -206,6 +216,7 @@ Do not add any extra text before or after.`;
     { key: 'length', label: 'Length', value: length },
     { key: 'breadth', label: 'Breadth', value: breadth },
     { key: 'description', label: 'Description', value: description },
+    { key: 'tokenAmount', label:'Token Money', value: tokenAmount },
     {
       key: 'coordinates',
       label: 'Map Location',
@@ -225,6 +236,7 @@ Do not add any extra text before or after.`;
     breadth: useRef(null),
     description: useRef(null),
     coordinates: useRef(null),
+    tokenAmount: useRef(null)
   };
   const [fieldErrors, setFieldErrors] = useState({});
   const getErrorClass = (key) => {
@@ -270,6 +282,7 @@ Do not add any extra text before or after.`;
       if (!breadth) errors.breadth = true;
       if (!description) errors.description = true;
       if (!coordinates?.lat || !coordinates?.lng) errors.coordinates = true;
+      if (!tokenAmount) errors.tokenAmount = true;
     }
 
     if (step === 2) {
@@ -335,7 +348,7 @@ Do not add any extra text before or after.`;
 
   //fucntions to handle the steps
   const getStep1Progress = () => {
-    let total = 9; // updated
+    let total = 10// updated
     let filled = 0;
 
     if (landtype) filled++;
@@ -347,7 +360,7 @@ Do not add any extra text before or after.`;
     if (breadth) filled++;
     if (description) filled++; // NEW
     if (coordinates && coordinates.lat && coordinates.lng) filled++; // NEW
-
+if (tokenAmount) filled++;
     return Math.round((filled / total) * 100);
   };
   const getStep2Progress = () => {
@@ -489,6 +502,7 @@ Do not add any extra text before or after.`;
       formData.append('latitude', coordinates.lat);
       formData.append('longitude', coordinates.lng);
       formData.append('declarationAccepted', agreed);
+      formData.append('tokenAmount', tokenAmount);
       if (!coordinates) {
         toast.error('Please select land location on map.');
         setLoading(false);
@@ -835,7 +849,30 @@ Do not add any extra text before or after.`;
                     </div>
                   </div>
                 </div>
+<div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+  <div className="flex items-center mb-4">
+    <FaRupeeSign className="w-5 h-5 text-emerald-400 mr-3" />
+    <h3 className="text-lg font-bold text-white">
+      Token Money (Editable)
+    </h3>
+  </div>
 
+  <input
+    type="number"
+    value={tokenAmount}
+    ref={fieldRefs.tokenAmount}
+    onChange={(e)=>{
+      setTokenAmount(e.target.value);
+      setCustomTokenEdited(true);
+    }}
+    placeholder="Auto 5% or edit manually"
+    className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-2xl text-white"
+  />
+
+  <p className="text-xs text-gray-400 mt-2">
+    Suggested default: 5% of property value
+  </p>
+</div>
                 {/* Description Section */}
                 <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                   {/* Header */}

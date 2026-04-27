@@ -27,7 +27,25 @@ const InterestDashboard = () => {
 
   //payment
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+ const [userLoaded, setUserLoaded] = useState(false);
+const refreshLand = async () => {
+  try {
+    const res = await API.get(`/api/lands/dashboard/${landId}`);
 
+    console.log("REFRESHED LAND:", res.data.land);
+
+    setLand(res.data.land);
+    setOwnershipHistory(res.data.ownershipHistory || []);
+    setCurrentOwner(res.data.currentOwner);
+
+    // refresh chat gating too
+    await checkConsultationExists();
+    await checkLegalChatExists();
+
+  } catch (err) {
+    console.error(err);
+  }
+};
   //to check whether the leagl chats exists to sethasleagl chat and change button veiw to leagla process started
   const checkLegalChatExists = async () => {
     try {
@@ -210,46 +228,86 @@ const InterestDashboard = () => {
     }
   };
   //for rendering
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const token = localStorage.getItem('token');
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     setLoading(true);
+  //     const token = localStorage.getItem('token');
 
-      try {
-        let userPromise = null;
+  //     try {
+  //       let userPromise = null;
 
-        if (token) {
-          userPromise = API.get('/api/users/profile');
-        }
+  //       if (token) {
+  //         userPromise = API.get('/api/users/profile');
+  //       }
 
-        const landPromise = API.get(`/api/lands/dashboard/${landId}`);
+  //       const landPromise = API.get(`/api/lands/dashboard/${landId}`);
 
-        const [userRes, landRes] = await Promise.all([userPromise, landPromise]);
+  //       const [userRes, landRes] = await Promise.all([userPromise, landPromise]);
 
-        // ✅ USER
-        if (userRes) {
-          const userData = userRes.data?.data || userRes.data?.user || userRes.data;
+  //       // ✅ USER
+  //       if (userRes) {
+  //         const userData = userRes.data?.data || userRes.data?.user || userRes.data;
 
-          const userId = userData?._id || userData?.id;
+  //         const userId = userData?._id || userData?.id;
 
-          setCurrentUserId(userId);
-        }
+  //         setCurrentUserId(userId);
+  //       }
 
-        // ✅ LAND
-        setLand(landRes.data.land);
-        setOwnershipHistory(landRes.data.ownershipHistory || []);
-        setCurrentOwner(landRes.data.currentOwner);
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to load dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (landId) {
-      fetchData();
+  //       // ✅ LAND
+  //       setLand(landRes.data.land);
+  //       setOwnershipHistory(landRes.data.ownershipHistory || []);
+  //       setCurrentOwner(landRes.data.currentOwner);
+  //     } catch (err) {
+  //       console.error(err);
+  //       toast.error('Failed to load dashboard');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   if (landId) {
+  //     fetchData();
+  //   }
+  // }, [landId]);
+
+  const fetchData = async () => {
+  setLoading(true);
+  const token = localStorage.getItem('token');
+
+  try {
+    let userPromise = null;
+
+    if (token) {
+      userPromise = API.get('/api/users/profile');
     }
-  }, [landId]);
+
+    const landPromise = API.get(`/api/lands/dashboard/${landId}`);
+
+    const [userRes, landRes] = await Promise.all([userPromise, landPromise]);
+
+    if (userRes) {
+      const userData = userRes.data?.data || userRes.data?.user || userRes.data;
+      const userId = userData?._id || userData?.id;
+      setCurrentUserId(userId);
+    }
+setUserLoaded(true); 
+console.log("📦 LAND FROM API:", landRes.data.land);
+    setLand(landRes.data.land);
+    setOwnershipHistory(landRes.data.ownershipHistory || []);
+    setCurrentOwner(landRes.data.currentOwner);
+
+  } catch (err) {
+    console.error(err);
+    toast.error('Failed to load dashboard');
+  } finally {
+    setLoading(false);
+  }
+};
+useEffect(() => {
+  if (landId) fetchData();
+}, [landId]);
+useEffect(() => {
+  console.log("🔥 LAND STATE UPDATED:", land);
+}, [land]);
   //ti chekc if consulation exists
   useEffect(() => {
     if (landId) {
@@ -301,6 +359,71 @@ const InterestDashboard = () => {
   // =========================
   const lastHash = ownershipHistory[ownershipHistory.length - 1]?.currentHash;
 
+
+// =========================
+// PAYMENT STATES
+// =========================
+const paymentStatus = land?.paymentStatus || "available";
+
+const hasValidTokenStage =
+  paymentStatus === "partial" &&
+  !!land?.tokenBuyer;
+
+const isTokenPaid = paymentStatus === "partial";
+const isFullPaid = paymentStatus === "completed";
+const isNotPaid = !isTokenPaid && !isFullPaid;
+// =========================
+// OWNER STATES
+// =========================
+const isOwner =
+  !!land?.owner &&
+  String(currentUserId) === String(land.owner);
+
+const tokenBuyerId =
+ typeof land?.tokenBuyer === "object"
+   ? land.tokenBuyer?._id
+   : land?.tokenBuyer;
+
+const isTokenBuyer =
+ !!tokenBuyerId &&
+ String(currentUserId) === String(tokenBuyerId);
+
+ const hasTokenBuyer = !!land?.tokenBuyer;
+
+ const tokenLocked = paymentStatus === "partial";
+
+// =========================
+// LOCK STATES
+// =========================
+// // payment button
+const canPay =
+ !isFullPaid &&
+ !isOwner &&
+ !hasValidTokenStage;
+
+  const canAccessChatButtons =
+  !tokenLocked || isTokenBuyer;
+//for stroing all staages for the deal room 
+  const allowedStagesForDealRoom = [
+  "token_paid",
+  "appointment_booked",
+  "registrar_assigned",
+  "legal_process"
+];
+//to check pay buttons status
+const allowedToPay = [
+  "token_pending",
+  "token_paid",
+  "appointment_booked",
+  "registrar_assigned",
+  "legal_process"
+]; 
+//for keping track of the deal room
+const showDealRoom =
+  userLoaded &&
+  isTokenBuyer &&
+  hasLegalChat &&
+  allowedStagesForDealRoom.includes(land?.transferStatus);
   return (
     <div className="min-h-screen pt-24 pb-10 px-6 bg-gradient-to-br from-[#f8fafc] to-[#eef2f7]">
       <div className="max-w-5xl mx-auto space-y-8">
@@ -446,62 +569,86 @@ const InterestDashboard = () => {
             </div>
           </div>
         )}
-        {/* ========================= */}
+       
         {/* ⚖️ LEGAL SECTION */}
-        {/* ========================= */}
-        <div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
-            ⚖️ Legal Actions
-          </h3>
+    
 
-          {/* Consultation Button */}
-          <button
-            onClick={() => startLawyerChat(land._id)}
-            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
-          >
-            <span>{hasConsultation ? 'Continue Consultation' : 'Talk to Lawyer'}</span>
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-              {hasConsultation ? 'You have consulted' : 'Consultation Required'}
-            </span>
-          </button>
 
-          {/*  Start Legal Process */}
-          {!hasConsultation && (
-            <button
-              disabled
-              className="w-full bg-gray-400 text-white px-4 py-2 rounded-lg shadow cursor-not-allowed flex justify-between items-center"
-            >
-              <span>Start Legal</span>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                Consultation Required
-              </span>
-            </button>
-          )}
+<div className="bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-md p-6 space-y-4">
 
-          {hasConsultation && !hasLegalChat && (
-            <button
-              onClick={handleStartLegal}
-              className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
-            >
-              <span>Start Legal Process</span>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                Begin formal procedure
-              </span>
-            </button>
-          )}
+<h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">
+⚖️ Legal Actions
+</h3>
 
-          {/*  Continue Legal Process */}
-          {hasLegalChat && (
-            <button
-              onClick={() => navigate(`/inbox?chatId=${existingChatId}`)}
-              className="w-full bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition flex justify-between items-center"
-            >
-              <span>Continue Legal Process</span>
-              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                Chat ongoing
-              </span>
-            </button>
-          )}
+{canAccessChatButtons ? (
+<>
+  {/* TALK TO LAWYER */}
+  <button
+    onClick={() => startLawyerChat(land._id)}
+    className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white"
+  >
+    {hasConsultation
+      ? 'Continue Consultation'
+      : 'Talk To Lawyer'}
+  </button>
+
+
+  {/* START LEGAL only if no case yet */}
+  {!hasLegalChat && (
+    <button
+      onClick={handleStartLegal}
+      disabled={!hasConsultation}
+      className={`w-full px-4 py-3 rounded-lg
+      ${
+        !hasConsultation
+        ? 'bg-gray-300 cursor-not-allowed'
+        : 'bg-purple-600 text-white'
+      }`}
+    >
+      {!hasConsultation
+       ? 'Consult Lawyer First'
+       : 'Start Legal Process'}
+    </button>
+  )}
+
+
+  {/* EXISTING LEGAL CHAT */}
+  {hasLegalChat && (
+    <button
+      onClick={() =>
+       navigate(`/inbox?chatId=${existingChatId}`)
+      }
+      className="w-full px-4 py-3 rounded-lg bg-green-600 text-white"
+    >
+      Continue Legal Process
+    </button>
+  )}
+
+</>
+) : (
+
+<>
+  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl">
+    Another buyer has already paid token.
+    Legal chat access is locked.
+  </div>
+
+  <button
+   disabled
+   className="w-full bg-gray-300 py-3 rounded-lg cursor-not-allowed"
+  >
+   Talk To Lawyer (Locked)
+  </button>
+
+  <button
+   disabled
+   className="w-full bg-gray-300 py-3 rounded-lg cursor-not-allowed"
+  >
+   Legal Process Locked
+  </button>
+</>
+
+)}
 
           {/*  Lawyer Modal */}
           {showLawyerModal && (
@@ -703,77 +850,139 @@ const InterestDashboard = () => {
 
       {/* ========================= */}
       {/* 💳 PAYMENT SECTION */}
-      {/* ========================= */}
-      {/* 💳 PAYMENT SECTION */}
+     
       <div className="bg-white/90 backdrop-blur-md max-w-5xl mx-auto border border-gray-200 rounded-2xl shadow-md p-6 space-y-4 mt-6">
-        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">💳 Payment</h3>
+  <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+    💳 Payment
+  </h3>
+{/* 💳 PAYMENT STATUS BANNER */}
+<div className="space-y-3">
 
-        {/* 🔍 DEBUG LOG */}
-        {console.log('PAYMENT DEBUG =>', {
-          paymentStatus: land.paymentStatus,
-          isLocked: land.isLocked,
-          currentUserId,
-          ownerId: land.owner,
-          isOwner: currentUserId === land.owner,
-        })}
+  {isTokenPaid && isTokenBuyer && (
+  <div className="bg-blue-100 border border-blue-200 text-blue-800 p-4 rounded-xl text-center shadow-sm">
+    💰 Token payment completed. Remaining payment pending.
+  </div>
+)}
 
-        {/* STATUS */}
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600 text-sm">Payment Status:</span>
+{isTokenPaid && !isTokenBuyer && (
+  <div className="bg-amber-100 border border-amber-200 text-amber-800 p-4 rounded-xl text-center shadow-sm">
+    🔒 Token payment completed by another buyer.
+  </div>
+)}
+  {isFullPaid && (
+    <div className="bg-green-100 border border-green-200 text-green-800 p-4 rounded-xl text-center shadow-sm">
+      🎉 Full payment completed. Ownership processing ongoing.
+    </div>
+  )}
 
-          <span
-            className={`px-3 py-1 text-xs rounded-full font-semibold ${
-              land.paymentStatus === 'completed'
-                ? 'bg-green-100 text-green-700'
-                : land.isLocked
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-yellow-100 text-yellow-700'
-            }`}
-          >
-            {land.paymentStatus === 'completed'
-              ? 'Paid'
-              : land.isLocked
-                ? 'Processing'
-                : 'Not Paid'}
-          </span>
-        </div>
+  {!isFullPaid && !isTokenPaid && (
+    <div className="bg-yellow-100 border border-yellow-200 text-yellow-800 p-4 rounded-xl text-center shadow-sm">
+      ⏳ No payment done yet. Token payment required to proceed.
+    </div>
+  )}
 
-        {/* BUTTON */}
-        <button
-          onClick={() => {
-            console.log('BUTTON CLICKED', {
-              disabledReason: {
-                isCompleted: land.paymentStatus === 'completed',
-                isLocked: land.isLocked,
-                isOwner: currentUserId === land.owner,
-              },
-            });
+</div>
+  {/* STATUS */}
+{/* STATUS */}
+<div className="flex justify-between items-center">
+  <span className="text-gray-600 text-sm">Payment Status:</span>
 
-            setShowPaymentModal(true);
-          }}
-          disabled={
-            land.paymentStatus === 'completed' ||
-            land.isLocked ||
-            currentUserId === land.owner
-          }
-          className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
-        >
-          {land.paymentStatus === 'completed'
-            ? 'Already Purchased'
-            : land.isLocked
-              ? 'Payment in Progress'
-              : 'Pay & Buy Land'}
-        </button>
+  <span
+    className={`px-3 py-1 text-xs rounded-full font-semibold ${
+      paymentStatus === 'completed'
+        ? 'bg-green-100 text-green-700'
+        : paymentStatus === 'partial'
+        ? 'bg-blue-100 text-blue-700'
+        : land.isLocked
+        ? 'bg-blue-100 text-blue-700'
+        : 'bg-yellow-100 text-yellow-700'
+    }`}
+  >
+    {paymentStatus === 'completed'
+      ? 'Paid'
+      : paymentStatus === 'partial'
+      ? 'Token Paid'
+      : land.isLocked
+      ? 'Processing'
+      : 'Not Paid'}
+  </span>
+</div>
+
+  {/* TOKEN INFO (NEW IMPORTANT ADDITION) */}
+  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+    <p className="text-sm text-gray-600">Token Required</p>
+
+    <p className="text-emerald-700 font-semibold">
+      ₹ {land.tokenConfig?.amount || Math.round(land.price * 0.05)}
+    </p>
+  </div>
+
+  {/* BUTTON */}
+  <button
+    onClick={() => setShowPaymentModal(true)}
+   disabled={
+  isFullPaid ||
+  land.isLocked ||
+  String(currentUserId) === String(land.owner) ||
+  land.transferStatus !== 'available'
+}
+    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+  >
+   {!allowedToPay.includes(land.transferStatus)
+  ? 'Cannot proceed'
+  : land.transferStatus === 'token_pending'
+  ? 'Complete Token First'
+  : land.transferStatus === 'appointment_booked'
+  ? 'Appointment Scheduled'
+  : 'Pay & Buy Land'}
+  </button>
+</div>
+
+     <PaymentModal
+  isOpen={showPaymentModal}
+  onClose={() => setShowPaymentModal(false)}
+  land={land}
+  onSuccess={(data) => {
+    setShowPaymentModal(false);
+   
+
+    toast.success(data?.msg);
+
+    refreshLand(); // 👈 THIS is correct function
+  }}
+/>
+{showDealRoom && (
+<div className="mt-6 pt-5 border-t border-indigo-100">
+  <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-5 shadow-lg text-white">
+    
+    <div className="flex items-center justify-between gap-4">
+      
+      <div>
+        <p className="text-xs uppercase tracking-wider text-indigo-100 font-semibold">
+          Next Step
+        </p>
+
+        <h4 className="text-lg font-bold mt-1">
+          Continue Property Transfer Process
+        </h4>
+
+        <p className="text-sm text-indigo-100 mt-1">
+          Book registrar appointment and continue legal formalities.
+        </p>
       </div>
 
-      <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          console.log('MODAL CLOSED');
-          setShowPaymentModal(false);
-        }}
-        land={land}
-      />
+      <button
+        onClick={() => navigate(`/transaction-workflow/${land._id}`)}
+        className="shrink-0 bg-white text-indigo-700 font-semibold px-5 py-3 rounded-xl shadow hover:scale-105 transition"
+      >
+        Open Deal Room →
+      </button>
+
+    </div>
+
+  </div>
+</div>
+)}
     </div>
   );
 };

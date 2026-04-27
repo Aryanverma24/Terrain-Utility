@@ -1,39 +1,96 @@
-import axios from 'axios';
-import { createContext, useState } from 'react';
+import React, { createContext, useState } from "react";
+import { API } from "../utils/API";
+
 export const AuthContext = createContext();
-import React from 'react';
-import { API } from '../utils/API';
 
 const AuthState = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(() => {
+    return JSON.parse(localStorage.getItem("user")) || null;
+  });
 
+  const [registrar, setRegistrar] = useState(null);
+  const [role, setRole] = useState(() => localStorage.getItem("role") || null);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem("token");
+  });
+
+  // ================= GET USER =================
   const getUser = async () => {
     try {
-      const { data } = await API.get('/api/users/profile');
-      console.log(data); // Log response to check if user data is returned
-      if (data?.data) {
-        setUser(data.data); // Set user data in state
-        setIsAuthenticated(true); // Set authenticated flag
-        localStorage.setItem('user', JSON.stringify(data.data)); // Ensure localStorage is updated
-      } else {
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+      const token = localStorage.getItem("token");
+
+    
+
+      if (!token) {
         setUser(null);
         setIsAuthenticated(false);
+        return;
       }
-    } catch (error) {
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
+
+      const { data } = await API.get("/api/users/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      
+
+      // FIXED: consistent handling
+      const userData = data?.data || data?.user || data;
+
+      setUser(userData);
+      setIsAuthenticated(true);
+
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch (err) {
+      console.log("❌ getUser ERROR:", err.response?.data || err.message);
+
       setUser(null);
       setIsAuthenticated(false);
-      console.log(error); // Log any errors
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
   };
 
+  // ================= GET REGISTRAR =================
+  const getRegistrar = async () => {
+    try {
+      const token = localStorage.getItem("registrarToken");
+
+      if (!token) return;
+
+      const { data } = await API.get("/api/registrar/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const regData = data?.registrar || data;
+
+      setRegistrar(regData);
+      setRole("registrar");
+      setIsAuthenticated(true);
+
+      localStorage.setItem("registrar", JSON.stringify(regData));
+    } catch (error) {
+      console.log("❌ registrar ERROR:", error.response?.data || error.message);
+      logout();
+    }
+  };
+
+  // ================= LOGOUT =================
   const logout = () => {
-    localStorage.removeItem('token');
+    console.log("🔥 LOGOUT CALLED");
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("registrarToken");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+
     setUser(null);
+    setRegistrar(null);
+    setRole(null);
     setIsAuthenticated(false);
   };
 
@@ -41,8 +98,11 @@ const AuthState = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        registrar,
+        role,
         isAuthenticated,
         getUser,
+        getRegistrar,
         logout,
       }}
     >

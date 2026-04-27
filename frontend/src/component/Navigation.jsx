@@ -35,18 +35,19 @@ const Navigation = () => {
     return () => clearInterval(interval);
   }, [user]);
 
-  const logoutUser = async () => {
-    try {
-      const { data } = await API.post('/api/users/logout');
-      if (data) {
-        logout();
-        navigate('/login');
-      }
-    } catch (error) {
-      toast.error('Logout failed. Try again.');
-      console.log(error);
-    }
-  };
+const logoutUser = async () => {
+  try {
+    await API.post('/api/users/logout');
+
+    logout();
+
+    localStorage.removeItem("registrarToken"); // ADD THIS
+
+    navigate('/login');
+  } catch (error) {
+    toast.error('Logout failed');
+  }
+};
 
   const getLinkClass = (path) => {
     const baseClass =
@@ -135,10 +136,14 @@ const Navigation = () => {
                   </>
                 )}
 
-                {user?.username ? (
+                {user?._id ? (
                   <div className="flex items-center space-x-3 pl-4 border-l border-white/20">
-                    <Link
-                      to="/userProfile"
+                   <Link
+  to="/userProfile"
+  onClick={() => {
+    console.log("PROFILE CLICKED");
+  }}
+
                       className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 hover:from-emerald-500/30 hover:to-cyan-500/30 transition-all duration-300 group"
                     >
                       <FaUser className="text-emerald-400 group-hover:scale-110 transition-transform" />
@@ -239,9 +244,13 @@ const Navigation = () => {
                 <div className="border-t border-white/10 pt-4 mt-4">
                   {user?.username ? (
                     <div className="space-y-2">
-                      <Link
-                        to="/userProfile"
-                        onClick={() => setMenubar(false)}
+                     <Link
+  to="/userProfile"
+  onClick={() => {
+    console.log("PROFILE CLICKED");
+  }}
+
+
                         className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 font-medium"
                       >
                         <FaUser className="text-lg" />

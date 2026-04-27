@@ -1,89 +1,144 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const paymentSchema = new mongoose.Schema(
-  {
-    land: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Land',
-      required: true,
-    },
-    buyer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    amount: {
-      type: Number,
-      required: true,
+{
+    // Linked Asset
+    land:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Land",
+        required:true
     },
 
-    currency: {
-      type: String,
-      default: 'INR',
-    },
-    // Stripe Data
-    paymentIntentId: {
-      type: String,
-      required: true,
+    // Buyer
+    buyer:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
     },
 
-    clientSecret: {
-      type: String,
+    // Seller (missing in current schema)
+    seller:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
     },
 
-    paymentMethod: {
-      type: String,
-      enum: ['cash', 'card', 'upi'],
-      default: 'card',
-      required: true,
-    },
-    status: {
-      type: String,
-      enum: [
-        'created',
-        'pending',
-        'requires_action',
-        'succeeded',
-        'failed',
-        'cancelled',
-        'refunded',
-      ],
-      default: 'created',
+    // Linked transaction case (missing in current schema)
+    transaction:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"Transaction",
+        required:true
     },
 
-    // Payment Type
-    type: {
-      type: String,
-      enum: ['full', 'token', 'remaining'],
-      default: 'full',
-    },
-    // Failure Handling
-    failureReason: {
-      type: String,
-      default: null,
+    // Amount paid in this payment event
+    amount:{
+        type:Number,
+        required:true
     },
 
-    // Refund
-    refundId: {
-      type: String,
-      default: null,
+    currency:{
+        type:String,
+        default:"INR"
     },
 
-    refundedAmount: {
-      type: Number,
-      default: 0,
+    // Stripe
+    paymentIntentId:{
+        type:String,
+        required:true
     },
 
-    // Metadata
-    metadata: {
-      type: Object,
-      default: {},
+    clientSecret:{
+        type:String,
+        default:null
     },
-  },
-  {
-    timestamps: true,
-  },
+
+    paymentMethod:{
+        type:String,
+        enum:["cash","card","upi"],
+        default:"card",
+        required:true
+    },
+
+    // Payment lifecycle
+    status:{
+        type:String,
+        enum:[
+            "created",
+            "pending",
+            "requires_action",
+            "succeeded",
+            "failed",
+            "cancelled",
+            "refunded"
+        ],
+        default:"created"
+    },
+
+    // IMPORTANT: default changed from full -> token
+    type:{
+        type:String,
+        enum:[
+            "token",
+            "remaining",
+            "full"
+        ],
+        default:"token"
+    },
+
+    // For token workflow
+    isEscrowHeld:{
+        type:Boolean,
+        default:false
+    },
+
+    releasedAt:{
+        type:Date,
+        default:null
+    },
+
+    // Failure handling
+    failureReason:{
+        type:String,
+        default:null
+    },
+
+    // Refund tracking
+    refundId:{
+        type:String,
+        default:null
+    },
+
+    refundedAmount:{
+        type:Number,
+        default:0
+    },
+
+    refundedAt:{
+        type:Date,
+        default:null
+    },
+
+    // Flexible metadata
+    metadata:{
+        type:Object,
+        default:{}
+    }
+
+},
+{
+timestamps:true
+}
 );
 
-export const Payment = mongoose.model('Payment', paymentSchema);
+
+// Helpful indexes
+paymentSchema.index({ buyer:1 });
+paymentSchema.index({ seller:1 });
+paymentSchema.index({ transaction:1 });
+paymentSchema.index({ paymentIntentId:1 });
+paymentSchema.index({ status:1 });
+
+
+export const Payment = mongoose.model("Payment",paymentSchema);
+
 export default Payment;

@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import axios from 'axios';
 import { toast } from 'react-toastify';
-import { useNavigate } from 'react-router-dom';
+import { API } from '../../../utils/API';
 
-const LandPayment = ({ landId, price, land }) => {
+const LandPayment = ({ landId, land, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
+
+  const payableAmount =
+    land?.transferStatus === 'token_paid'
+      ? land.price
+      : land?.tokenConfig?.amount || Math.round(land.price * 0.05);
 
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -22,11 +25,16 @@ const LandPayment = ({ landId, price, land }) => {
       const token = localStorage.getItem('token');
 
       // 1️⃣ Create Payment Intent
-      const { data } = await axios.post(
+      const { data } = await API.post(
         '/api/payment/create-intent',
         { landId },
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      if (!data?.clientSecret) {
+        toast.error('Payment initialization failed');
+        return;
+      }
 
       // 2️⃣ Confirm Payment
       const result = await stripe.confirmCardPayment(data.clientSecret, {
@@ -40,32 +48,33 @@ const LandPayment = ({ landId, price, land }) => {
         return;
       }
 
-      // 3️⃣ Success
-      if (result.paymentIntent.status === 'succeeded') {
-        const confirmResponse = await axios.post(
+      // 3️⃣ Success check
+      const paymentIntent = result?.paymentIntent;
+
+      if (paymentIntent?.status === 'succeeded') {
+        const confirmResponse = await API.post(
           '/api/payment/confirm',
-          { paymentIntentId: result.paymentIntent.id },
-          { headers: { Authorization: `Bearer ${token}` } },
+          { paymentIntentId: paymentIntent.id },
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         toast.success('Payment Successful 🎉');
 
-        // Redirect to congratulations page with land details
-        navigate('/congratulations', {
-          state: {
-            landDetails: {
-              title: land?.title || land?.name || 'Property',
-              price: price || land?.price,
-              location: land?.location,
-              area: land?.area,
-            },
-            transactionId: confirmResponse.data.transactionId || result.paymentIntent.id,
-          },
-        });
+        // 🔥 SAFE CALLBACK
+        if (onSuccess && typeof onSuccess === 'function') {
+          onSuccess(confirmResponse.data);
+        }
+      } else {
+        toast.error('Payment not completed');
       }
     } catch (err) {
-      console.error(err);
-      toast.error('Payment failed');
+      console.error('🔥 PAYMENT ERROR:', err);
+
+      toast.error(
+        err?.response?.data?.msg ||
+        err?.response?.data?.error ||
+        'Payment failed'
+      );
     } finally {
       setLoading(false);
     }
@@ -77,9 +86,17 @@ const LandPayment = ({ landId, price, land }) => {
         <CardElement />
       </div>
 
-      <p className="text-sm text-gray-600">
-        Amount: <strong>₹{price}</strong>
-      </p>
+      <div className="bg-emerald-50 p-3 rounded-lg text-sm">
+        <p className="text-gray-600">Payable Amount</p>
+        <p className="text-2xl font-bold text-emerald-700">
+          ₹{payableAmount.toLocaleString('en-IN')}
+        </p>
+        <p className="text-xs text-gray-500">
+          {land?.transferStatus === 'token_paid'
+            ? 'Final payment'
+            : 'Token payment (advance)'}
+        </p>
+      </div>
 
       <button
         disabled={!stripe || loading}

@@ -28,17 +28,47 @@ const transactionSchema = new mongoose.Schema(
       },
     ],
 
-    status: [
-      initiated,
-      token_paid,
-      agreement_pending,
-      appointment_booked,
-      deed_executed,
-      mutation_pending,
-      completed,
-      cancelled,
-    ],
+   status:{
+ type:String,
+ enum:[
+   "initiated",
+   "token_paid",
+   "agreement_pending",
+   "appointment_booked",
+   "deed_executed",
+   "mutation_pending",
+   "completed",
+   "cancelled"
+ ],
+ default:"initiated"
+},
+    //registrar flow
+registrar: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Registrar",
+  default: null
+},
 
+appointmentId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Appointment",
+  default: null
+},
+
+agreedPrice:{
+ type:Number,
+ default:null
+},
+
+tokenAmount: {
+  type: Number,
+  default: 0
+},
+
+tokenPaidAt: {
+  type: Date,
+  default: null
+},
     // Legal Flow
     lawyerApproved: {
       type: Boolean,

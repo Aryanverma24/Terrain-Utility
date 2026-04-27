@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Registrar from '../modals/registrarModal.js';
-
+import Land from '../modals/LandModal.js';
 //registrar activation and login
 // First Time Activation
 export const activateRegistrar = async (req, res) => {
@@ -110,15 +110,15 @@ export const loginRegistrar = async (req, res) => {
 
     // token
     const token = jwt.sign(
-      {
-        registrarId: registrar._id,
-        role: 'registrar',
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '7d',
-      },
-    );
+  {
+    userId: registrar._id,
+role: 'registrar',
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: '7d',
+  },
+);
 
     res.status(200).json({
       success: true,
@@ -137,6 +137,72 @@ export const loginRegistrar = async (req, res) => {
 
     res.status(500).json({
       message: 'Server error',
+    });
+  }
+};
+/**
+ * 🔥 Auto-assign nearest registrar to land (geo-based)
+ * This is the FIRST step of appointment workflow
+ */
+export const assignRegistrarToLand = async (req, res) => {
+  try {
+    console.log("🔥 HIT assignRegistrarToLand");
+
+    const { landId } = req.body;
+    console.log("landId:", landId);
+
+    const land = await Land.findById(landId);
+
+    console.log("LAND FOUND:", land ? "YES" : "NO");
+
+    if (!land) {
+      return res.status(404).json({
+        success: false,
+        msg: "Land not found",
+      });
+    }
+
+    console.log("LAND COORDS:", land.location);
+
+    const coords = land.location?.coordinates;
+
+    if (!coords) {
+      console.log("❌ NO COORDINATES");
+      return res.status(400).json({
+        success: false,
+        msg: "No coordinates",
+      });
+    }
+
+    const [lng, lat] = coords;
+    console.log("COORDS:", lng, lat);
+
+    const registrar = await Registrar.findOne({
+      status: "active",
+    });
+
+    console.log("REGISTRAR FOUND:", registrar);
+
+    if (!registrar) {
+      return res.status(404).json({
+        success: false,
+        msg: "No registrar available in system",
+      });
+    }
+
+    land.assignedRegistrar = registrar._id;
+    await land.save();
+
+    return res.json({
+      success: true,
+      registrar,
+    });
+
+  } catch (err) {
+    console.error("ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      msg: err.message,
     });
   }
 };

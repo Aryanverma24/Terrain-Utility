@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../modals/UserModal.js';
 import Land from '../modals/LandModal.js';
+import Payment from '../modals/PaymentModal.js';
 import asyncHandler from '../middlerwares/asyncHandler.js';
 import { mongo, Types } from 'mongoose';
 import calculateAverageRating from '../utils/calculateAverageRating.js';
@@ -622,27 +623,51 @@ const updateLandById = asyncHandler(async (req, res) => {
       state,
       owner,
       price,
+      tokenPercentage,
       dimensions,
       dimensionsString,
-      length,
-      breadth,
       description,
-      ratings,
-      reviews,
-      ...rest
     } = req.body;
 
+    // ================= BASIC FIELDS =================
     land.landtype = landtype || land.landtype;
     land.city = city || land.city;
     land.state = state || land.state;
     land.pincode = pincode || land.pincode;
     land.description = description || land.description;
 
+    // ================= PRICE =================
     if (price !== undefined) {
       const p = Number(price);
       land.price = Number.isNaN(p) ? land.price : p;
     }
 
+    // ================= TOKEN CONFIG =================
+    if (tokenPercentage !== undefined) {
+      const percent = Number(tokenPercentage);
+
+      if (isNaN(percent) || percent <= 0 || percent > 20) {
+        return res.status(400).json({
+          message: "Token percentage must be between 1% and 20%",
+        });
+      }
+
+      // prevent changes if locked
+      if (land.tokenConfig?.editable === false) {
+        return res.status(400).json({
+          message: "Token configuration is locked and cannot be changed",
+        });
+      }
+
+      land.tokenConfig.percentage = percent;
+
+      // always calculate from latest price
+      land.tokenConfig.amount = (land.price * percent) / 100;
+
+      land.tokenConfig.setByOwner = true;
+    }
+
+    // ================= DIMENSIONS =================
     if (dimensions && typeof dimensions === 'string') {
       const cleaned = dimensions.replace(/\s+/g, '');
       const sepMatch = cleaned.match(/(\d+)[\*xX](\d+)/);
@@ -655,22 +680,31 @@ const updateLandById = asyncHandler(async (req, res) => {
         length: Number(sepMatch[1]),
         breadth: Number(sepMatch[2]),
       };
+
       land.dimensionsString = dimensions;
     }
 
+    // ================= OWNER CHANGE =================
     if (owner) {
       const checkOwner = await User.find({ username: owner });
-      if (!checkOwner.length) return res.status(400).send('User not found');
+
+      if (!checkOwner.length) {
+        return res.status(400).json({ message: 'User not found' });
+      }
 
       land.owner = checkOwner[0]._id;
       land.ownerName = checkOwner[0].username;
     }
 
+    // ================= SAVE =================
     const updatedLand = await land.save();
-    res.status(200).json(updatedLand);
+    return res.status(200).json(updatedLand);
+
   } catch (err) {
     console.error('Error updating land:', err);
-    res.status(500).json({ message: 'Server error while updating land.' });
+    return res.status(500).json({
+      message: 'Server error while updating land.',
+    });
   }
 });
 
@@ -1096,30 +1130,73 @@ const getInterestedUsers = asyncHandler(async (req, res) => {
 // };
 //to get the ownership table
 const getLandDashboard = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const land = await Land.findById(id).populate('ownershipHistory').populate({
-    path: 'interestedUsers.user',
-    select: 'username  _id',
-  });
+    const land = await Land.findById(id)
+      .populate("ownershipHistory")
+      .populate("tokenBuyer")
+      .populate({
+        path: "interestedUsers.user",
+        select: "username _id",
+      });
 
-  if (!land) {
-    return res.status(404).json({ msg: 'Land not found' });
+    if (!land) {
+      return res.status(404).json({ msg: "Land not found" });
+    }
+
+    // =========================
+    // CURRENT OWNER
+    // =========================
+    const currentOwner = land.owner;
+
+    // =========================
+    // LAST TRANSFER
+    // =========================
+    const lastTransfer =
+      land.ownershipHistory?.[land.ownershipHistory.length - 1];
+
+    // =========================
+    // USER ID (FROM AUTH MIDDLEWARE)
+    // =========================
+    const currentUserId = req.user?._id;
+
+    // =========================
+    // TOKEN BUYER (FROM LAND)
+    // =========================
+    const tokenBuyer = land.tokenBuyer || null;
+
+    // =========================
+    // TOKEN ACCESS CHECK (BASED ON LAND)
+    // =========================
+    const hasTokenAccess =
+      currentUserId &&
+      tokenBuyer &&
+      String(currentUserId) === String(tokenBuyer);
+
+    // =========================
+    // RESPONSE
+    // =========================
+    res.json({
+      land,
+
+      currentOwner,
+
+      lastTransferDate: land.lastTransferDate,
+
+      ownershipHistory: land.ownershipHistory,
+
+      interests: land.interestedUsers,
+
+      // 🔥 IMPORTANT FIX
+      tokenBuyer,
+
+      hasTokenAccess,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
-
-  //  Current Owner
-  const currentOwner = land.owner;
-
-  //  Last Transfer
-  const lastTransfer = land.ownershipHistory[land.ownershipHistory.length - 1];
-
-  res.json({
-    land,
-    currentOwner,
-    lastTransferDate: land.lastTransferDate,
-    ownershipHistory: land.ownershipHistory,
-    interests: land.interestedUsers,
-  });
 };
 //geo verifiacation api
 const geoVerifyLand = async (req, res) => {

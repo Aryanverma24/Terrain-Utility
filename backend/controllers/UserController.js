@@ -43,44 +43,43 @@ const createUser = asyncHandler(async (req, res) => {
     throw new Error('Invalid user creation');
   }
 });
-
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   const existUser = await User.findOne({ email });
 
   if (!existUser) {
-    return res.status(400).json({ error: 'User not found' });
+    return res.status(400).json({ error: "User not found" });
   }
 
-  // Check password
   const isMatch = await bcrypt.compare(password, existUser.password);
 
   if (!isMatch) {
-    return res.status(400).json({ error: 'Invalid Credentials' });
+    return res.status(400).json({ error: "Invalid Credentials" });
   }
 
-  // Generate JWT
-  const token = createToken(res, existUser._id);
+  const token = createToken(existUser);
 
   return res.status(200).json({
-    _id: existUser._id,
-    username: existUser.username,
-    email: existUser.email,
-    isAdmin: existUser.isAdmin,
-    contactNumber: existUser.contactNumber,
     token,
+    user: {
+      _id: existUser._id,
+      username: existUser.username,
+      email: existUser.email,
+      role: existUser.role,
+      isAdmin: existUser.isAdmin,
+      contactNumber: existUser.contactNumber,
+    },
   });
 });
-
 const logout = asyncHandler(async (req, res) => {
-  res.cookie('jwt', '', {
+  res.cookie("jwt", "", {
     httpOnly: true,
     expires: new Date(0),
+    sameSite: "strict",
   });
-  res.status(200).json({
-    message: 'user logout successfully',
-  });
+
+  return res.status(200).json({ message: "Logout successful" });
 });
 
 const getAllUser = asyncHandler(async (req, res) => {
@@ -90,15 +89,21 @@ const getAllUser = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUserProfile = asyncHandler(async (req, res) => {
-  const user = req.user;
-  if (user) {
-    res.status(201).json({ data: user, message: 'User Data Fetched' });
-  } else {
-    res.status(404);
-    throw new Error('User not found');
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
-});
 
+  const user = await User.findById(req.user.id).select("-password");
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  res.status(200).json({
+    data: user,
+    message: "User Data Fetched",
+  });
+});
 const updateCurrentUserProfile = asyncHandler(async (req, res) => {
   const {
     username,
@@ -125,7 +130,7 @@ const updateCurrentUserProfile = asyncHandler(async (req, res) => {
 
   try {
     const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(decoded.id).select('-password');
 
     if (!user) {
       res.status(404);
@@ -509,7 +514,7 @@ const updateUserDocumentStatus = async (req, res) => {
 //to repuload a document that is rejected
 const reuploadUserDocumentHandler = asyncHandler(async (req, res) => {
   const { docId } = req.params;
-  const userId = req.user._id;
+  const userId = req.user.id;
 
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 

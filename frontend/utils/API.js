@@ -1,12 +1,18 @@
-import axios from 'axios';
+import axios from "axios";
 
 export const API = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: "http://localhost:5000",
 });
-API.interceptors.request.use((req) => {
-  const token = localStorage.getItem('token');
+
+// 🔥 ALWAYS GET LATEST TOKEN
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+
+  
+
   if (token) {
-    req.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  return req;
+
+  return config;
 });

@@ -22,7 +22,9 @@ const MyLand = () => {
     price: '',
     dimensions: '',
     description: '',
+    tokenPercentage: '',
   });
+  const [tokenWarning, setTokenWarning] = useState("");
 
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -123,8 +125,22 @@ const MyLand = () => {
       price: land.price || '',
       dimensions: land.dimensions || '',
       description: land.description || '',
+      tokenPercentage:
+  land.tokenConfig?.percentage || 5,
     });
   };
+
+  //token amount calc
+  const calculateTokenAmount = (price, percent) => {
+  const p = Number(price || 0);
+  const per = Number(percent || 0);
+  return Math.round((p * per) / 100);
+};
+//to check whether token money is valid or not 
+const isTokenValid =
+  formData.tokenPercentage &&
+  Number(formData.tokenPercentage) > 0 &&
+  Number(formData.tokenPercentage) <= 20;
 
   const handleFormChange = (e) => {
     setFormData((prev) => ({
@@ -133,24 +149,57 @@ const MyLand = () => {
     }));
   };
 
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
+const handleFormSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      await axios.put(`http://localhost:5000/api/lands/${editingLand._id}`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  try {
+    const tokenPercentage = Number(formData.tokenPercentage);
+    const price = Number(formData.price);
 
-      setLands((prev) =>
-        prev.map((l) => (l._id === editingLand._id ? { ...l, ...formData } : l)),
-      );
-
-      setEditingLand(null);
-      toast.success('Updated successfully');
-    } catch {
-      toast.error('Update failed');
+    // 🔥 FRONTEND SAFETY CHECK (UX layer)
+    if (tokenPercentage > 20) {
+      toast.error("Token percentage cannot exceed 20%");
+      return;
     }
-  };
+
+    if (tokenPercentage <= 0) {
+      toast.error("Token percentage must be greater than 0");
+      return;
+    }
+
+    const payload = {
+      landtype: formData.landtype,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      price,
+      dimensions: formData.dimensions,
+      description: formData.description,
+      tokenPercentage,
+    };
+
+    const { data } = await axios.put(
+      `http://localhost:5000/api/lands/${editingLand._id}`,
+      payload,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setLands((prev) =>
+      prev.map((l) =>
+        l._id === editingLand._id ? data : l
+      )
+    );
+
+    setEditingLand(null);
+    toast.success("Updated successfully");
+  } catch (err) {
+    toast.error(
+      err?.response?.data?.message || "Update failed"
+    );
+  }
+};
   const fetchConsultationLands = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/chat/consultation', {
@@ -186,44 +235,158 @@ const MyLand = () => {
       {/* ================= LAND SECTION ================= */}
       <h1 className="text-3xl text-center mb-8">My Lands</h1>
 
-      {lands.length > 0 ? (
-        <div className="grid md:grid-cols-3 gap-6">
-          {lands.map((land) => {
-            const isApprovedByMe =
-              String(land.approvedBy?._id || land.approvedBy) === String(currentUserId);
+   {lands.length > 0 ? (
+  <div className="grid md:grid-cols-3 gap-8">
+    {lands.map((land) => {
+      const isApprovedByMe =
+        String(land.approvedBy?._id || land.approvedBy) ===
+        String(currentUserId);
 
-            return (
-              <div
-                key={land._id}
-                onClick={() => navigate(`/land/${land._id}`)}
-                className="bg-[#ACE1AF] p-5 rounded-xl cursor-pointer hover:scale-105"
-              >
-                {land.image && (
-                  <img
-                    src={getFileUrl(land.image)}
-                    className="h-40 w-full object-cover rounded mb-2"
-                  />
-                )}
+      return (
+        <div
+          key={land._id}
+          onClick={() => navigate(`/land/${land._id}`)}
+          className="
+            group
+            bg-white
+            rounded-3xl
+            overflow-hidden
+            shadow-lg
+            hover:shadow-2xl
+            transition-all
+            duration-300
+            cursor-pointer
+            hover:-translate-y-2
+            border border-emerald-100
+          "
+        >
+          {/* IMAGE */}
+          <div className="relative overflow-hidden">
+            {land.image && (
+              <img
+                src={getFileUrl(land.image)}
+                alt="land"
+                className="
+                  h-56
+                  w-full
+                  object-cover
+                  group-hover:scale-110
+                  transition-transform
+                  duration-500
+                "
+              />
+            )}
 
-                <h2 className="font-bold text-lg">
-                  {land.city}, {land.state}
-                </h2>
+            {/* Type Badge */}
+            <div className="absolute top-4 left-4 bg-emerald-600 text-white text-xs px-3 py-1 rounded-full shadow">
+              {land.landtype || 'Land'}
+            </div>
 
-                <p>₹ {land.price}</p>
-                <p>{formatDimensions(land.dimensions)}</p>
-
-                {role === 'lawyer' && isApprovedByMe && (
-                  <div className="mt-2 bg-green-600 text-white text-center py-1 rounded">
-                    Approved by You
-                  </div>
-                )}
+            {/* Approved Badge */}
+            {role === 'lawyer' && isApprovedByMe && (
+              <div className="absolute top-4 right-4 bg-green-600 text-white text-xs px-3 py-1 rounded-full shadow">
+                Approved By You
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          {/* CONTENT */}
+          <div className="p-6">
+
+            {/* Location */}
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">
+              📍 {land.city}, {land.state}
+            </h2>
+
+            {/* Price */}
+            <div className="mb-3">
+              <p className="text-gray-500 text-sm">
+                Property Price
+              </p>
+              <p className="text-2xl font-bold text-emerald-700">
+                ₹ {Number(land.price).toLocaleString()}
+              </p>
+            </div>
+
+            {/* Token */}
+            <div className="mb-4 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+              <p className="text-sm text-gray-500">
+                Token Money
+              </p>
+
+             <p className="font-semibold text-emerald-700">
+  ₹{" "}
+  {Number(
+    land.tokenConfig?.amount ||
+    Math.round(land.price * 0.05)
+  ).toLocaleString()}
+</p>
+            </div>
+
+            {/* Dimensions */}
+            <div className="mb-5 text-gray-600">
+              📐 {formatDimensions(land.dimensions)}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(land);
+                }}
+                className="
+                  flex-1
+                  bg-blue-600
+                  hover:bg-blue-700
+                  text-white
+                  py-3
+                  rounded-xl
+                  font-semibold
+                  shadow-md
+                  transition
+                "
+              >
+                ✏ Edit
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/land/${land._id}`);
+                }}
+                className="
+                  flex-1
+                  bg-emerald-600
+                  hover:bg-emerald-700
+                  text-white
+                  py-3
+                  rounded-xl
+                  font-semibold
+                  shadow-md
+                  transition
+                "
+              >
+                View
+              </button>
+            </div>
+
+          </div>
         </div>
-      ) : (
-        <p>No lands found</p>
-      )}
+      );
+    })}
+  </div>
+) : (
+  <div className="text-center py-20">
+    <h2 className="text-2xl font-semibold text-gray-600">
+      No lands found
+    </h2>
+
+    <p className="text-gray-500 mt-2">
+      Start by listing your first property.
+    </p>
+  </div>
+)}
 
       {/* ================= APPROVED USERS ================= */}
       {role === 'lawyer' && (
@@ -342,44 +505,137 @@ const MyLand = () => {
         </div>
       )}
       {/* ================= EDIT MODAL ================= */}
-      {editingLand && (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
-          <form onSubmit={handleFormSubmit} className="bg-white p-6 rounded w-[400px]">
-            <input
-              name="city"
-              value={formData.city}
-              onChange={handleFormChange}
-              className="w-full mb-3 p-2 border"
-            />
+{/* ================= EDIT MODAL ================= */}
+{editingLand && (
+<div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+  <form
+    onSubmit={handleFormSubmit}
+    className="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 space-y-5"
+  >
+    <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
+      Edit Land Details
+    </h2>
 
-            <input
-              name="state"
-              value={formData.state}
-              onChange={handleFormChange}
-              className="w-full mb-3 p-2 border"
-            />
+    {/* City */}
+    <div>
+      <label className="block mb-2 text-sm font-semibold text-gray-700">
+        City
+      </label>
+      <input
+        type="text"
+        name="city"
+        value={formData.city}
+        onChange={handleFormChange}
+        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+      />
+    </div>
 
-            <input
-              name="price"
-              value={formData.price}
-              onChange={handleFormChange}
-              className="w-full mb-3 p-2 border"
-            />
+    {/* State */}
+    <div>
+      <label className="block mb-2 text-sm font-semibold text-gray-700">
+        State
+      </label>
+      <input
+        type="text"
+        name="state"
+        value={formData.state}
+        onChange={handleFormChange}
+        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+      />
+    </div>
 
-            <div className="flex justify-between">
-              <button className="bg-green-500 px-4 py-2 text-white">Save</button>
+    {/* Price */}
+    <div>
+      <label className="block mb-2 text-sm font-semibold text-gray-700">
+        Price (₹)
+      </label>
+      <input
+        type="number"
+        name="price"
+        value={formData.price}
+        onChange={handleFormChange}
+        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+      />
+    </div>
 
-              <button
-                type="button"
-                onClick={() => setEditingLand(null)}
-                className="bg-gray-500 px-4 py-2 text-white"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+    {/* Token Money % (optional if adding this feature now) */}
+<div>
+  <label className="block mb-2 text-sm font-semibold text-gray-700">
+    Token Percentage (%)
+  </label>
+
+  <input
+    type="number"
+    name="tokenPercentage"
+    value={formData.tokenPercentage}
+    onChange={handleFormChange}
+    min={1}
+    max={20}
+    className={`w-full p-3 border rounded-xl outline-none transition
+      ${
+        formData.tokenPercentage > 20
+          ? "border-red-500 focus:ring-2 focus:ring-red-400"
+          : "focus:ring-2 focus:ring-green-500"
+      }`}
+  />
+
+  {/* LIVE WARNING */}
+  {formData.tokenPercentage > 20 && (
+    <p className="text-red-500 text-sm mt-2 font-medium animate-pulse">
+      ⚠ Token percentage cannot exceed 20%
+    </p>
+  )}
+
+  {/* LIVE CALCULATION */}
+  <p className="text-sm mt-2 text-emerald-600 font-semibold">
+    Token Amount: ₹{" "}
+    {calculateTokenAmount(
+      formData.price,
+      Math.min(formData.tokenPercentage || 0, 20)
+    )}
+  </p>
+</div>
+
+    {/* Description */}
+    <div>
+      <label className="block mb-2 text-sm font-semibold text-gray-700">
+        Description
+      </label>
+      <textarea
+        name="description"
+        rows="4"
+        value={formData.description}
+        onChange={handleFormChange}
+        className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-green-500 outline-none"
+      />
+    </div>
+
+    {/* Buttons */}
+    <div className="flex justify-between gap-4 pt-4">
+  <button
+    type="button"
+    onClick={() => setEditingLand(null)}
+    className="w-1/2 py-3 rounded-xl bg-gray-500 hover:bg-gray-600 text-white font-semibold"
+  >
+    Cancel
+  </button>
+
+  <button
+    type="submit"
+    disabled={!isTokenValid}
+    className={`w-1/2 py-3 rounded-xl font-semibold text-white transition
+      ${
+        isTokenValid
+          ? "bg-green-600 hover:bg-green-700"
+          : "bg-green-300 cursor-not-allowed"
+      }`}
+  >
+    Save Changes
+  </button>
+</div>
+  </form>
+</div>
+)}
 
       {/* Consultation Lands (Only for Lawyers) */}
       {role === 'lawyer' && consultationLands.length > 0 && (

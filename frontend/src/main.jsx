@@ -38,7 +38,8 @@ import LawyerDocuments from './component/lawyer/lawyerDocuments.jsx';
 import InterestDashboard from './component/Lands/IntrestDashboard.jsx';
 import CongratulationsPage from './component/Payment/CongratulationsPage.jsx';
 import RegistrarDashboard from './component/RegistrarDashboard/registrarDashboard.jsx';
-
+import TransactionWorkflow from './component/Lands/TransactionWorkFlow.jsx';
+import Appointment from './component/RegistrarDashboard/Components/Appointment.jsx';
 // import FaceSetup from './component/FaceSetup.jsx';
 // import FaceAuthentication from './component/FaceAuthentication.jsx';
 
@@ -94,6 +95,17 @@ const router = createBrowserRouter(
 
       {/* registrar routes */}
       <Route path="/registrar-dashboard" element={<RegistrarDashboard />} />
+       {/* main operational appointment console */}
+     <Route
+ path="/registrar/appointments"
+ element={<Appointment />}
+/>
+
+<Route
+ path="/registrar/appointments/:appointmentId"
+ element={<Appointment />}
+/>
+
       {/* admin routes */}
       <Route path="/adminDashboard" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<UserManagement />} />
@@ -112,6 +124,8 @@ const router = createBrowserRouter(
       <Route path="/interest-dashboard/:landId" element={<InterestDashboard />} />
       {/* Congratulations Page */}
       <Route path="/congratulations" element={<CongratulationsPage />} />
+      {/* appoitment page basically called it tenasaction flow */}
+      <Route path="/transaction-workflow/:landId" element={<TransactionWorkflow />}/>
     </Route>,
   ),
 );
