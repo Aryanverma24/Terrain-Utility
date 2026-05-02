@@ -929,7 +929,7 @@ const showDealRoom =
     className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
   >
    {!allowedToPay.includes(land.transferStatus)
-  ? 'Cannot proceed'
+  ? 'Pay Now'
   : land.transferStatus === 'token_pending'
   ? 'Complete Token First'
   : land.transferStatus === 'appointment_booked'
