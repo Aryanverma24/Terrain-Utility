@@ -29,6 +29,37 @@ const ReviewSchema = new mongoose.Schema(
   },
   { _id: false },
 );
+const ExtractedFieldSchema = new mongoose.Schema({
+  value: { type: String, default: null },
+  confidence: { type: String, enum: ["high", "medium", "low"], default: "low" },
+  verified: { type: Boolean, default: false }
+}, { _id: false });
+
+const ExtractionSchema = new mongoose.Schema({
+  ownerName: ExtractedFieldSchema,
+  khasraNumber: ExtractedFieldSchema,
+  village: ExtractedFieldSchema,
+  city: ExtractedFieldSchema,
+  state: ExtractedFieldSchema,
+  pincode: ExtractedFieldSchema,
+  area: ExtractedFieldSchema,
+  coordinates: {
+    lat: Number,
+    lng: Number
+  },
+source: {
+  type: String,
+  enum: ["ocr", "manual"],
+  default: "ocr"
+},
+  rawText: { type: String, default: "" },
+
+  status: {
+    type: String,
+    enum: ["pending", "reviewed", "rejected"],
+    default: "pending"
+  }
+}, { _id: false });
 
 const LandSchema = new mongoose.Schema(
   {
@@ -215,6 +246,13 @@ const LandSchema = new mongoose.Schema(
       },
     },
 
+extraction: {
+  type: ExtractionSchema,
+  default: () => ({
+    status: "pending",
+    rawText: ""
+  })
+},
     // =========================
     // LAND STATUS
     // =========================
@@ -305,6 +343,7 @@ tokenConfig:{
       default: null,
     },
   },
+  
   { timestamps: true },
 );
 
@@ -312,5 +351,6 @@ tokenConfig:{
 LandSchema.index({ ownershipCount: -1 });
 LandSchema.index({ 'interestedUsers.user': 1 });
 LandSchema.index({ location: '2dsphere' });
+LandSchema.index({ "extraction.status": 1 });
 export const Land = mongoose.model('Land', LandSchema);
 export default Land;

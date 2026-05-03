@@ -14,6 +14,7 @@ const router = express.Router();
 import upload from '../utils/multerConfig.js';
 import { io } from '../index.js';
 import { reuploadDocumentHandler } from '../controllers/documentController.js';
+import { extractSaleDeed } from '../controllers/OCRcontroller.js';
 // Multer setup for file uploads
 
 // router.post(
@@ -94,5 +95,9 @@ router.put(
   upload.single('file'),
   reuploadDocumentHandler,
 );
+
+//the extraction route for ocr
+
+router.post("/extract", upload.array("files", 5) , extractSaleDeed);
 
 export default router;

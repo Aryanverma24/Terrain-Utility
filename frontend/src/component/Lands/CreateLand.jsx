@@ -31,7 +31,7 @@ import {
 } from 'react-icons/fa';
 
 function CreateLand() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0); // instead of 1
   const [landtype, setLandtype] = useState('');
   const [state, setState] = useState('');
   const [city, setCity] = useState('');
@@ -46,7 +46,6 @@ function CreateLand() {
   const [documents, setDocuments] = useState({
     Aadhaar: null,
     Pan: null,
-    SaleDeed: null,
     LandRegistry: null,
     EncumbranceCertificate: null,
     Khata: null,
@@ -69,6 +68,14 @@ const [customTokenEdited, setCustomTokenEdited] = useState(false);
   //declaration state
   const [agreed, setAgreed] = useState(false);
   const [declarationError, setDeclarationError] = useState(false);
+
+  // OCR + Extraction
+
+const [saleDeedFiles, setSaleDeedFiles] = useState([]);
+const [ocrLoading, setOcrLoading] = useState(false);
+const [extractionData, setExtractionData] = useState(null);
+const [showExtractionModal, setShowExtractionModal] = useState(false);
+
   //for setting ai generated description
   const [aiDescriptions, setAiDescriptions] = useState([]);
   const [showAIModal, setShowAIModal] = useState(false);
@@ -297,7 +304,6 @@ Do not add any extra text before or after.`;
       const requiredDocs = [
         'Aadhaar',
         'Pan',
-        'SaleDeed',
         'LandRegistry',
         'EncumbranceCertificate',
         'Khata',
@@ -446,7 +452,6 @@ if (tokenAmount) filled++;
     const requiredDocs = [
       'Aadhaar',
       'Pan',
-      'SaleDeed',
       'LandRegistry',
       'EncumbranceCertificate',
       'Khata',
@@ -564,10 +569,91 @@ if (tokenAmount) filled++;
     }
   };
 
+  //ocr extraction function 
+const isHindiText = (text) => {
+  return /[\u0900-\u097F]/.test(text || "");
+};
+
+const handleSaleDeedUpload = async () => {
+  console.log("BUTTON CLICKED");
+
+  if (!saleDeedFiles || saleDeedFiles.length === 0) {
+    toast.error("Upload Sale Deed images first");
+    return;
+  }
+
+  const formData = new FormData();
+  saleDeedFiles.forEach(file => formData.append("files", file));
+
+  try {
+    setOcrLoading(true);
+
+    const res = await axios.post(
+      "http://localhost:5000/api/documents/extract",
+      formData
+    );
+
+    console.log("RESPONSE:", res.data);
+
+    let data = res.data;
+
+    // ✅ APPLY TRANSLITERATION ONLY WHEN NEEDED
+    if (data.transliterated) {
+      data = {
+        ...data,
+
+        ownerName: {
+          ...data.ownerName,
+          value: isHindiText(data.ownerName?.value)
+            ? data.transliterated.ownerName_en || data.ownerName?.value
+            : data.ownerName?.value
+        },
+
+        buyerName: {
+          ...data.buyerName,
+          value: isHindiText(data.buyerName?.value)
+            ? data.transliterated.buyerName_en || data.buyerName?.value
+            : data.buyerName?.value
+        },
+
+        city: {
+          ...data.city,
+          value: isHindiText(data.city?.value)
+            ? data.transliterated.city_en || data.city?.value
+            : data.city?.value
+        },
+
+        state: {
+          ...data.state,
+          value: isHindiText(data.state?.value)
+            ? data.transliterated.state_en || data.state?.value
+            : data.state?.value
+        },
+
+        village: {
+          ...data.village,
+          value: isHindiText(data.village?.value)
+            ? data.transliterated.village_en || data.village?.value
+            : data.village?.value
+        }
+      };
+    }
+
+    setExtractionData(data);
+    setShowExtractionModal(true);
+
+  } catch (err) {
+    console.error("OCR ERROR:", err);
+    toast.error("OCR failed, fill manually");
+    setCurrentStep(1);
+  } finally {
+    setOcrLoading(false);
+  }
+};
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-teal-900 overflow-hidden pt-12">
       {/* Enhanced Background with Multiple Layers */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         {/* Primary Grid Pattern */}
         <div
           className="absolute inset-0 opacity-10"
@@ -580,7 +666,7 @@ if (tokenAmount) filled++;
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/30 via-transparent to-cyan-900/30 animate-pulse"></div>
 
         {/* Floating Particles */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
             <div
               key={i}
@@ -630,7 +716,259 @@ if (tokenAmount) filled++;
           <div className="text-emerald-400 font-bold text-xl">{progress}% Complete</div>
         </div>
       )}
+{/* Step 0: Sale Deed Upload */}
+{/* Step 0: Sale Deed Upload */}
+{currentStep === 0 && (
+  <div className="relative z-10 min-h-screen flex flex-col">
 
+    {/* HEADER (compact) */}
+    <div className="text-center pt-8 pb-6 px-4">
+      <div className="max-w-3xl mx-auto">
+
+        {/* Step Indicator */}
+        <div className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-400/30 rounded-full text-emerald-400 text-xs font-semibold mb-5 backdrop-blur-sm">
+          <span className="mr-2">STEP 1 OF 3</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-1 bg-emerald-400 rounded-full"></div>
+            <div className="w-6 h-1 bg-white/30 rounded-full"></div>
+            <div className="w-6 h-1 bg-white/30 rounded-full"></div>
+          </div>
+        </div>
+
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+          Sale Deed OCR
+        </h1>
+
+        <p className="text-sm md:text-base text-gray-400">
+          Upload images to auto-extract property details.{" "}
+          <span className="text-white font-semibold">
+            Multiple images supported
+          </span>
+        </p>
+      </div>
+    </div>
+
+    {/* CONTENT */}
+    <div className="flex-1 max-w-4xl mx-auto px-6 pb-10">
+
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-6 md:p-8">
+
+        <div className="border border-dashed border-emerald-400/25 rounded-2xl p-10 text-center bg-emerald-500/5">
+
+          <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-5">
+            <FaUpload className="w-10 h-10 text-emerald-400" />
+          </div>
+
+          <h3 className="text-xl font-bold text-white mb-2">
+            Upload Sale Deed Images
+          </h3>
+
+          <p className="text-sm text-gray-400 mb-5">
+            You can upload multiple images for better accuracy
+          </p>
+
+          {/* FILE INPUT */}
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => setSaleDeedFiles([...e.target.files])}
+            className="hidden"
+            id="saleDeedUpload"
+          />
+
+          <label
+            htmlFor="saleDeedUpload"
+            className="cursor-pointer px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-xl hover:scale-105 transition inline-flex items-center gap-2"
+          >
+            <FaUpload />
+            Select Files
+          </label>
+
+          <p className="text-xs text-gray-500 mt-2">
+            JPG, PNG supported
+          </p>
+
+          {/* HIGHLIGHT */}
+          <p className="text-xs mt-2">
+            <span className="text-emerald-400 font-semibold">
+              Multiple images recommended
+            </span>
+          </p>
+
+          {/* FILE PREVIEW */}
+          {saleDeedFiles?.length > 0 && (
+            <div className="mt-5 p-4 bg-emerald-500/10 border border-emerald-400/20 rounded-xl">
+              <p className="text-emerald-400 text-sm font-medium">
+                {saleDeedFiles.length} file(s) selected
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ACTIONS */}
+        <div className="flex justify-between items-center mt-6">
+
+          <button
+            onClick={() => setCurrentStep(1)}
+            className="text-sm text-gray-400 hover:text-white transition"
+          >
+            <span className="font-semibold text-emerald-400">
+              Skip manually →
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSaleDeedUpload}
+            className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition"
+          >
+            {ocrLoading ? "Scanning..." : "Upload & Scan"}
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
+{/* modal for extration to showcase info */}
+{showExtractionModal && extractionData && (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 px-4">
+    
+    <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-white/10 backdrop-blur-xl p-8 rounded-3xl w-full max-w-2xl shadow-2xl animate-fadeIn">
+
+      {/* HEADER */}
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+          Verify Extracted Information
+        </h2>
+        <p className="text-gray-400 text-sm md:text-base">
+          Please review and update the fields if required before continuing
+        </p>
+      </div>
+
+      {/* FORM GRID */}
+      <div className="space-y-5">
+
+        {/* OWNER */}
+        <div>
+          <label className="text-xs text-gray-400">Owner Name</label>
+          <input
+            value={extractionData.ownerName?.value || ""}
+            onChange={(e) =>
+              setExtractionData({
+                ...extractionData,
+                ownerName: {
+                  ...extractionData.ownerName,
+                  value: e.target.value
+                }
+              })
+            }
+            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
+          />
+          {extractionData.original?.ownerName_hi && (
+            <p className="text-xs text-gray-500 mt-1">
+              Original: {extractionData.original.ownerName_hi}
+            </p>
+          )}
+        </div>
+
+        {/* CITY */}
+        <div>
+          <label className="text-xs text-gray-400">City</label>
+          <input
+            value={extractionData.city?.value || ""}
+            onChange={(e) =>
+              setExtractionData({
+                ...extractionData,
+                city: {
+                  ...extractionData.city,
+                  value: e.target.value
+                }
+              })
+            }
+            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
+          />
+          {extractionData.original?.city_hi && (
+            <p className="text-xs text-gray-500 mt-1">
+              Original: {extractionData.original.city_hi}
+            </p>
+          )}
+        </div>
+
+        {/* STATE */}
+        <div>
+          <label className="text-xs text-gray-400">State</label>
+          <input
+            value={extractionData.state?.value || ""}
+            onChange={(e) =>
+              setExtractionData({
+                ...extractionData,
+                state: {
+                  ...extractionData.state,
+                  value: e.target.value
+                }
+              })
+            }
+            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
+          />
+          {extractionData.original?.state_hi && (
+            <p className="text-xs text-gray-500 mt-1">
+              Original: {extractionData.original.state_hi}
+            </p>
+          )}
+        </div>
+
+        {/* PINCODE */}
+        <div>
+          <label className="text-xs text-gray-400">Pincode</label>
+          <input
+            value={extractionData.pincode?.value || ""}
+            onChange={(e) =>
+              setExtractionData({
+                ...extractionData,
+                pincode: {
+                  ...extractionData.pincode,
+                  value: e.target.value
+                }
+              })
+            }
+            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
+          />
+        </div>
+      </div>
+
+      {/* ACTION BUTTONS */}
+      <div className="flex gap-4 mt-8">
+
+        {/* BACK */}
+        <button
+          onClick={() => setShowExtractionModal(false)}
+          className="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 transition"
+        >
+          ← Back
+        </button>
+
+        {/* CONFIRM */}
+        <button
+          onClick={() => {
+            setCity(extractionData.city?.value || "");
+            setState(extractionData.state?.value || "");
+            setPincode(extractionData.pincode?.value || "");
+
+            setShowExtractionModal(false);
+            setCurrentStep(1);
+          }}
+          className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold hover:scale-105 transition shadow-lg"
+        >
+          Confirm & Continue →
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
       {/* Step 1: Land Details - Professional Full Screen */}
       {currentStep === 1 && (
         <div className="relative z-10 min-h-screen flex flex-col">
