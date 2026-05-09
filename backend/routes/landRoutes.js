@@ -20,6 +20,10 @@ import {
   getLandDashboard,
   geoVerifyLand,
   saveLawyerDeclaration,
+  relistLand,
+  refreshLandDocuments,
+  requestReverification,
+  getAuditTrail
   // updateInterestStatus
 } from '../controllers/LandController.js';
 
@@ -27,6 +31,7 @@ import { authenticate } from '../middlerwares/landauthenticate.js';
 import upload from '../utils/multerConfig.js';
 import multer from 'multer';
 import { uploadDocuments, resubmitLand } from '../controllers/LandController.js';
+import { authenticateRegistrar } from '../middlerwares/authMiddlewares.js';
 
 const router = express.Router();
 
@@ -71,8 +76,31 @@ router.put('/lawyer-declaration/:id', authenticate, saveLawyerDeclaration);
 router.route('/:landId/interested').post(authenticate, markInterested);
 router.route('/:landId/uninterested').post(authenticate, unmarkInterested);
 router.route('/:landId/interested-users').get(authenticate, getInterestedUsers);
-// router.put("/update-status", authenticate,updateInterestStatus);
+
 //route for getitng ownership history
 router.get('/dashboard/:id', getLandDashboard);
-
+//to put land on resale 
+router.patch(
+  "/relist/:id",
+  authenticate,
+  relistLand
+);
+//to get all new docs reupload 
+router.put(
+  "/:id/refresh-documents",
+ authenticate,
+ refreshLandDocuments
+);
+//for reverification of new docs 
+router.patch(
+  "/request-reverification/:id",
+  authenticate,
+ requestReverification
+);
+//get audiut trail 
+router.get(
+  "/:id/audit-trail",
+  authenticateRegistrar,
+  getAuditTrail
+);
 export default router;

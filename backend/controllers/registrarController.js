@@ -2,6 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import Registrar from '../modals/registrarModal.js';
 import Land from '../modals/LandModal.js';
+import Document from '../modals/DocumentModal.js';
+import userDocumentModal from '../modals/userDocumentModal.js';
+import Appointment from '../modals/AppointmentModal.js';
 //registrar activation and login
 // First Time Activation
 export const activateRegistrar = async (req, res) => {
@@ -141,19 +144,22 @@ role: 'registrar',
   }
 };
 /**
- * 🔥 Auto-assign nearest registrar to land (geo-based)
+ *Auto-assign nearest registrar to land (geo-based)
  * This is the FIRST step of appointment workflow
  */
 export const assignRegistrarToLand = async (req, res) => {
   try {
-    console.log("🔥 HIT assignRegistrarToLand");
 
     const { landId } = req.body;
-    console.log("landId:", landId);
+
+    if (!landId) {
+      return res.status(400).json({
+        success: false,
+        msg: "landId is required"
+      });
+    }
 
     const land = await Land.findById(landId);
-
-    console.log("LAND FOUND:", land ? "YES" : "NO");
 
     if (!land) {
       return res.status(404).json({
@@ -162,47 +168,107 @@ export const assignRegistrarToLand = async (req, res) => {
       });
     }
 
-    console.log("LAND COORDS:", land.location);
-
-    const coords = land.location?.coordinates;
-
-    if (!coords) {
-      console.log("❌ NO COORDINATES");
-      return res.status(400).json({
-        success: false,
-        msg: "No coordinates",
-      });
-    }
-
-    const [lng, lat] = coords;
-    console.log("COORDS:", lng, lat);
-
     const registrar = await Registrar.findOne({
       status: "active",
     });
 
-    console.log("REGISTRAR FOUND:", registrar);
-
     if (!registrar) {
       return res.status(404).json({
         success: false,
-        msg: "No registrar available in system",
+        msg: "No registrar available",
       });
     }
 
     land.assignedRegistrar = registrar._id;
+
     await land.save();
 
     return res.json({
       success: true,
+      message: "Registrar assigned successfully",
       registrar,
     });
 
   } catch (err) {
-    console.error("ERROR:", err);
+
+    console.error("ASSIGN ERROR:", err);
+
     return res.status(500).json({
       success: false,
       msg: err.message,
+    });
+
+  }
+};
+//for documents 
+
+
+export const getRegistrarAppointmentDocuments = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    const appointment = await Appointment.findById(appointmentId)
+      .populate("buyer")
+      .populate({
+        path: "land",
+        populate: {
+          path: "owner",
+        },
+      });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    /* =========================
+       LAND DOCUMENTS (FIXED)
+    ========================== */
+
+    const landDocIds = appointment.land?.documents || [];
+
+    const landDocParents = await Document.find({
+      _id: { $in: landDocIds },
+    });
+
+    // flatten sub-documents
+    const landDocs = landDocParents.flatMap((doc) =>
+      doc.documents.map((sub) => ({
+        ...sub.toObject(),
+        parentId: doc._id,
+      }))
+    );
+
+    /* =========================
+       BUYER DOCUMENTS
+    ========================== */
+
+    const buyerDocData = await userDocumentModal.findOne({
+      user: appointment.buyer._id,
+    });
+
+    const buyerDocs = buyerDocData?.documents || [];
+
+    /* =========================
+       OWNER DOCUMENTS
+    ========================== */
+
+    const ownerDocData = await userDocumentModal.findOne({
+      user: appointment.land.owner?._id,
+    });
+
+    const ownerDocs = ownerDocData?.documents || [];
+
+    return res.json({
+      success: true,
+      landDocs,
+      buyerDocs,
+      ownerDocs,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
     });
   }
 };

@@ -1,43 +1,51 @@
 import cloudinary from '../config/cloudinary.js';
-const uploadToCloudinary = async (filePath, folder, publicId = null) => {
+const uploadToCloudinary = async (fileInput, folder = "uploads", publicId = null) => {
   try {
-    // Safety check
-    if (!filePath) {
-      console.log('❌ No file path provided');
+    if (!fileInput) {
+      console.log("❌ No file input provided");
       return null;
     }
 
-    //  Check file exists
-    const fs = await import('fs');
-    if (!fs.existsSync(filePath)) {
-      console.log('❌ File does NOT exist at path:', filePath);
-      return null;
-    }
-
-    // Options
     const options = {
-      folder: folder,
-      resource_type: 'auto', // important for pdf/images/videos
+      folder,
+      resource_type: "auto",
     };
 
-    // Overwrite logic
     if (publicId) {
       options.public_id = publicId;
       options.overwrite = true;
     }
 
-    const result = await cloudinary.uploader.upload(filePath, options);
+    let result;
 
-    if (!result || !result.secure_url) {
-      console.log('⚠️ Upload succeeded but no secure_url returned');
+    // ✅ CASE 1: BASE64 IMAGE (camera capture)
+    if (typeof fileInput === "string" && fileInput.startsWith("data:")) {
+      console.log("📸 Uploading BASE64 image");
+      result = await cloudinary.uploader.upload(fileInput, options);
+    }
+
+    // ✅ CASE 2: FILE PATH (old multer flow)
+    else {
+      const fs = await import("fs");
+
+      if (!fs.existsSync(fileInput)) {
+        console.log("❌ File does NOT exist at path:", fileInput);
+        return null;
+      }
+
+      console.log("📁 Uploading FILE PATH");
+      result = await cloudinary.uploader.upload(fileInput, options);
+    }
+
+    if (!result?.secure_url) {
+      console.log("⚠️ Upload succeeded but no secure_url");
       return null;
     }
 
     return result.secure_url;
+
   } catch (error) {
-    console.error('❌ Cloudinary upload failed:');
-    console.error('Message:', error.message);
-    console.error('Full error:', error);
+    console.error("❌ Cloudinary upload failed:", error.message);
     return null;
   }
 };

@@ -261,7 +261,19 @@ extraction: {
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
-
+marketStatus: {
+  type: String,
+  enum: [
+    "not_for_sale",
+    "for_sale",
+    "in_transaction"
+  ],
+  default: "for_sale"
+},
+documentsRefreshRequired: {
+  type: Boolean,
+  default: false
+},
     documents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Document' }],
 assignedRegistrar: {
   type: mongoose.Schema.Types.ObjectId,
@@ -277,7 +289,53 @@ assignedRegistrar: {
         ref: 'OwnershipHistory',
       },
     ],
+// =========================
+// AUDIT TRAIL SYSTEM
+// =========================
+auditTrail: [
+  {
+    action: {
+      type: String,
+      required: true,
+    },
 
+    description: {
+      type: String,
+      default: "",
+    },
+
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    performerName: {
+      type: String,
+      default: "",
+    },
+
+    performerRole: {
+      type: String,
+      default: "",
+    },
+
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
+    ipAddress: {
+      type: String,
+      default: null,
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
     ownershipCount: {
       type: Number,
       default: 0,
@@ -349,6 +407,7 @@ tokenConfig:{
 
 //  PERFORMANCE INDEXES
 LandSchema.index({ ownershipCount: -1 });
+
 LandSchema.index({ 'interestedUsers.user': 1 });
 LandSchema.index({ location: '2dsphere' });
 LandSchema.index({ "extraction.status": 1 });

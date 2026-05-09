@@ -18,11 +18,22 @@ export const reuploadDocumentHandler = asyncHandler(async (req, res) => {
   const subDoc = parentDoc.documents.id(docId);
   if (!subDoc) return res.status(404).json({ message: 'Sub-document not found' });
 
-  if (subDoc.status !== 'rejected') {
-    return res.status(400).json({ message: 'Only rejected documents can be reuploaded' });
-  }
+ const land = await Land.findById(parentDoc.land);
 
-  const land = await Land.findById(parentDoc.land);
+// ALLOW REUPLOAD DURING:
+// 1. rejected correction workflow
+// 2. ownership refresh workflow
+
+const canReupload =
+  subDoc.status === 'rejected' ||
+  land?.documentsRefreshRequired === true;
+
+if (!canReupload) {
+  return res.status(400).json({
+    message: 'Document cannot be reuploaded right now',
+  });
+}
+
 
   console.log('Reupload - req.file.path:', req.file.path);
 

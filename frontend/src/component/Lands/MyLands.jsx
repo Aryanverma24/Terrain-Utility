@@ -30,6 +30,15 @@ const MyLand = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
 
+
+  const resaleEligibleLands = lands.filter(
+  (land) => land.marketStatus === "not_for_sale"
+);
+
+const activeMarketLands = lands.filter(
+  (land) => land.marketStatus === "for_sale"
+);
+
   // ================= JWT =================
   const decodeJWT = (token) => {
     try {
@@ -235,9 +244,9 @@ const handleFormSubmit = async (e) => {
       {/* ================= LAND SECTION ================= */}
       <h1 className="text-3xl text-center mb-8">My Lands</h1>
 
-   {lands.length > 0 ? (
+   {activeMarketLands.length > 0 ? (
   <div className="grid md:grid-cols-3 gap-8">
-    {lands.map((land) => {
+    {activeMarketLands.map((land) => {
       const isApprovedByMe =
         String(land.approvedBy?._id || land.approvedBy) ===
         String(currentUserId);
@@ -682,6 +691,383 @@ const handleFormSubmit = async (e) => {
           </div>
         </div>
       )}
+
+      {/* ================= PURCHASED LANDS ================= */}
+
+{resaleEligibleLands.length > 0 && (
+  <div className="mt-20">
+
+    {/* HEADER */}
+    <div className="
+      flex flex-col md:flex-row
+      md:items-center
+      md:justify-between
+      gap-5
+      mb-8
+    ">
+
+      <div>
+        <h1 className="
+          text-4xl
+          font-black
+          bg-gradient-to-r
+          from-emerald-700
+          via-green-600
+          to-teal-500
+          bg-clip-text
+          text-transparent
+        ">
+          Newly Purchased Properties
+        </h1>
+
+        <p className="text-slate-500 mt-2 text-lg">
+          Properties successfully transferred to your ownership
+        </p>
+      </div>
+
+      <div className="
+        px-5 py-3
+        rounded-2xl
+        bg-emerald-100
+        text-emerald-700
+        font-bold
+        shadow-sm
+      ">
+        {resaleEligibleLands.length} Owned
+      </div>
+
+    </div>
+
+    {/* GRID */}
+    <div className="grid md:grid-cols-3 gap-8">
+
+      {resaleEligibleLands.map((land) => (
+
+        <div
+          key={land._id}
+          className="
+            group
+            relative
+            overflow-hidden
+            rounded-[32px]
+            bg-white/90
+            backdrop-blur-xl
+            border border-emerald-100
+            shadow-xl
+            hover:shadow-2xl
+            transition-all
+            duration-500
+            hover:-translate-y-3
+          "
+        >
+
+          {/* IMAGE */}
+          <div className="relative overflow-hidden">
+
+            <img
+              src={getFileUrl(land.image)}
+              alt="land"
+              className="
+                h-64
+                w-full
+                object-cover
+                group-hover:scale-110
+                transition-transform
+                duration-700
+              "
+            />
+
+            {/* OWNERSHIP BADGE */}
+            <div className="
+              absolute
+              top-5 left-5
+              bg-gradient-to-r
+              from-emerald-600
+              to-green-500
+              text-white
+              px-4 py-2
+              rounded-full
+              text-sm
+              font-bold
+              shadow-lg
+            ">
+              Ownership Secured
+            </div>
+
+            {/* PRIVATE BADGE */}
+            <div className="
+              absolute
+              top-5 right-5
+              bg-black/70
+              backdrop-blur-md
+              text-white
+              px-4 py-2
+              rounded-full
+              text-xs
+              font-semibold
+            ">
+              Not For Sale
+            </div>
+
+          </div>
+
+          {/* BODY */}
+          <div className="p-7">
+
+            {/* TITLE */}
+            <h2 className="
+              text-2xl
+              font-black
+              text-slate-800
+              leading-tight
+            ">
+              {land.city}, {land.state}
+            </h2>
+
+            {/* PRICE */}
+            <div className="mt-5">
+
+              <p className="text-sm text-slate-500">
+                Registered Property Value
+              </p>
+
+              <h3 className="
+                text-3xl
+                font-black
+                text-emerald-700
+                mt-1
+              ">
+                ₹ {Number(land.price).toLocaleString()}
+              </h3>
+
+            </div>
+
+            {/* DETAILS */}
+            <div className="
+              mt-6
+              grid grid-cols-2
+              gap-4
+            ">
+
+              <div className="
+                rounded-2xl
+                bg-slate-50
+                border
+                p-4
+              ">
+                <p className="text-xs text-slate-500">
+                  Land Type
+                </p>
+
+                <h4 className="font-bold mt-2 capitalize">
+                  {land.landtype}
+                </h4>
+              </div>
+
+              <div className="
+                rounded-2xl
+                bg-slate-50
+                border
+                p-4
+              ">
+                <p className="text-xs text-slate-500">
+                  Dimensions
+                </p>
+
+                <h4 className="font-bold mt-2">
+                  {formatDimensions(land.dimensions)}
+                </h4>
+              </div>
+
+            </div>
+
+            {/* TRANSFER INFO */}
+            <div className="
+              mt-6
+              rounded-2xl
+              bg-emerald-50
+              border border-emerald-100
+              p-5
+            ">
+
+              <p className="
+                text-sm
+                text-emerald-700
+                font-semibold
+              ">
+                Registry ownership successfully transferred
+                and secured in digital records.
+              </p>
+
+            </div>
+
+            {/* ACTIONS */}
+         {/* ACTIONS */}
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
+
+  {/* VIEW */}
+  <button
+    onClick={() =>
+      navigate(`/land/${land._id}`)
+    }
+    className="
+      py-4
+      rounded-2xl
+      bg-slate-900
+      hover:bg-black
+      text-white
+      font-bold
+      transition-all
+      shadow-lg
+    "
+  >
+    View Property
+  </button>
+
+  {/* VERIFY DOCUMENTS */}
+  <button
+    disabled={
+      land.documentsRefreshRequired ||
+      land.status === "pending"
+    }
+    onClick={async () => {
+
+      try {
+
+        await axios.patch(
+          `http://localhost:5000/api/lands/request-reverification/${land._id}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        toast.success(
+          "Upload updated ownership documents now"
+        );
+
+        fetchUserLands(user.username);
+
+      } catch (err) {
+
+        toast.error(
+          err?.response?.data?.message ||
+          "Verification request failed"
+        );
+
+      }
+
+    }}
+    className={`
+      py-4
+      rounded-2xl
+      text-white
+      font-bold
+      transition-all
+      shadow-lg
+
+      ${
+        land.documentsRefreshRequired ||
+        land.status === "pending"
+          ? `
+            bg-amber-300
+            cursor-not-allowed
+          `
+          : `
+            bg-amber-500
+            hover:bg-amber-600
+          `
+      }
+    `}
+  >
+    {land.documentsRefreshRequired
+      ? "Upload Documents First"
+      : land.status === "pending"
+      ? "Lawyer Verification Pending"
+      : "Verify Documents"}
+  </button>
+
+  {/* PUT ON RESALE */}
+  <button
+    disabled={
+      land.documentsRefreshRequired ||
+      land.status !== "approved"
+    }
+    onClick={async () => {
+
+      try {
+
+        await axios.patch(
+          `http://localhost:5000/api/lands/relist/${land._id}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        toast.success(
+          "Property relisted successfully"
+        );
+
+        fetchUserLands(user.username);
+
+      } catch (err) {
+
+        toast.error(
+          err?.response?.data?.message ||
+          "Relist failed"
+        );
+
+      }
+
+    }}
+    className={`
+      py-4
+      rounded-2xl
+      text-white
+      font-bold
+      transition-all
+      shadow-lg
+
+      ${
+        land.documentsRefreshRequired ||
+        land.status !== "approved"
+          ? `
+            bg-emerald-300
+            cursor-not-allowed
+          `
+          : `
+            bg-gradient-to-r
+            from-emerald-600
+            to-green-500
+            hover:from-emerald-700
+            hover:to-green-600
+          `
+      }
+    `}
+  >
+    {land.documentsRefreshRequired
+      ? "Documents Update In Progress"
+      : land.status === "pending"
+      ? "Awaiting Lawyer Approval"
+      : "Put On Resale"}
+  </button>
+
+</div>
+          </div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  </div>
+)}
     </div>
   );
 };

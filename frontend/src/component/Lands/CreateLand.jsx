@@ -650,6 +650,35 @@ const handleSaleDeedUpload = async () => {
     setOcrLoading(false);
   }
 };
+//for all the extraction values 
+const Field = ({ label, value, setExtractionData, fieldKey }) => {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+
+      <label className="text-xs text-gray-400">{label}</label>
+
+      <input
+        value={value?.value || ""}
+        onChange={(e) =>
+          setExtractionData((prev) => ({
+            ...prev,
+            [fieldKey]: {
+              ...prev[fieldKey],
+              value: e.target.value,
+            },
+          }))
+        }
+        className="w-full mt-1 p-2 bg-transparent text-white outline-none border-b border-white/10 focus:border-emerald-400"
+      />
+
+      {/* subtle confidence indicator */}
+      <p className="text-[10px] text-gray-500 mt-1">
+        confidence: {value?.confidence || "low"}
+      </p>
+
+    </div>
+  );
+};
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-teal-900 overflow-hidden pt-12">
       {/* Enhanced Background with Multiple Layers */}
@@ -832,138 +861,115 @@ const handleSaleDeedUpload = async () => {
     </div>
   </div>
 )}
+
 {/* modal for extration to showcase info */}
 {showExtractionModal && extractionData && (
   <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 px-4">
-    
-    <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-white/10 backdrop-blur-xl p-8 rounded-3xl w-full max-w-2xl shadow-2xl animate-fadeIn">
+
+    <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-white/10 backdrop-blur-xl p-6 md:p-8 rounded-3xl w-full max-w-4xl shadow-2xl">
 
       {/* HEADER */}
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-          Verify Extracted Information
+      <div className="text-center mb-6">
+        <h2 className="text-2xl md:text-3xl font-bold text-white">
+          Verify Extracted Details
         </h2>
-        <p className="text-gray-400 text-sm md:text-base">
-          Please review and update the fields if required before continuing
+        <p className="text-gray-400 text-sm mt-2">
+          Please review and correct any field before continuing
         </p>
       </div>
 
-      {/* FORM GRID */}
-      <div className="space-y-5">
+      {/* GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         {/* OWNER */}
-        <div>
-          <label className="text-xs text-gray-400">Owner Name</label>
-          <input
-            value={extractionData.ownerName?.value || ""}
-            onChange={(e) =>
-              setExtractionData({
-                ...extractionData,
-                ownerName: {
-                  ...extractionData.ownerName,
-                  value: e.target.value
-                }
-              })
-            }
-            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
-          />
-          {extractionData.original?.ownerName_hi && (
-            <p className="text-xs text-gray-500 mt-1">
-              Original: {extractionData.original.ownerName_hi}
-            </p>
-          )}
-        </div>
+        <Field
+          label="Owner Name"
+          value={extractionData.ownerName}
+          setExtractionData={setExtractionData}
+          fieldKey="ownerName"
+        />
+
+        {/* BUYER */}
+        <Field
+          label="Buyer Name"
+          value={extractionData.buyerName}
+          setExtractionData={setExtractionData}
+          fieldKey="buyerName"
+        />
+
+        {/* VILLAGE */}
+        <Field
+          label="Village"
+          value={extractionData.village}
+          setExtractionData={setExtractionData}
+          fieldKey="village"
+        />
 
         {/* CITY */}
-        <div>
-          <label className="text-xs text-gray-400">City</label>
-          <input
-            value={extractionData.city?.value || ""}
-            onChange={(e) =>
-              setExtractionData({
-                ...extractionData,
-                city: {
-                  ...extractionData.city,
-                  value: e.target.value
-                }
-              })
-            }
-            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
-          />
-          {extractionData.original?.city_hi && (
-            <p className="text-xs text-gray-500 mt-1">
-              Original: {extractionData.original.city_hi}
-            </p>
-          )}
-        </div>
+        <Field
+          label="City"
+          value={extractionData.city}
+          setExtractionData={setExtractionData}
+          fieldKey="city"
+        />
 
         {/* STATE */}
-        <div>
-          <label className="text-xs text-gray-400">State</label>
-          <input
-            value={extractionData.state?.value || ""}
-            onChange={(e) =>
-              setExtractionData({
-                ...extractionData,
-                state: {
-                  ...extractionData.state,
-                  value: e.target.value
-                }
-              })
-            }
-            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
-          />
-          {extractionData.original?.state_hi && (
-            <p className="text-xs text-gray-500 mt-1">
-              Original: {extractionData.original.state_hi}
-            </p>
-          )}
-        </div>
+        <Field
+          label="State"
+          value={extractionData.state}
+          setExtractionData={setExtractionData}
+          fieldKey="state"
+        />
 
         {/* PINCODE */}
-        <div>
-          <label className="text-xs text-gray-400">Pincode</label>
-          <input
-            value={extractionData.pincode?.value || ""}
-            onChange={(e) =>
-              setExtractionData({
-                ...extractionData,
-                pincode: {
-                  ...extractionData.pincode,
-                  value: e.target.value
-                }
-              })
-            }
-            className="w-full mt-1 p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-emerald-400 outline-none"
-          />
-        </div>
+        <Field
+          label="Pincode"
+          value={extractionData.pincode}
+          setExtractionData={setExtractionData}
+          fieldKey="pincode"
+        />
+
+        {/* AREA */}
+        <Field
+          label="Area"
+          value={extractionData.area}
+          setExtractionData={setExtractionData}
+          fieldKey="area"
+        />
+
+        {/* KHASRA */}
+        <Field
+          label="Khasra Number"
+          value={extractionData.khasraNumber}
+          setExtractionData={setExtractionData}
+          fieldKey="khasraNumber"
+        />
+
       </div>
 
-      {/* ACTION BUTTONS */}
+      {/* ACTIONS */}
       <div className="flex gap-4 mt-8">
 
-        {/* BACK */}
         <button
           onClick={() => setShowExtractionModal(false)}
-          className="flex-1 px-6 py-3 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 transition"
+          className="flex-1 py-3 rounded-xl bg-white/10 border border-white/10 text-white hover:bg-white/20 transition"
         >
           ← Back
         </button>
 
-        {/* CONFIRM */}
         <button
           onClick={() => {
             setCity(extractionData.city?.value || "");
             setState(extractionData.state?.value || "");
             setPincode(extractionData.pincode?.value || "");
-
             setShowExtractionModal(false);
             setCurrentStep(1);
           }}
-          className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold hover:scale-105 transition shadow-lg"
+          className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold hover:scale-105 transition shadow-lg"
         >
           Confirm & Continue →
         </button>
+
       </div>
 
     </div>

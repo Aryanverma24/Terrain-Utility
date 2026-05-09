@@ -406,6 +406,7 @@ const canPay =
 //for stroing all staages for the deal room 
   const allowedStagesForDealRoom = [
   "token_paid",
+  "mutation_pending",
   "appointment_booked",
   "registrar_assigned",
   "legal_process"

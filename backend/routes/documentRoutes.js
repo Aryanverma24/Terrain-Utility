@@ -15,14 +15,7 @@ import upload from '../utils/multerConfig.js';
 import { io } from '../index.js';
 import { reuploadDocumentHandler } from '../controllers/documentController.js';
 import { extractSaleDeed } from '../controllers/OCRcontroller.js';
-// Multer setup for file uploads
 
-// router.post(
-//   "/api/documents/upload/:landId",
-//   authenticate,
-//   uploadAny,
-//   uploadDocuments
-// );
 router.get('/:id', async (req, res) => {
   try {
     const doc = await Document.findById(req.params.id);
@@ -51,11 +44,11 @@ router.put(
       return res.status(404).json({ message: 'Document not found' });
     }
 
-    // ✅ SAFE UPDATE (NO VALIDATION BREAK)
+    //  SAFE UPDATE (NO VALIDATION BREAK)
     await Document.updateOne(
       { 'documents._id': subDocId },
       {
-        $set: {
+        $set: {  
           'documents.$.status': status,
         },
       },
@@ -69,7 +62,7 @@ router.put(
 
     const subDoc = updatedDoc.documents[0];
 
-    // 🔔 Notification
+    //  Notification
     const notification = await Notification.create({
       userId: parentDoc.owner,
       title: `Document ${status}`,

@@ -100,17 +100,38 @@ const handleConfirmAppointment = async () => {
 
     console.log("📥 APPOINTMENT RESPONSE:", response.data);
 
-    if (response.data.success) {
-      const appt = response.data.appointment;
+   if (response.data.success) {
 
-      setAppointment(appt); // ✅ SAVE APPOINTMENT
-      setShowModal(false);
+  setShowModal(false);
 
-      toast.success(`Slot booked: ${appt.timeSlot}`, {
-        position: "top-right",
-      });
+  // ✅ FETCH POPULATED APPOINTMENT
+  const refreshed = await API.get(
+    `/api/appointments/land/${landId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
-    } else {
+  if (
+    refreshed.data?.success &&
+    refreshed.data?.appointment
+  ) {
+    setAppointment(
+      refreshed.data.appointment
+    );
+  }
+
+  toast.success(
+    `Slot booked: ${response.data.appointment.timeSlot}`,
+    {
+      position: "top-right",
+    }
+  );
+}
+
+    else {
       toast.error(response.data.msg || "Booking failed");
     }
 
@@ -646,7 +667,23 @@ Documents now move into registration execution with registrar.
   </div>
 
   <span className="px-5 py-2 rounded-full bg-emerald-50 text-emerald-700 font-medium">
-    Active
+   {appointment?.status === "confirmed" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+    ACtive
+  </span>
+)}
+
+{appointment?.status === "completed" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-medium">
+    Completed
+  </span>
+)}
+
+{appointment?.status === "rejected" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-red-100 text-red-700 font-medium">
+    Rejected
+  </span>
+)}
   </span>
 </div>
 
@@ -763,7 +800,23 @@ Status
 </p>
 
 <span className="inline-block mt-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 font-medium">
-Confirmed
+{appointment?.status === "confirmed" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+    Confirmed
+  </span>
+)}
+
+{appointment?.status === "completed" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-medium">
+    Completed
+  </span>
+)}
+
+{appointment?.status === "rejected" && (
+  <span className="inline-block mt-2 px-4 py-2 rounded-full bg-red-100 text-red-700 font-medium">
+    Rejected
+  </span>
+)}
 </span>
 </div>
 

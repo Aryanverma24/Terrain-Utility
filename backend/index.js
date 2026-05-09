@@ -21,6 +21,7 @@ import notificationRoutes from './routes/NotificationRoutes.js';
 import paymentRoutes from './routes/PaymentRoutes.js';
 import registrarRoutes from './routes/registrarRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
+import mutationroutes from './routes/mutationroutes.js';
 
 import { authenticate } from './middlerwares/landauthenticate.js';
 import { createLand, deleteReview } from '../backend/controllers/LandController.js';
@@ -109,17 +110,16 @@ io.on('connection', (socket) => {
 
     try {
       const {
-        chatId, // ✅ FIXED
+        chatId, 
         room,
         senderId,
         senderName,
         receiverId,
         receiverName,
-        message, // ✅ FIXED (no rename confusion)
+        message, 
       } = data;
 
-      console.log('👉 chatId:', chatId);
-      console.log('👉 message:', message);
+     
 
       if (!chatId || !message) {
         console.log('❌ Missing chatId or message');
@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // ✅ CREATE MESSAGE
+      // CREATE MESSAGE
       const msg = await Message.create({
         chatId,
         senderId,
@@ -150,17 +150,17 @@ io.on('connection', (socket) => {
         delivered: true,
       });
 
-      console.log('✅ Message saved:', msg._id);
+      console.log(' Message saved:', msg._id);
 
-      // ✅ UPDATE CHAT
+      // UPDATE CHAT
       chat.lastMessage = message;
       chat.lastMessageAt = new Date();
       await chat.save();
 
-      // ✅ EMIT TO ROOM
+      //  EMIT TO ROOM
       io.to(room).emit('message', msg);
 
-      // ✅ FALLBACK (sender gets message too)
+      //  FALLBACK (sender gets message too)
       socket.emit('message', msg);
     } catch (err) {
       console.error('❌ socket sendMessage error:', err);
@@ -275,6 +275,7 @@ app.use('/api/lawyer', lawyerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/registrar', registrarRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/mutations",mutationroutes);
 app.use((req, res, next) => {
   console.log('🌍 Incoming:', req.method, req.url);
   next();

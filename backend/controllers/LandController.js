@@ -6,7 +6,8 @@ import asyncHandler from '../middlerwares/asyncHandler.js';
 import { mongo, Types } from 'mongoose';
 import calculateAverageRating from '../utils/calculateAverageRating.js';
 import mongoose from 'mongoose';
-
+import Mutation from '../modals/mutationModal.js';
+import Appointment from '../modals/AppointmentModal.js';
 import { getRequesterFromHeader } from '../utils/getRequesterheader.js';
 import Document from '../modals/DocumentModal.js';
 import Notification from '../modals/NotificationModal.js';
@@ -328,7 +329,10 @@ const getAllLands = asyncHandler(async (req, res) => {
         });
     } else {
       // ✅ Normal users see ONLY approved lands
-      lands = await Land.find({ status: 'approved' })
+     lands = await Land.find({
+  status: 'approved',
+  marketStatus: { $ne: 'not_for_sale' },
+})
         .populate({
           path: 'approvedBy',
           model: 'User',
@@ -1292,7 +1296,377 @@ const saveLawyerDeclaration = async (req, res) => {
     res.status(500).json({ message: 'Failed to save declaration' });
   }
 };
+//for reselling land 
+export const relistLand = async (req, res) => {
 
+  try {
+
+    const land = await Land.findById(req.params.id);
+
+    if (!land) {
+      return res.status(404).json({
+        success: false,
+        message: "Land not found"
+      });
+    }
+
+    /* =========================
+       OWNER CHECK
+    ========================= */
+
+    if (
+      land.owner.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    /* =========================
+       DOCUMENT REFRESH CHECK
+    ========================= */
+
+    if (land.documentsRefreshRequired) {
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please upload updated ownership documents before relisting"
+      });
+
+    }
+
+    /* =========================
+       RESET SALE / WORKFLOW ONLY
+       (DO NOT RESET LAWYER VERIFICATION)
+    ========================= */
+
+    land.marketStatus = "for_sale";
+
+    land.transferStatus = "available";
+
+    land.paymentStatus = "not_started";
+
+    land.currentTransaction = null;
+
+    land.tokenBuyer = null;
+
+    land.assignedRegistrar = null;
+
+    land.isLocked = false;
+
+    land.interestedUsers = [];
+
+    land.interestedUsersCount = 0;
+
+    /* =========================
+       IMPORTANT:
+       KEEP THESE INTACT
+    ========================= */
+
+    // land.assignedLawyer
+    // land.approvedBy
+    // land.status
+    // land.verification
+    // land.geoVerification
+
+    await land.save();
+
+    /* =========================
+       ARCHIVE OLD APPOINTMENTS
+    ========================= */
+
+  await Appointment.updateMany(
+  { land: land._id },
+  {
+    $set: {
+      isArchived: true,
+      lifecycleStatus: "archived"
+    }
+  }
+);
+
+await Mutation.updateMany(
+  { land: land._id },
+  {
+    $set: {
+      isArchived: true,
+      lifecycleStatus: "archived"
+    }
+  }
+);
+    /* =========================
+       NOTIFY LAWYERS
+    ========================= */
+
+    const lawyers = await User.find({
+      role: "lawyer"
+    }).select("_id");
+
+    const notifications = lawyers.map((lawyer) => ({
+
+      userId: lawyer._id,
+
+      title: "Land Relisted For Sale",
+
+      message:
+        `${land.ownerName} has relisted a verified property for sale.`,
+
+      type: "land_verification",
+
+      relatedLand: land._id,
+
+      isRead: false
+
+    }));
+
+    await Notification.insertMany(notifications);
+
+    /* =========================
+       RESPONSE
+    ========================= */
+
+    return res.json({
+
+      success: true,
+
+      message:
+        "Land relisted successfully",
+
+      land
+
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: err.message
+
+    });
+
+  }
+
+};
+//referesh docs 
+// ==============================
+// REFRESH LAND DOCUMENTS
+// ==============================
+export const refreshLandDocuments = async (req, res) => {
+
+  try {
+
+    const land = await Land.findById(req.params.id);
+
+    if (!land) {
+      return res.status(404).json({
+        success: false,
+        message: "Land not found"
+      });
+    }
+
+    // OWNER CHECK
+    if (
+      land.owner.toString() !== req.user.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized"
+      });
+    }
+
+    // CHECK FLAG
+    if (!land.documentsRefreshRequired) {
+      return res.status(400).json({
+        success: false,
+        message: "Document refresh not required"
+      });
+    }
+
+    // ======================================
+    // NOW SEND TO LAWYER VERIFICATION AGAIN
+    // ======================================
+
+    land.status = "pending";
+
+    land.marketStatus = "not_for_sale";
+
+    land.approvedBy = null;
+
+    land.assignedLawyer = null;
+
+    land.verification = {
+      documentsVerified: false,
+      readyForApproval: false
+    };
+
+    land.geoVerification = {
+      lawyerCoordinates: [],
+      status: "pending",
+      verifiedAt: null,
+      distance: null,
+      note: "",
+      lawyerDeclaration: {
+        accepted: false,
+        acceptedAt: null,
+        lawyerId: null
+      }
+    };
+
+    // DOCUMENT UPDATE PHASE COMPLETED
+    land.documentsRefreshRequired = false;
+
+    await land.save();
+
+    // ======================================
+    // NOTIFY LAWYERS
+    // ======================================
+
+    const lawyers = await User.find({
+      role: "lawyer"
+    }).select("_id");
+
+    const notifications = lawyers.map((lawyer) => ({
+
+      userId: lawyer._id,
+
+      title: "Updated Land Documents Submitted",
+
+      message:
+        `${land.ownerName} uploaded updated ownership documents for reverification.`,
+
+      type: "land_verification",
+
+      relatedLand: land._id,
+
+      isRead: false
+
+    }));
+
+    await Notification.insertMany(
+      notifications
+    );
+
+    return res.json({
+
+      success: true,
+
+      message:
+        "Documents submitted for reverification",
+
+      land
+
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+
+      success: false,
+
+      message: err.message
+
+    });
+
+  }
+
+};
+
+
+
+// ==========================================
+// REQUEST REVERIFICATION
+// ==========================================
+export const requestReverification = asyncHandler(async (req, res) => {
+
+  const land = await Land.findById(req.params.id);
+
+  if (!land) {
+    return res.status(404).json({
+      message: "Land not found",
+    });
+  }
+
+  // OWNER CHECK
+  if (
+    land.owner.toString() !== req.user.id
+  ) {
+    return res.status(403).json({
+      message: "Unauthorized",
+    });
+  }
+
+  // ALREADY IN DOC UPDATE PHASE
+  if (land.documentsRefreshRequired) {
+    return res.status(400).json({
+      message:
+        "Document update already requested",
+    });
+  }
+
+  // ==========================================
+  // ONLY ENABLE DOCUMENT UPDATE PHASE
+  // DO NOT CHANGE STATUS YET
+  // ==========================================
+
+  land.documentsRefreshRequired = true;
+
+  // REMOVE FROM MARKETPLACE TEMPORARILY
+  land.marketStatus = "not_for_sale";
+
+  await land.save();
+
+  res.status(200).json({
+
+    success: true,
+
+    message:
+      "Upload updated ownership documents before reverification",
+
+    land
+
+  });
+
+});
+//for audit trail 
+export const getAuditTrail = async (req, res) => {
+  try {
+
+    const land = await Land.findById(req.params.id)
+      .select("auditTrail")
+      .lean();
+
+    if (!land) {
+      return res.status(404).json({
+        success: false,
+        message: "Land not found"
+      });
+    }
+
+    // ✅ SORT AUDIT TRAIL (NEWEST FIRST)
+    const sortedAudit = (land.auditTrail || []).sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    return res.json({
+      success: true,
+      auditTrail: sortedAudit
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+
+  }
+};
 // ----------------------------------------------
 export {
   createLand,
